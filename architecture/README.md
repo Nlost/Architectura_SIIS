@@ -39,6 +39,7 @@ docs/architecture/
 │   ├── sequences.puml             # Onboarding / măsurători / alarmă / HL7 / FHIR
 │   └── ble-esp32-android.md       # GATT: UUID-uri, payload binar, pairing
 │
+├── index.html                     # Viewer web interactiv pentru toate diagramele PlantUML
 ├── eurorec-compliance.md          # Mapping criterii EuroRec Seal L2 → implementare
 └── README.md                      # Acest fișier
 ```
@@ -57,6 +58,14 @@ docs/architecture/
 - **Cursor / VS Code:** extensia [PlantUML](https://marketplace.visualstudio.com/items?itemName=jebbs.plantuml) → preview cu `Alt+D`
 - **Online:** [plantuml.com/plantuml](https://www.plantuml.com/plantuml) — lipire conținut `.puml`
 - **OpenAPI:** importare `module2-cloud/openapi-cloud.yaml` în [Swagger Editor](https://editor.swagger.io/) sau Postman
+
+### Vizualizare web unificată (`index.html`)
+- `index.html` agregă toate diagramele din `overview/`, `integration/`, `shared/` și modulele 1–4 într-o singură pagină.
+- Pagina folosește `fetch` pentru fișierele locale `.puml`, deci trebuie servită prin HTTP (nu funcționează deschisă direct cu `file://`).
+- Pornire rapidă:
+  - `cd docs/architecture && python3 -m http.server 8000`
+  - deschide `http://localhost:8000/`
+- Pentru diagrame multi-pagină (`newpage`), viewer-ul separă automat paginile și oferă linkuri către SVG și editorul PlantUML.
 
 ---
 
