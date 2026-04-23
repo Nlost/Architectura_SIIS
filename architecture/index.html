@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<title>Arhitectura sistemului wearable</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root {
+    --bg: #fafafa;
+    --fg: #222;
+    --muted: #666;
+    --accent: #1565c0;
+    --card: #fff;
+    --border: #e0e0e0;
+    --sidebar: #f0f4f8;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--fg);
+    line-height: 1.5;
+    display: grid;
+    grid-template-columns: 260px 1fr;
+    min-height: 100vh;
+  }
+  aside {
+    background: var(--sidebar);
+    border-right: 1px solid var(--border);
+    padding: 16px;
+    overflow-y: auto;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+  }
+  aside h1 { font-size: 16px; margin: 0 0 16px; }
+  aside ul { list-style: none; padding: 0; margin: 0 0 16px; }
+  aside li { margin: 4px 0; }
+  aside details { margin-bottom: 8px; }
+  aside summary {
+    cursor: pointer; font-weight: 600; padding: 4px 0; color: var(--muted);
+    font-size: 13px; text-transform: uppercase; letter-spacing: .5px;
+  }
+  aside a {
+    display: block; padding: 6px 8px; text-decoration: none;
+    color: var(--fg); font-size: 14px; border-radius: 4px;
+  }
+  aside a:hover { background: #e3f2fd; color: var(--accent); }
+  main { padding: 32px 40px; max-width: 1200px; }
+  h2 { color: var(--accent); border-bottom: 2px solid var(--border); padding-bottom: 8px; margin-top: 48px; }
+  h2:first-of-type { margin-top: 0; }
+  .diagram-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    margin: 16px 0 32px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.05);
+  }
+  .diagram-card .path {
+    font-family: ui-monospace, "SF Mono", Consolas, monospace;
+    font-size: 12px; color: var(--muted); margin-bottom: 12px;
+  }
+  .diagram-card img, .diagram-card object {
+    max-width: 100%; display: block; margin: 0 auto;
+    background: #fff;
+  }
+  .page-wrapper { margin-top: 16px; }
+  .page-wrapper:first-of-type { margin-top: 0; }
+  .page-label {
+    background: #1565c0; color: #fff;
+    padding: 4px 12px; border-radius: 4px 4px 0 0;
+    font-size: 12px; font-weight: 600;
+    display: inline-block; margin-bottom: 0;
+  }
+  .page-label a { color: #fff; text-decoration: underline; }
+  .page-label a:hover { color: #bbdefb; }
+  .page-wrapper + .page-wrapper {
+    border-top: 2px dashed var(--border); padding-top: 16px;
+  }
+  .diagram-card .error {
+    color: #b71c1c; padding: 12px; background: #ffebee; border-radius: 4px;
+    font-family: monospace; font-size: 13px; white-space: pre-wrap;
+  }
+  .loading { color: var(--muted); font-style: italic; }
+  header.intro {
+    background: linear-gradient(135deg, #1565c0, #0d47a1);
+    color: #fff; padding: 32px; border-radius: 8px; margin-bottom: 24px;
+  }
+  header.intro h1 { margin: 0 0 8px; font-size: 28px; }
+  header.intro p { margin: 0; opacity: .9; }
+  .notice {
+    background: #fff3e0; border-left: 4px solid #ff9800;
+    padding: 12px 16px; border-radius: 4px; margin-bottom: 24px; font-size: 14px;
+  }
+  code { background: #eceff1; padding: 2px 6px; border-radius: 3px; font-size: 90%; }
+  @media (max-width: 800px) {
+    body { grid-template-columns: 1fr; }
+    aside { position: static; height: auto; }
+  }
+</style>
+</head>
+<body>
+
+<aside>
+  <h1>📐 Arhitectura</h1>
+
+  <details open>
+    <summary>Overview</summary>
+    <ul>
+      <li><a href="#overview-system-components">System components</a></li>
+      <li><a href="#overview-azure-deployment">Azure deployment</a></li>
+      <li><a href="#overview-sequence-measurement-sync">Secventa masuratori</a></li>
+    </ul>
+  </details>
+
+  <details open>
+    <summary>Integrare</summary>
+    <ul>
+      <li><a href="#integration-integration-points">Puncte de integrare</a></li>
+      <li><a href="#integration-data-flow">Flux de date</a></li>
+      <li><a href="#integration-sequences">Secvente end-to-end</a></li>
+    </ul>
+  </details>
+
+  <details>
+    <summary>Shared</summary>
+    <ul>
+      <li><a href="#shared-types-shared">Types shared</a></li>
+      <li><a href="#shared-domain-model">Domain model</a></li>
+    </ul>
+  </details>
+
+  <details>
+    <summary>Module 1 - Web</summary>
+    <ul>
+      <li><a href="#module1-web-api-module1-web">API</a></li>
+    </ul>
+  </details>
+
+  <details>
+    <summary>Module 2 - Cloud</summary>
+    <ul>
+      <li><a href="#module2-cloud-api-module2-cloud">API</a></li>
+    </ul>
+  </details>
+
+  <details>
+    <summary>Module 3 - Mobile</summary>
+    <ul>
+      <li><a href="#module3-mobile-api-module3-mobile">API</a></li>
+    </ul>
+  </details>
+
+  <details>
+    <summary>Module 4 - ESP32</summary>
+    <ul>
+      <li><a href="#module4-esp32-api-module4-esp32">API</a></li>
+    </ul>
+  </details>
+</aside>
+
+<main>
+  <header class="intro">
+    <h1>Sistem purtabil - supraveghere stare sanatate</h1>
+    <p>Arhitectura completa: Web + Cloud Azure + Android + ESP32. Toate diagramele sunt randate prin <a href="https://www.plantuml.com/" style="color:#fff;text-decoration:underline">plantuml.com</a>.</p>
+  </header>
+
+  <div class="notice">
+    <strong>Cum folosesti aceasta pagina:</strong>
+    serveste folderul <code>docs/architecture/</code> cu un server HTTP simplu (nu poate functiona cu <code>file://</code> din cauza <code>fetch</code>):<br><br>
+    <code>cd docs/architecture &amp;&amp; python3 -m http.server 8000</code><br><br>
+    apoi deschide <a href="http://localhost:8000/">http://localhost:8000/</a>
+  </div>
+
+  <h2>Overview</h2>
+  <div class="diagram-card" id="overview-system-components" data-puml="overview/system-components.puml"></div>
+  <div class="diagram-card" id="overview-azure-deployment" data-puml="overview/azure-deployment.puml"></div>
+  <div class="diagram-card" id="overview-sequence-measurement-sync" data-puml="overview/sequence-measurement-sync.puml"></div>
+
+  <h2>Integrare</h2>
+  <div class="diagram-card" id="integration-integration-points" data-puml="integration/integration-points.puml"></div>
+  <div class="diagram-card" id="integration-data-flow" data-puml="integration/data-flow.puml"></div>
+  <div class="diagram-card" id="integration-sequences" data-puml="integration/sequences.puml"></div>
+
+  <h2>Shared</h2>
+  <div class="diagram-card" id="shared-types-shared" data-puml="shared/types-shared.puml"></div>
+  <div class="diagram-card" id="shared-domain-model" data-puml="shared/domain-model.puml"></div>
+
+  <h2>Module 1 - Web</h2>
+  <div class="diagram-card" id="module1-web-api-module1-web" data-puml="module1-web/api-module1-web.puml"></div>
+
+  <h2>Module 2 - Cloud</h2>
+  <div class="diagram-card" id="module2-cloud-api-module2-cloud" data-puml="module2-cloud/api-module2-cloud.puml"></div>
+
+  <h2>Module 3 - Mobile</h2>
+  <div class="diagram-card" id="module3-mobile-api-module3-mobile" data-puml="module3-mobile/api-module3-mobile.puml"></div>
+
+  <h2>Module 4 - ESP32</h2>
+  <div class="diagram-card" id="module4-esp32-api-module4-esp32" data-puml="module4-esp32/api-module4-esp32.puml"></div>
+</main>
+
+<!-- pako pentru deflate raw, necesar pentru encoding PlantUML -->
+<script src="https://cdn.jsdelivr.net/npm/pako@2.1.0/dist/pako.min.js"></script>
+<script>
+/**
+ * Encoder PlantUML: deflate raw -> base64 cu alfabet custom.
+ * Conform specificatiei plantuml.com (encode6bit).
+ */
+function encode6bit(b) {
+  if (b < 10) return String.fromCharCode(48 + b);
+  b -= 10;
+  if (b < 26) return String.fromCharCode(65 + b);
+  b -= 26;
+  if (b < 26) return String.fromCharCode(97 + b);
+  b -= 26;
+  if (b === 0) return '-';
+  if (b === 1) return '_';
+  return '?';
+}
+function append3bytes(b1, b2, b3) {
+  const c1 = b1 >> 2;
+  const c2 = ((b1 & 0x3) << 4) | (b2 >> 4);
+  const c3 = ((b2 & 0xF) << 2) | (b3 >> 6);
+  const c4 = b3 & 0x3F;
+  return encode6bit(c1 & 0x3F) + encode6bit(c2 & 0x3F) + encode6bit(c3 & 0x3F) + encode6bit(c4 & 0x3F);
+}
+function encode64(data) {
+  let r = '';
+  for (let i = 0; i < data.length; i += 3) {
+    if (i + 2 === data.length) r += append3bytes(data[i], data[i + 1], 0);
+    else if (i + 1 === data.length) r += append3bytes(data[i], 0, 0);
+    else r += append3bytes(data[i], data[i + 1], data[i + 2]);
+  }
+  return r;
+}
+function encodePlantUml(source) {
+  const utf8 = new TextEncoder().encode(source);
+  const compressed = pako.deflateRaw(utf8, { level: 9 });
+  return encode64(compressed);
+}
+
+/**
+ * Imparte o sursa PlantUML cu "newpage" in N surse independente,
+ * reutilizand preamble-ul (title/skinparam/allowmixing/!directive).
+ * Daca nu exista newpage, returneaza [source] neschimbat.
+ */
+function splitByNewpage(source) {
+  const lines = source.split(/\r?\n/);
+  const startIdx = lines.findIndex(l => /^\s*@startuml\b/i.test(l));
+  const endIdx   = lines.findIndex(l => /^\s*@enduml\b/i.test(l));
+  if (startIdx === -1 || endIdx === -1) return [source];
+
+  const startLine = lines[startIdx];
+  const body = lines.slice(startIdx + 1, endIdx);
+
+  // Imparte body pe newpage
+  const chunks = [[]];
+  for (const line of body) {
+    if (/^\s*newpage\b/i.test(line.trim()) && !line.trim().startsWith("'")) {
+      chunks.push([]);
+    } else {
+      chunks[chunks.length - 1].push(line);
+    }
+  }
+  if (chunks.length === 1) return [source];
+
+  // Extrage preamble-ul din prima bucata: liniile comentate / skinparam /
+  // title / allowmixing / !... de la inceput, pana la prima linie "de continut".
+  const preamble = [];
+  const firstBody = [];
+  let inContent = false;
+  const isPreambleLine = (t) =>
+    t === '' ||
+    t.startsWith("'") ||
+    /^skinparam\b/i.test(t) ||
+    /^title\b/i.test(t) ||
+    /^allowmixing\b/i.test(t) ||
+    /^hide\b/i.test(t) ||
+    /^scale\b/i.test(t) ||
+    /^!/.test(t);
+
+  for (const line of chunks[0]) {
+    if (!inContent && isPreambleLine(line.trim())) {
+      preamble.push(line);
+    } else {
+      inContent = true;
+      firstBody.push(line);
+    }
+  }
+
+  const result = [];
+  result.push([startLine, ...preamble, ...firstBody, '@enduml'].join('\n'));
+  for (let i = 1; i < chunks.length; i++) {
+    result.push([startLine, ...preamble, ...chunks[i], '@enduml'].join('\n'));
+  }
+  return result;
+}
+
+async function renderDiagram(card) {
+  const path = card.dataset.puml;
+  const title = path.split('/').pop();
+  card.innerHTML = `<div class="path">${path}</div><div class="loading">se incarca ${title}...</div>`;
+  try {
+    const res = await fetch(path);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const source = await res.text();
+    const sources = splitByNewpage(source);
+    const pages = sources.length;
+
+    const pageBlocks = [];
+    const pageUrls = [];
+    for (let i = 0; i < pages; i++) {
+      const enc = encodePlantUml(sources[i]);
+      const pageUrl = `https://www.plantuml.com/plantuml/svg/${enc}`;
+      const editorUrl = `https://www.plantuml.com/plantuml/uml/${enc}`;
+      pageUrls.push({ svg: pageUrl, editor: editorUrl });
+      pageBlocks.push(`
+        <div class="page-wrapper">
+          ${pages > 1
+            ? `<div class="page-label">Pagina ${i + 1} / ${pages}
+                 &middot; <a href="${pageUrl}" target="_blank">open SVG</a>
+                 &middot; <a href="${editorUrl}" target="_blank">editor</a></div>`
+            : ''}
+          <object data="${pageUrl}" type="image/svg+xml"></object>
+        </div>
+      `);
+    }
+
+    const topLinks = pages === 1
+      ? `&nbsp;|&nbsp;<a href="${pageUrls[0].svg}" target="_blank">open SVG</a>
+         &nbsp;|&nbsp;<a href="${pageUrls[0].editor}" target="_blank">editor online</a>`
+      : `&nbsp;|&nbsp;<strong>${pages} pagini</strong>`;
+
+    card.innerHTML = `
+      <div class="path">
+        <a href="${path}">${path}</a>
+        ${topLinks}
+      </div>
+      ${pageBlocks.join('\n')}
+    `;
+  } catch (e) {
+    card.innerHTML = `<div class="path">${path}</div><div class="error">Eroare: ${e.message}</div>`;
+  }
+}
+
+document.querySelectorAll('.diagram-card[data-puml]').forEach(renderDiagram);
+</script>
+</body>
+</html>

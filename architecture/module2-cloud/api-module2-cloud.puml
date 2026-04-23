@@ -1,0 +1,458 @@
+@startuml api-module2-cloud
+title Modul 2 - Cloud Azure: REST API (Controller + Service)
+
+allowmixing
+skinparam classAttributeIconSize 0
+skinparam ClassBackgroundColor #FAFAFA
+skinparam ClassBorderColor #999999
+skinparam ArrowColor #555555
+skinparam NoteBackgroundColor #FFFDE7
+skinparam NoteBorderColor #D4A017
+skinparam PackageBackgroundColor transparent
+skinparam PackageBorderColor #999999
+
+' ============================================================
+' CONTRACT MODUL
+' ============================================================
+note as CONTRACT
+  == Responsabilitatea modulului ==
+  Backend REST gazduit in Azure (App Service / Functions) care:
+   1) autentifica medici si pacienti (JWT)
+   2) stocheaza in Azure SQL dosarul electronic de sanatate (EHR)
+      cu versionare pe fiecare "health item" (EuroRec 5-7, 15-17, 31, 32)
+   3) administreaza utilizatorii si rolurile (admin / privileged / common)
+   4) audit append-only pentru toate accesele si modificarile
+   5) primeste de la Android batch-uri de masuratori (idempotente) si alarme
+   6) serveste graficele si istoricul catre web si mobil
+   7) integreaza cu sistemul MF (HL7 in, FHIR out)
+
+  == Conformitate EuroRec Seal Level 2 (criterii "da") ==
+   - Users, roluri, audit: 1, 24, 25, 26, 28, 29, 33, 34, 36, 40
+   - Identificare pacient:  2, 3, 38, 39, 43, 45
+   - Versionare:            5, 6, 7, 15, 16, 17, 31, 32
+   - Probleme sanatate:     4
+   - Alergii:               14, 44
+   - Medicatie:             9, 10, 50
+   - Acces date + coding:   8, 35
+   - Alerte clinice:        49
+   Vezi docs/architecture/eurorec-compliance.md
+
+  == Contract detaliat ==
+   module2-cloud/openapi-cloud.yaml (OpenAPI 3.0)
+end note
+
+' ============================================================
+' NOTA TRANSVERSALA: VERSIONARE (EuroRec 5, 6, 7, 15, 16, 17, 31, 32)
+' ============================================================
+note as VERSIONING
+  == Regula transversala: "health items" versionate ==
+  Toate entitatile medicale (consultatii, probleme, alergii, medicatii,
+  recomandari, reguli alarma, fisa medicala) sunt stocate ca sir de
+  versiuni. Fiecare versiune are VersionMetadata (shared/types-shared.puml):
+    - versionId        (EuroRec 32 - id unic si persistent)
+    - healthItemId     (EuroRec 31 - asociere logica stabila)
+    - patientId        (EuroRec 31)
+    - recordedAt       (EuroRec 5  - data/ora intrare)
+    - recordedByUserId (EuroRec 6  - cine a introdus)
+    - responsiblePersonId (EuroRec 16)
+    - status           (EuroRec 15 "deleted", 17 schimbare status)
+    - previousVersionId
+
+  UPDATE -> noua versiune (EuroRec 7).
+  DELETE -> noua versiune cu status=DELETED (EuroRec 15).
+  Nicio modificare "in loc" peste randul existent.
+end note
+
+' ============================================================
+' AUTH  (EuroRec 29 - schimbare parola)
+' ============================================================
+package "Auth" #E3F2FD {
+  class AuthController <<Controller>> {
+    + login(req: LoginRequest) : AuthTokens
+    + refreshToken(refreshToken: String) : AuthTokens
+    + logout(accessToken: String) : void
+    + changePassword(userId: UUID, req: ChangePasswordRequest) : void
+  }
+  note right of AuthController
+    POST /auth/login
+    POST /auth/refresh
+    POST /auth/logout
+    POST /auth/change-password   (EuroRec 29)
+  end note
+  class AuthService <<Service>> {
+    + authenticateUser(email: String, passwordHash: String) : AuthTokens
+    + validateToken(accessToken: String) : UserClaims
+    + revokeToken(refreshToken: String) : void
+    + changePassword(userId: UUID, current: String, newPwd: String) : void
+  }
+  AuthController -right-> AuthService
+}
+
+' ============================================================
+' USERS & ROLES  (EuroRec 1, 25, 33, 34, 36, 40)
+' ============================================================
+package "Users & Roles" #D1C4E9 {
+  class UserController <<Controller>> {
+    + listUsers() : UserAccount[]
+    + createUser(body: UserAccount) : UserAccount
+    + getUser(userId: UUID) : UserAccount
+    + updateUser(userId: UUID, body: UserAccount) : UserAccount
+    + deactivateUser(userId: UUID) : void
+    + assignRole(userId: UUID, role: UserRole) : RoleAssignment
+    + listPermissions(role: UserRole) : Permission[]
+    + updatePermissions(role: UserRole, permissions: Permission[]) : Permission[]
+  }
+  note right of UserController
+    GET|POST /users                  (EuroRec 33, 36)
+    GET|PATCH /users/{id}
+    POST /users/{id}/deactivate
+    POST /users/{id}/role            (EuroRec 1, 36)
+    GET|PUT /roles/{role}/permissions (EuroRec 25, 34, 40)
+    Doar ADMIN poate apela.
+  end note
+  class UserService <<Service>> {
+    + listUsers() : UserAccount[]
+    + createUser(account: UserAccount) : UserAccount
+    + getUserById(userId: UUID) : UserAccount
+    + updateUser(userId: UUID, update: UserAccount) : UserAccount
+    + deactivateUser(userId: UUID) : void
+    + assignRole(userId: UUID, role: UserRole, grantedBy: UUID) : RoleAssignment
+  }
+  class AccessControlService <<Service>> {
+    ' EuroRec 24, 25, 34, 40 - gestiunea accesului
+    + getPermissionsForRole(role: UserRole) : Permission[]
+    + updatePermissionsForRole(role: UserRole, permissions: Permission[]) : Permission[]
+    + canUserAccess(userId: UUID, resource: String, action: String) : boolean
+    + isAuthorizedForPatient(userId: UUID, patientId: UUID, action: String) : boolean
+  }
+  UserController -right-> UserService
+  UserController -down-> AccessControlService
+}
+
+' ============================================================
+' PATIENTS  (EuroRec 2, 3, 35, 38, 39, 43, 45)
+' ============================================================
+package "Patients" #E8F5E9 {
+  class PatientController <<Controller>> {
+    + listPatients() : PatientSummary[]
+    + createPatient(body: CreatePatientRequest) : PatientDetail
+    + getPatient(patientId: UUID) : PatientDetail
+    + updatePatient(patientId: UUID, body: UpdatePatientRequest) : PatientDetail
+    + deletePatient(patientId: UUID) : void
+    + getPatientIdentification(patientId: UUID) : PatientIdentificationHeader
+    + updateMedicalRecord(patientId: UUID, body: MedicalRecord) : MedicalRecord
+    + upsertDeviceBinding(patientId: UUID, body: DeviceBinding) : DeviceBinding
+    + getNormalRangeProfile(patientId: UUID) : NormalRangeProfile
+    + updateNormalRangeProfile(patientId: UUID, body: NormalRangeProfile) : NormalRangeProfile
+  }
+  note right of PatientController
+    GET  /patients
+    POST /patients                  (EuroRec 2, 3)
+    GET|PATCH|DELETE /patients/{id}
+    GET  /patients/{id}/identification (EuroRec 43 - header afisat peste tot)
+    PATCH /patients/{id}/medical    (EuroRec 45)
+    PUT   /patients/{id}/device-binding
+    GET|PATCH /patients/{id}/normal-range
+  end note
+  class PatientService <<Service>> {
+    + listPatientsForDoctor(doctorId: UUID) : PatientSummary[]
+    + createPatient(doctorId: UUID, demo: Demographics, medical: MedicalRecord) : PatientDetail
+    + getPatientById(patientId: UUID) : PatientDetail
+    + updateDemographics(patientId: UUID, demo: Demographics) : Demographics
+    + deletePatient(patientId: UUID) : void
+    + updateMedicalRecord(patientId: UUID, record: MedicalRecord) : MedicalRecord
+    + upsertDeviceBinding(patientId: UUID, binding: DeviceBinding) : DeviceBinding
+    + updateNormalRangeProfile(patientId: UUID, profile: NormalRangeProfile) : NormalRangeProfile
+    + buildIdentificationHeader(patientId: UUID) : PatientIdentificationHeader
+    + findDuplicateCandidates(demo: Demographics) : PatientSummary[]
+  }
+  PatientController -right-> PatientService
+}
+
+' ============================================================
+' HEALTH PROBLEMS  (EuroRec 4, 8, 17)
+' ============================================================
+package "Health Problems" #E1F5FE {
+  class HealthProblemController <<Controller>> {
+    + listCurrentProblems(patientId: UUID) : HealthProblem[]
+    + listAllProblems(patientId: UUID) : HealthProblem[]
+    + createProblem(patientId: UUID, body: HealthProblem) : HealthProblem
+    + updateProblemStatus(problemId: UUID, newStatus: HealthItemStatus) : HealthProblem
+    + getProblemVersionHistory(problemId: UUID) : HealthProblem[]
+  }
+  note right of HealthProblemController
+    GET /patients/{id}/problems         (EuroRec 4 - probleme curente)
+    GET /patients/{id}/problems?all=true
+    POST /patients/{id}/problems
+    PATCH /problems/{id}/status         (EuroRec 17)
+    GET /problems/{id}/versions
+  end note
+  class HealthProblemService <<Service>> {
+    + listCurrentForPatient(patientId: UUID) : HealthProblem[]
+    + createProblem(patientId: UUID, problem: HealthProblem, actorId: UUID) : HealthProblem
+    + updateStatus(problemId: UUID, newStatus: HealthItemStatus, actorId: UUID) : HealthProblem
+    + getVersionHistory(problemId: UUID) : HealthProblem[]
+  }
+  HealthProblemController -right-> HealthProblemService
+}
+
+' ============================================================
+' ALLERGIES  (EuroRec 14, 44)
+' ============================================================
+package "Allergies" #FFEBEE {
+  class AllergyController <<Controller>> {
+    + listActiveAllergies(patientId: UUID) : Allergy[]
+    + listAllAllergies(patientId: UUID) : Allergy[]
+    + createAllergy(patientId: UUID, body: Allergy) : Allergy
+    + updateAllergy(allergyId: UUID, body: Allergy) : Allergy
+    + deleteAllergy(allergyId: UUID) : Allergy
+  }
+  note right of AllergyController
+    GET /patients/{id}/allergies        (EuroRec 14 - active)
+    GET /patients/{id}/allergies?all=true
+    POST /patients/{id}/allergies
+    PATCH|DELETE /allergies/{id}
+  end note
+  class AllergyService <<Service>> {
+    + listActiveForPatient(patientId: UUID) : Allergy[]
+    + createAllergy(patientId: UUID, allergy: Allergy, actorId: UUID) : Allergy
+    + updateAllergy(allergyId: UUID, update: Allergy, actorId: UUID) : Allergy
+    + markDeleted(allergyId: UUID, actorId: UUID) : Allergy
+    + findBySubstance(patientId: UUID, code: CodedValue) : Allergy
+  }
+  AllergyController -right-> AllergyService
+}
+
+' ============================================================
+' MEDICATIONS  (EuroRec 9, 10, 44, 50)
+' ============================================================
+package "Medications" #FFF3E0 {
+  class MedicationController <<Controller>> {
+    + listCurrentMedication(patientId: UUID) : Medication[]
+    + listMedicationHistory(patientId: UUID) : Medication[]
+    + prescribeMedication(patientId: UUID, body: PrescriptionRequest) : Medication
+    + updateMedicationStatus(medicationId: UUID, newStatus: HealthItemStatus) : Medication
+    + checkPrescriptionSafety(patientId: UUID, product: CodedValue) : PrescriptionDecisionSupport
+  }
+  note right of MedicationController
+    GET /patients/{id}/medications              (EuroRec 9 - curenta)
+    GET /patients/{id}/medications/history      (EuroRec 10 - istoric)
+    POST /patients/{id}/medications/prescribe   (EuroRec 50)
+    PATCH /medications/{id}/status
+    GET /patients/{id}/prescription-check?product=... (EuroRec 44)
+  end note
+  class MedicationService <<Service>> {
+    + listCurrent(patientId: UUID) : Medication[]
+    + listHistory(patientId: UUID) : Medication[]
+    + prescribe(patientId: UUID, req: PrescriptionRequest, actorId: UUID) : Medication
+    + updateStatus(medicationId: UUID, newStatus: HealthItemStatus, actorId: UUID) : Medication
+    + buildDecisionSupport(patientId: UUID, product: CodedValue) : PrescriptionDecisionSupport
+  }
+  MedicationController -right-> MedicationService
+  MedicationService ..> AllergyService : cross-check alergii (EuroRec 44)
+}
+
+' ============================================================
+' CLINICAL VISITS  (EuroRec 8 - ICD-10)
+' ============================================================
+package "Clinical Visits" #FFF8E1 {
+  class ClinicalVisitController <<Controller>> {
+    + listVisits(patientId: UUID) : ClinicalVisit[]
+    + createVisit(patientId: UUID, body: ClinicalVisit) : ClinicalVisit
+    + getVisit(visitId: UUID) : ClinicalVisit
+    + updateVisit(visitId: UUID, body: ClinicalVisit) : ClinicalVisit
+    + getVisitVersionHistory(visitId: UUID) : ClinicalVisit[]
+  }
+  note right of ClinicalVisitController
+    GET|POST /patients/{id}/visits
+    GET|PATCH /visits/{id}
+    GET /visits/{id}/versions
+  end note
+  class ClinicalVisitService <<Service>> {
+    + listVisitsForPatient(patientId: UUID) : ClinicalVisit[]
+    + getVisitById(visitId: UUID) : ClinicalVisit
+    + createVisit(patientId: UUID, visit: ClinicalVisit, actorId: UUID) : ClinicalVisit
+    + updateVisit(visitId: UUID, visit: ClinicalVisit, actorId: UUID) : ClinicalVisit
+    + getVersionHistory(visitId: UUID) : ClinicalVisit[]
+  }
+  ClinicalVisitController -right-> ClinicalVisitService
+}
+
+' ============================================================
+' RECOMMENDATIONS
+' ============================================================
+package "Recommendations" #E0F7FA {
+  class RecommendationController <<Controller>> {
+    + listRecommendations(patientId: UUID) : Recommendation[]
+    + createRecommendation(patientId: UUID, body: Recommendation) : Recommendation
+    + updateRecommendation(id: UUID, body: Recommendation) : Recommendation
+    + deleteRecommendation(id: UUID) : void
+  }
+  note right of RecommendationController
+    GET|POST /patients/{id}/recommendations
+    PATCH|DELETE /recommendations/{id}
+  end note
+  class RecommendationService <<Service>> {
+    + listForPatient(patientId: UUID) : Recommendation[]
+    + create(patientId: UUID, rec: Recommendation, actorId: UUID) : Recommendation
+    + update(id: UUID, rec: Recommendation, actorId: UUID) : Recommendation
+    + markDeleted(id: UUID, actorId: UUID) : void
+  }
+  RecommendationController -right-> RecommendationService
+}
+
+' ============================================================
+' ALARM RULES
+' ============================================================
+package "Alarm Rules" #FCE4EC {
+  class AlarmRuleController <<Controller>> {
+    + listAlarmRules(patientId: UUID) : AlarmRule[]
+    + createAlarmRule(patientId: UUID, body: AlarmRule) : AlarmRule
+    + updateAlarmRule(id: UUID, body: AlarmRule) : AlarmRule
+    + deleteAlarmRule(id: UUID) : void
+  }
+  note right of AlarmRuleController
+    GET|POST /patients/{id}/alarm-rules
+    PATCH|DELETE /alarm-rules/{id}
+  end note
+  class AlarmRuleService <<Service>> {
+    + listForPatient(patientId: UUID) : AlarmRule[]
+    + create(patientId: UUID, rule: AlarmRule, actorId: UUID) : AlarmRule
+    + update(id: UUID, rule: AlarmRule, actorId: UUID) : AlarmRule
+    + markDeleted(id: UUID, actorId: UUID) : void
+    + replicateRulesToEdge(patientId: UUID) : void
+  }
+  AlarmRuleController -right-> AlarmRuleService
+}
+
+' ============================================================
+' INGESTION (de la Android)
+' ============================================================
+package "Ingestion (de la Android)" #FFECB3 {
+  class IngestionController <<Controller>> {
+    + receiveMeasurements(body: UplinkBatch) : IngestionAck
+    + receiveAlert(body: AlertEvent) : IngestionAck
+  }
+  note right of IngestionController
+    POST /ingestion/measurements
+    POST /ingestion/alerts
+    Idempotent pe batchId / alertId.
+  end note
+  class IngestionService <<Service>> {
+    + storeMeasurementBatch(batch: UplinkBatch) : IngestionAck
+    + storeAlertEvent(event: AlertEvent) : IngestionAck
+    + isDuplicateBatch(batchId: String) : boolean
+  }
+  IngestionController -right-> IngestionService
+}
+
+' ============================================================
+' MONITORING (rapoarte)  (EuroRec 35, 49)
+' ============================================================
+package "Monitoring (rapoarte)" #F3E5F5 {
+  class MonitoringController <<Controller>> {
+    + getMeasurementSeries(patientId: UUID, from: DateTime, to: DateTime, parameter: SensorParameter) : MeasurementSeries
+    + getAlertHistory(patientId: UUID, from: DateTime, to: DateTime) : AlertEvent[]
+    + exportReport(patientId: UUID, params: ReportParams) : ReportFile
+    + getConsolidatedPatientView(patientId: UUID) : PatientDetail
+  }
+  note right of MonitoringController
+    GET /patients/{id}/measurements
+    GET /patients/{id}/alerts
+    GET /patients/{id}/reports
+    GET /patients/{id}/full             (EuroRec 35 - acces la tot dosarul)
+  end note
+  class MonitoringService <<Service>> {
+    + queryMeasurementSeries(query: TimeRangeQuery) : MeasurementSeries
+    + queryAlertHistory(patientId: UUID, query: TimeRangeQuery) : AlertEvent[]
+    + generateReport(params: ReportParams) : ReportFile
+    + buildConsolidatedView(patientId: UUID) : PatientDetail
+    + computeAlertRendering(severity: AlertSeverity) : ClinicalAlertRendering
+  }
+  MonitoringController -right-> MonitoringService
+}
+
+' ============================================================
+' AUDIT  (EuroRec 26, 28)
+' ============================================================
+package "Audit (append-only)" #ECEFF1 {
+  class AuditController <<Controller>> {
+    + listAuditEvents(userId: UUID, from: DateTime, to: DateTime) : AuditEvent[]
+    + listAuditForResource(resourceType: String, resourceId: UUID) : AuditEvent[]
+  }
+  note right of AuditController
+    GET /audit/events?userId=...         (EuroRec 26 - login/logout)
+    GET /audit/resources/{type}/{id}
+    Doar ADMIN. Fara PATCH / DELETE - append-only (EuroRec 28).
+  end note
+  class AuditService <<Service>> {
+    + recordEvent(event: AuditEvent) : void
+    + queryByUser(userId: UUID, from: DateTime, to: DateTime) : AuditEvent[]
+    + queryByResource(resourceType: String, resourceId: UUID) : AuditEvent[]
+  }
+  AuditController -right-> AuditService
+}
+
+' ============================================================
+' INTEGRATION (HL7 / FHIR)
+' ============================================================
+package "Integration (HL7 / FHIR)" #E0F2F1 {
+  class IntegrationController <<Controller>> {
+    + receiveHl7Referral(rawMessage: String) : Hl7InboundReferral
+    + listInboundReferrals(patientId: UUID) : Hl7InboundReferral[]
+    + sendFhirMedicalLetter(patientId: UUID, visitId: UUID) : FhirOutboundLetter
+  }
+  note right of IntegrationController
+    POST /integrations/hl7/inbound
+    GET  /integrations/referrals/incoming
+    POST /integrations/fhir/outbound
+  end note
+  class IntegrationService <<Service>> {
+    + routeHl7InboundMessage(raw: String) : Hl7InboundReferral
+    + buildFhirBundle(patientId: UUID, visitId: UUID) : String
+    + sendFhirBundle(bundleJson: String, destinationUrl: String) : FhirOutboundLetter
+  }
+  IntegrationController -right-> IntegrationService
+}
+
+' ============================================================
+' RELATII TRANSVERSALE (audit + authorization pe toate controllerele)
+' ============================================================
+AuthService ..> AuditService           : login/logout (EuroRec 26)
+PatientService ..> AuditService        : CRUD (EuroRec 28)
+HealthProblemService ..> AuditService
+AllergyService ..> AuditService
+MedicationService ..> AuditService
+ClinicalVisitService ..> AuditService
+UserService ..> AuditService
+
+AuthService ..> AccessControlService   : valideaza rol
+PatientController ..> AccessControlService : verifica drepturi
+HealthProblemController ..> AccessControlService
+AllergyController ..> AccessControlService
+MedicationController ..> AccessControlService
+
+' ============================================================
+' ACTORI EXTERNI
+' ============================================================
+actor "Medic\n(web)"          as DOC
+actor "Pacient\n(Android/web)" as APP
+actor "Admin"                  as ADM
+actor "Sistem MF\n(HL7/FHIR)"  as MF
+
+ADM ..> UserController
+DOC ..> AuthController
+DOC ..> PatientController
+DOC ..> HealthProblemController
+DOC ..> AllergyController
+DOC ..> MedicationController
+DOC ..> ClinicalVisitController
+DOC ..> RecommendationController
+DOC ..> AlarmRuleController
+DOC ..> MonitoringController
+APP ..> AuthController
+APP ..> IngestionController
+MF  ..> IntegrationController
+IntegrationController ..> MF
+
+@enduml

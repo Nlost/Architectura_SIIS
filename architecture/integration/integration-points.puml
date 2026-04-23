@@ -1,0 +1,67 @@
+@startuml integration-points
+title Puncte de integrare - sistem wearable
+
+skinparam ArrowColor #555555
+skinparam ComponentBackgroundColor #FAFAFA
+skinparam ComponentBorderColor #999999
+skinparam NoteBackgroundColor #FFFDE7
+skinparam NoteBorderColor #D4A017
+
+' ============================================================
+' MODULE PROPRII
+' ============================================================
+node "Modul inteligent (ESP32)" as ESP #FFECB3 {
+  component "BlePeripheral\n+ senzori" as BLEP
+}
+
+node "Aplicatie mobila Android" as AND #E1F5FE {
+  component "BluetoothService" as BT
+  component "CloudSyncService" as CS
+  component "AlarmEvaluatorService" as AE
+}
+
+node "Aplicatie web (browser)" as WEB #E8F5E9 {
+  component "React / Angular UI" as UI
+}
+
+node "Cloud Azure (App Service)" as CLOUD #F3E5F5 {
+  component "REST API" as API
+  component "Integration\nHL7 / FHIR" as INT
+  database "Azure SQL" as DB
+}
+
+' ============================================================
+' SISTEME EXTERNE
+' ============================================================
+node "Sistem MF\n(echipa cealalta)" as MF #FFCDD2
+
+' ============================================================
+' INTEGRARI (numerotate ca in README)
+' ============================================================
+BLEP -right-> BT : [1] BLE GATT notify\nSensorFrame la ~10 s
+BT   -right-> CS : intern app
+CS   -right-> API : [2] HTTPS POST /ingestion/measurements\nUplinkBatch la ~30 s (idempotent)
+AE   -right-> API : [3] HTTPS POST /ingestion/alerts\nAlertEvent asincron
+API  -left->  CS  : [4] HTTPS GET /recommendations\n+ /alarm-rules (downlink)
+UI   -down->  API : [5] HTTPS REST + JWT\nCRUD fisa / consultatii / grafice
+MF   -down->  INT : [6] HL7 v2 inbound\ntrimitere la specialist
+INT  -up->    MF  : [7] FHIR Bundle outbound\nscrisoare medicala
+API  -down->  DB  : TDS / SQL
+INT  -down->  DB  : audit HL7/FHIR
+
+note right of CS
+  Offline: coada locala + retry
+  automat la reconectare.
+end note
+
+note right of API
+  Auth: JWT Bearer
+  (login / refresh / logout)
+end note
+
+note bottom of INT
+  Secret: API key sau mTLS
+  pe /integrations/hl7/inbound
+end note
+
+@enduml

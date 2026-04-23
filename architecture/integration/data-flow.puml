@@ -1,0 +1,101 @@
+@startuml data-flow
+title Flux de date - de la senzor la baza de date
+
+skinparam ArrowColor #555555
+skinparam ObjectBackgroundColor #FAFAFA
+skinparam ObjectBorderColor #999999
+skinparam NoteBackgroundColor #FFFDE7
+
+' ============================================================
+' ETAPE TRANSFORMARE
+' ============================================================
+
+object "SensorFrame\n(firmware, binar BLE)" as F1 #FFECB3 {
+  version       : uint8
+  seqNumber     : uint32
+  timestampMs   : uint32 (ms de la boot)
+  heartRateBpm  : uint16
+  spO2Percent   : uint8
+  humidityX10   : uint16
+  tempCX10      : int16
+  ecgSamples    : uint16[0..80]
+  flags         : uint8
+}
+
+object "SensorSample\n(obiect Android)" as F2 #E1F5FE {
+  timestamp   : Instant (UTC)
+  ecgBytes    : byte[]
+  umiditate   : BigDecimal
+  temperatura : BigDecimal
+  puls        : Integer
+}
+
+object "UplinkBatch\n(JSON uplink HTTP)" as F3 #C8E6C9 {
+  batchId      : UUID (idempotency key)
+  patientId    : UUID
+  deviceId     : String
+  windowStart  : Instant
+  windowEnd    : Instant
+  series       : MeasurementSeries
+  accelBurst   : AccelerometerBurst
+}
+
+object "MeasurementBatch\n(entitate SQL)" as F4 #F3E5F5 {
+  id           : UUID
+  patientId    : UUID (FK)
+  receivedAt   : Instant
+  windowStart  : Instant
+  windowEnd    : Instant
+  samplesJson  : NVARCHAR(max) (blob JSON)
+}
+
+object "AlertEvent\n(flux paralel)" as A1 #FFCDD2 {
+  id           : UUID
+  patientId    : UUID
+  ruleId       : UUID
+  triggeredAt  : Instant
+  measuredValue: Number
+  severity     : Enum
+  message      : String
+}
+
+' ============================================================
+' TRANZITII
+' ============================================================
+
+F1 -right-> F2 : parseSensorFrame()\n(LITTLE_ENDIAN,\nclock corectat\nla timpul telefonului)
+
+F2 -right-> F3 : aggregateWindow(30 s)\n- mediere puls/temp/umid\n- pastrare ECG reprezentativ\n- atasare burst accel (~30 esantioane)\n- generare batchId = UUID
+
+F3 -right-> F4 : POST /ingestion/measurements\n- verif idempotenta batchId\n- validare range (temp, puls)\n- INSERT in Azure SQL
+
+F2 .down.> A1 : AlarmEvaluatorService\n(daca depaseste\nNormalRangeProfile)
+A1 -down-> F4 : POST /ingestion/alerts\n(flux asincron,\nNOT blocheaza batch-ul)
+
+note bottom of F1
+  Produs de ESP32
+  la ~10 s / fereastra
+end note
+
+note bottom of F2
+  Produs in Android
+  dupa parseSensorFrame.
+  Trecut prin SensorAggregatorService
+  si AlarmEvaluatorService.
+end note
+
+note bottom of F3
+  Produs in Android de
+  CloudSyncService dupa
+  ~30 s (3 ferestre de 10 s).
+  Trimis HTTPS + JWT.
+end note
+
+note bottom of F4
+  Persistat in Azure SQL
+  prin IngestionService.
+  MonitoringService citeste
+  pentru grafice / rapoarte.
+end note
+
+@enduml

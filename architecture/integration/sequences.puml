@@ -1,0 +1,181 @@
+@startuml sequences
+title Secvente end-to-end - integrarea modulelor
+
+skinparam ArrowColor #555555
+skinparam SequenceBoxBorderColor #999999
+skinparam ParticipantBackgroundColor #FAFAFA
+skinparam NoteBackgroundColor #FFFDE7
+
+' ============================================================
+' SECVENTA 1 - ONBOARDING PACIENT
+' ============================================================
+
+actor "Medic" as M
+participant "Web UI" as W
+participant "Cloud API\n(PatientService)" as CP
+database "Azure SQL" as DB
+actor "Pacient" as P
+participant "Android App" as AND
+participant "ESP32" as ESP
+
+== 1. Onboarding pacient si legare dispozitiv ==
+
+M -> W  : creare pacient\n(date demografice)
+W -> CP : POST /patients (PatientProfile)
+CP -> DB: INSERT patient
+DB --> CP
+CP --> W: 201 Created (patientId)
+
+M -> W  : asociere dispozitiv\n(sensorKitId)
+W -> CP : PUT /patients/{id}/device-binding
+CP -> DB: UPSERT device_binding
+CP --> W: 200 OK
+
+M -> W  : adaugare reguli alarma\n(NormalRangeProfile)
+W -> CP : POST /patients/{id}/alarm-rules
+CP -> DB: INSERT alarm_rules
+CP --> W: 201 Created
+
+P -> AND: login cu credentiale pacient
+AND -> CP: POST /auth/login
+CP --> AND: AuthTokens (JWT)
+
+AND -> CP: GET /patients/me/device-binding
+CP --> AND: sensorKitId
+
+AND -> ESP: BLE scan + connect (sensorKitId)
+ESP --> AND: CONNECTED
+AND -> ESP: WRITE CONTROL = START_STREAM
+ESP --> AND: ACK
+
+newpage
+
+' ============================================================
+' SECVENTA 2 - MASURATORI PERIODICE
+' ============================================================
+
+participant "ESP32" as ESP
+participant "Android\n(BluetoothService)" as BT
+participant "Android\n(SensorAggregatorService)" as AGG
+participant "Android\n(CloudSyncService)" as CS
+participant "Cloud API\n(IngestionController)" as IC
+database "Azure SQL" as DB
+
+== 2. Masuratori - flux de 30 secunde ==
+
+loop de 3 ori (ferestre de 10 s)
+  ESP -> BT : NOTIFY SensorFrame (binar)
+  BT -> AGG : onSensorFrameReceived(SensorSample)
+  AGG -> AGG: addSample() -- acumulare 10 s
+end
+
+AGG -> AGG : flushAggregatedWindow()\nproduce UplinkBatch
+
+AGG -> CS  : syncMeasurements(UplinkBatch)
+CS  -> IC  : POST /ingestion/measurements\n(Authorization: Bearer JWT)
+
+alt idempotency hit
+  IC --> CS : 409 Conflict (batchId existent)
+else success
+  IC -> DB  : INSERT MeasurementBatch
+  DB --> IC : OK
+  IC --> CS : 202 Accepted
+end
+
+newpage
+
+' ============================================================
+' SECVENTA 3 - ALARMA ASINCRONA
+' ============================================================
+
+participant "Android\n(SensorAggregatorService)" as AGG
+participant "Android\n(AlarmEvaluatorService)" as AE
+participant "Android\n(CloudSyncService)" as CS
+participant "Cloud API\n(IngestionController)" as IC
+participant "NotificationService\n(Azure NHub)" as NH
+participant "Web UI medic" as WUI
+
+== 3. Alarma declansata la prag ==
+
+AGG -> AE : onSample(SensorSample)
+AE -> AE  : matchRule(profile)
+note right of AE
+  ex: puls > 120 bpm
+  pentru > 30 s
+end note
+
+AE -> CS  : emitAlert(AlertEvent)
+CS -> IC  : POST /ingestion/alerts (AlertEvent)
+IC --> CS : 201 Created
+
+IC -> NH  : publishAlertToDoctor(alert)
+NH --> WUI: push / SSE (alerta activa)
+
+note over WUI
+  Medicul vede alarma
+  in dashboard-ul web
+  si poate lua decizii.
+end note
+
+newpage
+
+' ============================================================
+' SECVENTA 4 - HL7 INBOUND (TRIMITERE DE LA MF)
+' ============================================================
+
+actor "Medic de familie" as MF
+participant "Sistem MF" as MFSYS
+participant "Cloud API\n(IntegrationController)" as INT
+participant "Cloud\n(HL7ParserService)" as PAR
+participant "PatientService" as PS
+database "Azure SQL" as DB
+participant "Web UI specialist" as WEB
+
+== 4. Primire trimitere HL7 de la medicul de familie ==
+
+MF -> MFSYS : completeaza trimitere
+MFSYS -> INT: POST /integrations/hl7/inbound\n(text/plain HL7 v2)
+INT -> PAR  : parseHl7ReferralMessage(raw)
+PAR --> INT : Referral(patient, reason, diagnostic)
+
+INT -> PS   : upsertPatientFromReferral()
+PS -> DB    : UPSERT patient + INSERT referral
+DB --> PS
+PS --> INT
+
+INT --> MFSYS: 202 Accepted (ACK HL7)
+
+WEB -> INT  : GET /integrations/referrals/incoming
+INT --> WEB : lista trimiteri noi
+
+newpage
+
+' ============================================================
+' SECVENTA 5 - FHIR OUTBOUND (SCRISOARE MEDICALA)
+' ============================================================
+
+actor "Medic specialist" as MS
+participant "Web UI" as W
+participant "Cloud API\n(ClinicalVisitController)" as CV
+participant "Cloud\n(FhirBuilderService)" as FHIR
+participant "Sistem MF (FHIR)" as MFSYS
+database "Azure SQL" as DB
+
+== 5. Trimitere scrisoare medicala FHIR catre MF ==
+
+MS -> W : finalizeaza consultatie\n(diagnostic + recomandari)
+W -> CV : POST /visits/{id}/finalize
+CV -> DB: UPDATE visit (status=FINALIZED)
+
+CV -> FHIR: buildMedicalLetter(visitId)
+FHIR -> DB: SELECT visit + patient + observations
+DB --> FHIR
+FHIR --> CV: FHIR Bundle (R4)
+
+CV -> MFSYS: POST /fhir/Bundle\nBearer token OAuth2
+MFSYS --> CV: 201 Created (Bundle id)
+
+CV -> DB : INSERT outbound_log (bundle id, hash)
+CV --> W : 200 OK (scrisoare trimisa)
+
+@enduml

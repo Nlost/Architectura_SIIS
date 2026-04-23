@@ -1,0 +1,211 @@
+@startuml api-module4-esp32
+title Modul 4 - Modul inteligent (ESP32): firmware
+
+skinparam classAttributeIconSize 0
+skinparam ClassBackgroundColor #FAFAFA
+skinparam ClassBorderColor #999999
+skinparam ArrowColor #555555
+skinparam NoteBackgroundColor #FFFDE7
+skinparam NoteBorderColor #D4A017
+skinparam PackageBackgroundColor transparent
+skinparam PackageBorderColor #999999
+
+' ============================================================
+' CONTRACT MODUL (ce are studentul pe responsabilitate)
+' ============================================================
+note as CONTRACT
+  == Responsabilitatea modulului ==
+  Firmware C++/Arduino pe ESP32 care:
+   1) initializeaza placa si senzorii (MAX30100 puls/SpO2, AD8232 ECG, DHT11 umid/temp)
+   2) citeste toti senzorii in cicluri de ~10 secunde
+   3) impacheteaza rezultatele intr-un SensorFrame (vezi mai jos)
+   4) trimite cadrul prin BLE GATT (notify) catre aplicatia Android
+
+  == Ce NU face modulul ==
+   - NU agregheaza pe 30 s si NU face medii - asta face Android
+   - NU evalueaza alarme - rulele nu ajung pe ESP
+   - NU vorbeste direct cu Azure / internetul
+   - NU stocheaza nimic persistent
+
+  == Granita de iesire - catre Android (BLE) ==
+   Service UUID:        0000FF01-0000-1000-8000-00805F9B34FB
+   Characteristic:      0000FF02-... (NOTIFY) -> SensorFrame binar (max 180 B)
+   Frecventa:           ~1 frame / 10 s
+   Vezi detalii:        integration/ble-esp32-android.md
+
+  == Granita de intrare - de la Android (BLE WRITE) ==
+   Characteristic CONTROL (0000FF04-...):
+     START_STREAM / STOP_STREAM / SET_LED / PING / SYNC_TIME
+
+  == Conformitate EuroRec Seal Level 2 ==
+   Criteriile EuroRec se aplica pe EHR, adica pe datele
+   stocate in cloud. La nivel de firmware aceste criterii
+   NU se aplica direct (nu exista "health items", utilizatori,
+   audit sau versionare pe ESP32).
+
+   Cerinte indirecte respectate la nivelul modulului:
+    - seqNumber + timestampMs pe fiecare SensorFrame ->
+      suporta versionarea (EuroRec 5, 32) odata ce cadrul
+      ajunge si este persistat in Azure SQL.
+    - Identificare unica a dispozitivului prin MAC BLE
+      (numele advertising WH-<last4>), care se mapeaza la
+      sensorKitId si la pacient (EuroRec 31, 38).
+    - BLE doar catre perechea legata prin DeviceBinding
+      (scope autorizare la nivel de aplicatie Android).
+end note
+
+' ============================================================
+' TIPURI INTERNE - Value Objects folosite in firmware
+' ============================================================
+package "Tipuri interne (valori)" #F5F5F5 {
+  class PulseOxReading <<ValueObject>> {
+    heartRateBpm : uint16_t
+    spO2Percent  : float
+    validReading : bool
+  }
+  class EcgSample <<ValueObject>> {
+    timestampMs  : uint32_t
+    rawAdcValues : uint16_t[]
+    leadOff      : bool
+  }
+  class EnvReading <<ValueObject>> {
+    humidityPct  : float
+    tempCelsius  : float
+    validReading : bool
+  }
+  class SensorFrame <<ValueObject>> {
+    seqNumber    : uint32_t
+    timestampMs  : uint32_t
+    pulseOx      : PulseOxReading
+    ecg          : EcgSample
+    env          : EnvReading
+  }
+  class BleConnectionState <<ValueObject>> {
+    connected     : bool
+    clientAddress : String
+  }
+  class InitResult <<ValueObject>> {
+    allOk        : bool
+    pulseOxReady : bool
+    ecgReady     : bool
+    dht11Ready   : bool
+    bleReady     : bool
+  }
+}
+
+' ============================================================
+' HARDWARE / BOARD SETUP
+' ============================================================
+package "Board setup" #E3F2FD {
+  class BoardManager <<Module>> {
+    ' Initializare I2C, GPIO, seriala de debug
+    + initializeBoard() : InitResult
+    + setDebugLevel(level: uint8_t) : void
+  }
+}
+
+' ============================================================
+' DRIVERE DE SENZOR - fiecare sta pe propriul pin/I2C
+' ============================================================
+package "Drivere senzor" #E8F5E9 {
+  class PulseOxSensor <<Module>> {
+    ' MAX30100 pe I2C (0x57). Masoara puls + SpO2.
+    + init() : bool
+    + readHeartRateAndSpO2() : PulseOxReading
+    + singleMeasurementCycle() : PulseOxReading
+    + setLedCurrent(irCurrent: uint8_t, redCurrent: uint8_t) : void
+  }
+  class EcgSensor <<Module>> {
+    ' AD8232 pe ADC analogic. Verifica leadOff pe pini GPIO.
+    + init() : bool
+    + readEcgWaveform(durationMs: uint32_t) : EcgSample
+    + isLeadOff() : bool
+  }
+  class EnvSensor <<Module>> {
+    ' DHT11 pe 1 pin digital. Umiditate + temperatura.
+    + init() : bool
+    + readHumidityAndTemperature() : EnvReading
+  }
+}
+
+' ============================================================
+' ASAMBLARE CADRU - compune SensorFrame din cei 3 senzori
+' ============================================================
+package "Frame builder" #FFF3E0 {
+  class SensorFrameBuilder <<Module>> {
+    ' Apeleaza cei 3 driveri si construieste SensorFrame.
+    ' IMPORTANT: seqNumber e crescator si se reseteaza la reboot.
+    + assembleTenSecondFrame(seq: uint32_t) : SensorFrame
+  }
+}
+
+' ============================================================
+' BLE PERIPHERAL - GATT server expus catre Android
+' ============================================================
+package "BLE peripheral (GATT server)" #FCE4EC {
+  class BlePeripheral <<Module>> {
+    ' Expune serviciul GATT si caracteristicile.
+    ' Trimite SensorFrame ca payload binar (little-endian).
+    + startBlePeripheral(deviceName: String) : void
+    + getConnectionState() : BleConnectionState
+    + sendFrameNotification(frame: SensorFrame) : bool
+    + onClientConnected(cb: ConnectCallback) : void
+    + onClientDisconnected(cb: DisconnectCallback) : void
+  }
+  class ConnectCallback <<FunctionalInterface>> {
+    + onConnect(clientAddress: String) : void
+  }
+  class DisconnectCallback <<FunctionalInterface>> {
+    + onDisconnect() : void
+  }
+}
+
+' ============================================================
+' ENERGIE
+' ============================================================
+package "Power" #F3E5F5 {
+  class PowerManager <<Module>> {
+    ' Light-sleep intre cicluri (economie baterie).
+    + enterLightSleepMs(durationMs: uint32_t) : void
+    + wakeUp() : void
+    + getBatteryLevelPercent() : uint8_t
+  }
+}
+
+' ============================================================
+' MAIN LOOP - punct de intrare firmware (setup + loop)
+' ============================================================
+class FirmwareMainLoop <<Entry>> {
+  - board    : BoardManager
+  - pulseOx  : PulseOxSensor
+  - ecg      : EcgSensor
+  - env      : EnvSensor
+  - builder  : SensorFrameBuilder
+  - ble      : BlePeripheral
+  - power    : PowerManager
+  --
+  + setup() : void
+  + loop() : void
+  - runMeasurementCycle() : SensorFrame
+  - handleBleStatus() : void
+}
+
+' --- Relatii ---
+FirmwareMainLoop --> BoardManager         : initializeaza
+FirmwareMainLoop --> SensorFrameBuilder   : 1 data la 10 s
+FirmwareMainLoop --> BlePeripheral        : trimite frame
+FirmwareMainLoop --> PowerManager         : sleep intre cicluri
+SensorFrameBuilder --> PulseOxSensor
+SensorFrameBuilder --> EcgSensor
+SensorFrameBuilder --> EnvSensor
+BlePeripheral ..> ConnectCallback         : invoca
+BlePeripheral ..> DisconnectCallback      : invoca
+
+note right of FirmwareMainLoop
+  Pseudocod loop():
+    frame = runMeasurementCycle()   // 10 s
+    ble.sendFrameNotification(frame)
+    power.enterLightSleepMs(rest)
+end note
+
+@enduml

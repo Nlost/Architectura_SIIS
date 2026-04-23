@@ -1,0 +1,458 @@
+@startuml types-shared
+title Tipuri de date partajate intre module
+
+skinparam classAttributeIconSize 0
+skinparam ClassBackgroundColor #FAFAFA
+skinparam ClassBorderColor #999999
+skinparam ArrowColor #555555
+
+' ============================================================
+' AUTH
+' ============================================================
+class LoginRequest <<DTO>> {
+  email    : String
+  password : String
+}
+class AuthTokens <<DTO>> {
+  accessToken  : String
+  refreshToken : String
+  expiresIn    : int
+  role         : UserRole
+}
+class ChangePasswordRequest <<DTO>> {
+  ' EuroRec 29 - user schimba parola
+  currentPassword : String
+  newPassword     : String
+}
+class UserClaims <<DTO>> {
+  userId      : UUID
+  role        : UserRole
+  permissions : String[]
+}
+
+' ============================================================
+' USERS & ROLES  (EuroRec 1, 33, 34, 36, 40)
+' ============================================================
+enum UserRole {
+  ADMIN        ' 36 - administrator
+  DOCTOR       ' privileged user (36) - rol clinic
+  PATIENT      ' common user (36) - acces limitat la datele proprii
+}
+class UserAccount <<DTO>> {
+  ' EuroRec 33: user identificat unic si persistent
+  id            : UUID
+  email         : String
+  fullName      : String
+  role          : UserRole
+  active        : boolean
+  createdAt     : DateTime
+  lastLoginAt   : DateTime
+}
+class Permission <<DTO>> {
+  ' EuroRec 34, 40: drepturi de acces per resursa + rol
+  resource   : String   ' ex. "patient.medical", "patient.allergies"
+  action     : String   ' ex. "READ", "WRITE", "DELETE"
+  confidential : boolean
+}
+class RoleAssignment <<DTO>> {
+  ' EuroRec 1: legatura rol <-> utilizator
+  userId : UUID
+  role   : UserRole
+  grantedBy : UUID
+  grantedAt : DateTime
+}
+
+' ============================================================
+' VERSIONARE  (EuroRec 5, 6, 7, 15, 16, 17, 22, 31, 32)
+' ============================================================
+class VersionMetadata <<DTO>> {
+  ' Metadate obligatorii pe FIECARE versiune de "health item"
+  versionId           : UUID         ' EuroRec 32 - id unic si persistent
+  healthItemId        : UUID         ' EuroRec 31 - legatura de entitatea logica
+  patientId           : UUID         ' EuroRec 31 - asociere pacient
+  recordedAt          : DateTime     ' EuroRec 5 - data/ora intrare
+  recordedByUserId    : UUID         ' EuroRec 6 - utilizatorul care a introdus
+  responsiblePersonId : UUID         ' EuroRec 16 - responsabilul de continut
+  status              : HealthItemStatus
+  previousVersionId   : UUID
+}
+enum HealthItemStatus {
+  ' EuroRec 15, 17 - tranzitii de stare prin versiuni noi
+  ACTIVE
+  INACTIVE
+  DELETED
+  COMPLETED
+  DISCONTINUED
+  ARCHIVED
+}
+class CodedValue <<DTO>> {
+  ' EuroRec 8 - suport pentru sisteme de codificare (ICD-10, ATC, SNOMED)
+  system  : String
+  code    : String
+  display : String
+}
+
+' ============================================================
+' DEMOGRAFIE / FISA
+' EuroRec 2, 3, 38, 39, 43, 45
+' ============================================================
+class Demographics <<DTO>> {
+  ' EuroRec 2: nume, prenume, sex, data nasterii - obligatorii
+  ' EuroRec 3: toate datele demografice cerute de lege
+  nume          : String
+  prenume       : String
+  sex           : Sex
+  dataNasterii  : Date
+  cnp           : String
+  strada        : String
+  localitate    : String
+  judet         : String
+  codPostal     : String
+  tara          : String
+  telefon       : String
+  email         : String
+  profesie      : String
+  locDeMunca    : String
+}
+enum Sex {
+  M
+  F
+  OTHER
+}
+class MedicalRecord <<DTO>> {
+  ' Folosit doar pentru istoric narativ.
+  ' Datele STRUCTURATE sunt in Allergy / Medication / HealthProblem (EuroRec 4, 9, 10, 14).
+  istoricMedical              : String
+  consultatiiCardiologiceText : String
+}
+class PatientSummary <<DTO>> {
+  ' EuroRec 38 - pacient identificat unic si persistent
+  id             : UUID
+  doctorId       : UUID
+  nume           : String
+  prenume        : String
+  sex            : Sex
+  dataNasterii   : Date
+  cnp            : String
+}
+class PatientDetail <<DTO>> {
+  id           : UUID
+  doctorId     : UUID
+  demographics : Demographics
+  medical      : MedicalRecord
+  identification: PatientIdentificationHeader
+}
+class PatientIdentificationHeader <<DTO>> {
+  ' EuroRec 43 - se afiseaza pe fiecare ecran de culegere date
+  ' EuroRec 39 - discriminare pacienti cu nume identice
+  patientId    : UUID
+  nume         : String
+  prenume      : String
+  sex          : Sex
+  varsta       : int
+  cnp          : String
+}
+
+' ============================================================
+' PROBLEME SANATATE  (EuroRec 4, 17)
+' ============================================================
+class HealthProblem <<DTO>> {
+  ' EuroRec 4 - lista problemelor curente
+  ' EuroRec 17 - schimbare status = versiune noua
+  id         : UUID
+  patientId  : UUID
+  code       : CodedValue        ' ex. ICD-10
+  description: String
+  onsetDate  : Date
+  status     : HealthItemStatus
+  version    : VersionMetadata
+}
+
+' ============================================================
+' ALERGII  (EuroRec 14, 44)
+' ============================================================
+class Allergy <<DTO>> {
+  ' EuroRec 14 - lista alergenilor activi
+  id            : UUID
+  patientId     : UUID
+  substance     : CodedValue
+  reaction      : String
+  severity      : AllergySeverity
+  status        : HealthItemStatus  ' active/inactive/deleted
+  identifiedAt  : Date
+  version       : VersionMetadata
+}
+enum AllergySeverity {
+  MILD
+  MODERATE
+  SEVERE
+  LIFE_THREATENING
+}
+
+' ============================================================
+' MEDICATIE  (EuroRec 9, 10, 44, 50)
+' ============================================================
+class Medication <<DTO>> {
+  ' EuroRec 50 - elemente minime pe medicatie
+  id                 : UUID
+  patientId          : UUID
+  product            : CodedValue         ' ex. ATC / nume comercial
+  packageForm        : String             ' "tablet 500mg"
+  startingDate       : Date               ' EuroRec 50
+  latestPrescription : Date               ' EuroRec 50
+  dosing             : DosingInstructions ' EuroRec 50
+  status             : HealthItemStatus   ' active / completed / discontinued
+  version            : VersionMetadata
+}
+class DosingInstructions <<DTO>> {
+  structured : String    ' ex. "1-0-1"
+  textual    : String    ' ex. "o tableta dimineata, alta seara"
+}
+class PrescriptionRequest <<DTO>> {
+  ' Intrare la prescriere (medic)
+  patientId : UUID
+  product   : CodedValue
+  dosing    : DosingInstructions
+  durationDays : int
+}
+class PrescriptionDecisionSupport <<DTO>> {
+  ' EuroRec 44 - la prescriere se afiseaza alergii cunoscute sau avertizari
+  knownAllergies : Allergy[]
+  warnings       : String[]
+}
+
+' ============================================================
+' AUDIT  (EuroRec 24, 26, 28)
+' ============================================================
+class AuditEvent <<DTO>> {
+  ' EuroRec 26 - login/logout
+  ' EuroRec 28 - inregistrarile nu pot fi modificate (append-only)
+  id           : UUID
+  occurredAt   : DateTime
+  userId       : UUID
+  eventType    : AuditEventType
+  resource     : String
+  resourceId   : UUID
+  clientIp     : String
+  outcome      : String   ' SUCCESS / DENIED
+}
+enum AuditEventType {
+  LOGIN
+  LOGOUT
+  READ
+  CREATE
+  UPDATE
+  DELETE
+  PERMISSION_CHANGE
+}
+
+' ============================================================
+' ALERTE CLINICE  (EuroRec 49)
+' ============================================================
+class ClinicalAlertRendering <<DTO>> {
+  ' EuroRec 49 - mod consistent de afisare (ex. rosu pentru anormal)
+  level   : AlertLevel
+  color   : String    ' HEX (RED, ORANGE, YELLOW, GREEN)
+  icon    : String
+  message : String
+}
+enum AlertLevel {
+  NORMAL
+  LOW
+  HIGH
+  CRITICAL
+}
+
+' ============================================================
+' CONSULTATII
+' ============================================================
+class ClinicalVisit <<DTO>> {
+  id              : UUID
+  patientId       : UUID
+  visitedAt       : DateTime
+  motivPrezentare : String
+  simptome        : String
+  diagnosticICD10 : CodedValue   ' EuroRec 8 - coding system
+  trimiteri       : String
+  prescriptions   : Medication[] ' EuroRec 9, 50
+  version         : VersionMetadata
+}
+
+' ============================================================
+' RECOMANDARI
+' ============================================================
+class Recommendation <<DTO>> {
+  id             : UUID
+  patientId      : UUID
+  tipActivitate  : String
+  durataZilnica  : int
+  alteIndicatii  : String
+  createdAt      : DateTime
+  version        : VersionMetadata
+}
+
+' ============================================================
+' ALARME DISPOZITIV  (senzori wearable - distincte de alertele clinice)
+' ============================================================
+enum SensorParameter {
+  ECG
+  UMIDITATE
+  TEMPERATURA
+  PULS
+}
+class AlarmRule <<DTO>> {
+  id                             : UUID
+  patientId                      : UUID
+  parametru                      : SensorParameter
+  pragMin                        : Decimal
+  pragMax                        : Decimal
+  durataPersistentaSec           : int
+  intervalDeLaDebutActivitateSec : int
+  version                        : VersionMetadata
+}
+class NormalRangeProfile <<DTO>> {
+  id        : UUID
+  patientId : UUID
+  note      : String
+  ranges    : AlarmRule[]
+}
+
+' ============================================================
+' SENZORI / MASURATORI
+' ============================================================
+class SensorSample <<DTO>> {
+  timestamp  : DateTime
+  ecgBytes   : Bytes
+  umiditate  : Decimal
+  temperatura: Decimal
+  puls       : int
+}
+class AccelSample <<DTO>> {
+  t: DateTime
+  x: Decimal
+  y: Decimal
+  z: Decimal
+}
+class AccelerometerBurst <<DTO>> {
+  intervalStart: DateTime
+  intervalEnd  : DateTime
+  samples      : AccelSample[]
+}
+class UplinkBatch <<DTO>> {
+  batchId      : String
+  patientId    : UUID
+  deviceId     : String
+  intervalStart: DateTime
+  intervalEnd  : DateTime
+  samples      : SensorSample[]
+  accelBurst   : AccelerometerBurst
+}
+class IngestionAck <<DTO>> {
+  batchId   : String
+  accepted  : boolean
+  receivedAt: DateTime
+}
+
+class AlertEvent <<DTO>> {
+  id           : UUID
+  patientId    : UUID
+  ruleId       : UUID
+  triggeredAt  : DateTime
+  severitate   : AlertSeverity
+  textPacient  : String
+  rendering    : ClinicalAlertRendering  ' EuroRec 49
+}
+enum AlertSeverity {
+  WARNING
+  CRITICAL
+}
+class AlarmEvalResult <<DTO>> {
+  triggered    : boolean
+  matchedRuleId: UUID
+  severity     : AlertSeverity
+  message      : String
+}
+
+' ============================================================
+' RAPOARTE
+' ============================================================
+class TimeRangeQuery <<DTO>> {
+  patientId: UUID
+  from     : DateTime
+  to       : DateTime
+  parameter: SensorParameter
+}
+class MeasurementSeries <<DTO>> {
+  patientId  : UUID
+  parameter  : SensorParameter
+  points     : TimeValuePoint[]
+}
+class TimeValuePoint <<DTO>> {
+  t    : DateTime
+  value: Decimal
+}
+class ReportParams <<DTO>> {
+  patientId : UUID
+  from      : DateTime
+  to        : DateTime
+  format    : ReportFormat
+}
+enum ReportFormat {
+  PDF
+  CSV
+}
+class ReportFile <<DTO>> {
+  fileName   : String
+  mimeType   : String
+  contentB64 : String
+}
+
+' ============================================================
+' DEVICE BINDING
+' ============================================================
+class DeviceBinding <<DTO>> {
+  id                 : UUID
+  patientId          : UUID
+  smartphoneDeviceId : String
+  sensorKitId        : String
+}
+
+' ============================================================
+' HL7 / FHIR
+' ============================================================
+class Hl7InboundReferral <<DTO>> {
+  id         : UUID
+  rawMessage : String
+  receivedAt : DateTime
+  status     : String
+}
+class FhirOutboundLetter <<DTO>> {
+  id         : UUID
+  patientId  : UUID
+  visitId    : UUID
+  bundleJson : String
+  sentAt     : DateTime
+}
+
+' ============================================================
+' MISC
+' ============================================================
+class SyncResult <<DTO>> {
+  success    : boolean
+  itemsSynced: int
+  failedItems: int
+  errors     : String[]
+}
+class ConnectionResult <<DTO>> {
+  success  : boolean
+  deviceId : String
+  message  : String
+}
+class InitResult <<DTO>> {
+  allOk        : boolean
+  pulseOxReady : boolean
+  ecgReady     : boolean
+  dht11Ready   : boolean
+}
+
+@enduml

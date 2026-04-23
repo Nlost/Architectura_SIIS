@@ -1,0 +1,261 @@
+@startuml api-module3-mobile
+title Modul 3 - Aplicatie mobila Android: servicii interne
+
+skinparam classAttributeIconSize 0
+skinparam ClassBackgroundColor #FAFAFA
+skinparam ClassBorderColor #999999
+skinparam ArrowColor #555555
+skinparam NoteBackgroundColor #FFFDE7
+skinparam NoteBorderColor #D4A017
+skinparam PackageBackgroundColor transparent
+skinparam PackageBorderColor #999999
+
+' ============================================================
+' CONTRACT MODUL
+' ============================================================
+note as CONTRACT
+  == Responsabilitatea modulului ==
+  Aplicatie Android Kotlin pe telefonul pacientului care:
+   1) se conecteaza prin BLE la ESP32 si primeste SensorFrame la ~10 s
+   2) citeste accelerometrul telefonului la ~1 Hz
+   3) agregheaza 3 ferestre de 10 s intr-un UplinkBatch de 30 s
+   4) evalueaza local regulile de alarma si emite AlertEvent (cand depaseste prag)
+   5) trimite HTTPS catre cloud-ul Azure (batch masuratori + alarme)
+   6) primeste de la cloud recomandari si reguli (cache local)
+   7) afiseaza la pacient: status conexiune, recomandari, alarme locale
+
+  == Ce NU face modulul ==
+   - NU trimite date direct catre sistemul MF (HL7/FHIR) - asta face cloud-ul
+   - NU calculeaza puls/ECG - senzorii deja livreaza valori gata
+   - NU expune date altor aplicatii (intern, doar BLE + HTTPS)
+
+  == Granita de intrare - de la ESP32 (BLE) ==
+   SensorFrame binar pe characteristic 0000FF02-... (NOTIFY)
+   Vezi: integration/ble-esp32-android.md
+
+  == Granita de iesire - catre cloud Azure (HTTPS + JWT) ==
+   POST /ingestion/measurements  (UplinkBatch la 30 s, idempotent pe batchId)
+   POST /ingestion/alerts        (AlertEvent asincron la prag)
+   GET  /patients/me/recommendations
+   GET  /patients/me/alarm-rules
+   GET  /patients/me/allergies       (EuroRec 14 read-only)
+   GET  /patients/me/medications     (EuroRec 9, 10)
+   GET  /patients/me/problems        (EuroRec 4)
+   GET  /patients/me/identification  (EuroRec 43 header)
+   POST /auth/change-password        (EuroRec 29)
+   Contract complet: module2-cloud/openapi-cloud.yaml
+
+  == Conformitate EuroRec Seal Level 2 (cerinte aplicabile portalului pacient) ==
+   - 29: pacient isi schimba parola
+   - 4, 9, 10, 14: vede probleme / medicatie (curenta + istoric) / alergii
+   - 43: header pacient pe orice ecran cu date
+   - 49: rendering consistent al alertelor (culoare / icon)
+   Vezi docs/architecture/eurorec-compliance.md
+end note
+
+' ============================================================
+' TIPURI CALLBACK si VALORI
+' ============================================================
+package "Tipuri callback / valori" #F5F5F5 {
+  class SensorSampleCallback <<FunctionalInterface>> {
+    + onSample(sample: SensorSample) : void
+  }
+  class NoteConfirmCallback <<FunctionalInterface>> {
+    + onConfirm(text: String) : void
+  }
+  class Subscription <<ValueObject>> {
+    subscriptionId : String
+    active         : boolean
+  }
+}
+
+' ============================================================
+' BLE - legatura cu ESP32 (granita de intrare)
+' ============================================================
+package "BLE (intrare de la ESP32)" #E3F2FD {
+  class BluetoothService <<Service>> {
+    ' Scan + connect la ESP32 filtrand dupa sensorKitId.
+    ' Parsare payload binar -> SensorSample Kotlin.
+    + startBluetoothConnection(sensorKitId: String) : ConnectionResult
+    + stopBluetoothConnection() : void
+    + subscribeToSensorStream(callback: SensorSampleCallback) : Subscription
+    + unsubscribeFromSensorStream(sub: Subscription) : void
+  }
+}
+
+' ============================================================
+' ACCELEROMETRU - senzor al telefonului, nu al ESP32-ului
+' ============================================================
+package "Accelerometru (telefon)" #E8F5E9 {
+  class AccelerometerService <<Service>> {
+    ' SensorManager Android, frecventa ~1 Hz.
+    + startAccelerometerPolling() : void
+    + stopAccelerometerPolling() : void
+    + getLatestAccelSample() : AccelSample
+    + collectWindowSamples() : AccelSample[]
+    + packageBurstForUpload(samples: AccelSample[]) : AccelerometerBurst
+  }
+}
+
+' ============================================================
+' AGREGATOR - transforma stream-ul in batch-uri de 30 s
+' ============================================================
+package "Agregare 30 s" #FFF3E0 {
+  class SensorAggregatorService <<Service>> {
+    ' Tine in buffer esantioanele pe fereastra de 10 s.
+    ' 3 ferestre = 1 batch de 30 s trimis la cloud.
+    + onSensorSampleReceived(sample: SensorSample) : void
+    + aggregateTenSecondWindow(window: SensorSample[]) : SensorSample
+    + buildThirtySecondBatch(windows: SensorSample[], burst: AccelerometerBurst) : UplinkBatch
+  }
+}
+
+' ============================================================
+' ALARME - evaluare locala inainte de cloud
+' ============================================================
+package "Evaluare alarme (local)" #FCE4EC {
+  class AlarmEvaluatorService <<Service>> {
+    ' Regulile vin cache-uite de la cloud (CloudSyncService).
+    ' La depasire de prag: AlertEvent -> notificare + trimitere async.
+    + loadCachedAlarmRules() : AlarmRule[]
+    + evaluateAlarmConditions(sample: SensorSample, burst: AccelerometerBurst, rules: AlarmRule[]) : AlarmEvalResult
+    + buildAlertEvent(patientId: UUID, result: AlarmEvalResult, userText: String) : AlertEvent
+    + triggerLocalNotification(event: AlertEvent) : void
+    + attachUserTextToAlert(event: AlertEvent, text: String) : AlertEvent
+  }
+}
+
+' ============================================================
+' CLOUD SYNC - granita de iesire catre Azure
+' ============================================================
+package "Sincronizare cloud (HTTPS)" #F3E5F5 {
+  class CloudSyncService <<Service>> {
+    ' Gestioneaza JWT, retry, coada offline.
+    ' batchId = cheie de idempotenta (acelasi batch -> 409 din cloud).
+    + schedulePeriodicSync(intervalSec: int) : void
+    + cancelPeriodicSync() : void
+    + syncMeasurementsToCloud(batch: UplinkBatch) : SyncResult
+    + sendImmediateAlert(event: AlertEvent) : SyncResult
+    + loadRecommendationsFromCloud(patientId: UUID) : Recommendation[]
+    + loadAlarmRulesFromCloud(patientId: UUID) : AlarmRule[]
+    + loadAllergiesFromCloud(patientId: UUID) : Allergy[]
+    + loadCurrentMedicationFromCloud(patientId: UUID) : Medication[]
+    + loadMedicationHistoryFromCloud(patientId: UUID) : Medication[]
+    + loadCurrentProblemsFromCloud(patientId: UUID) : HealthProblem[]
+    + loadPatientHeaderFromCloud(patientId: UUID) : PatientIdentificationHeader
+    + cachePayloadOffline(payload: UplinkBatch) : void
+    + cacheAlertOffline(event: AlertEvent) : void
+    + flushOfflineQueueOnConnectivity() : SyncResult[]
+    + ensureValidToken() : AuthTokens
+  }
+}
+
+' ============================================================
+' CONT  (EuroRec 29)
+' ============================================================
+package "Cont pacient" #D1C4E9 {
+  class AccountService <<Service>> {
+    ' EuroRec 29 - schimbare parola din telefon
+    + changeMyPassword(current: String, newPassword: String) : void
+  }
+}
+
+' ============================================================
+' DATE MEDICALE READ-ONLY PE TELEFON  (EuroRec 4, 9, 10, 14, 44)
+' ============================================================
+package "Date medicale (read-only)" #FFEBEE {
+  class MyAllergiesService <<Service>> {
+    ' EuroRec 14 - pacientul vede alergiile active.
+    + getActiveAllergies() : Allergy[]
+  }
+  class MyMedicationService <<Service>> {
+    ' EuroRec 9, 10 - medicatia curenta si istoricul.
+    + getCurrentMedication() : Medication[]
+    + getMedicationHistory() : Medication[]
+  }
+  class MyProblemsService <<Service>> {
+    ' EuroRec 4 - problemele curente de sanatate.
+    + getCurrentProblems() : HealthProblem[]
+  }
+}
+
+' ============================================================
+' ALERTE CLINICE - rendering consistent  (EuroRec 49)
+' ============================================================
+package "Rendering alerte" #FFCDD2 {
+  class ClinicalAlertRenderingService <<Service>> {
+    ' EuroRec 49 - un singur loc care decide culori/iconuri.
+    + renderingFor(severity: AlertSeverity) : ClinicalAlertRendering
+    + applyToNotification(event: AlertEvent) : AlertEvent
+  }
+}
+
+' ============================================================
+' UI - ce vede pacientul
+' ============================================================
+package "UI pacient" #E0F7FA {
+  class PatientUiService <<Service>> {
+    + showRecommendations(list: Recommendation[]) : void
+    + showActivityCalendar(list: Recommendation[]) : void
+    + showLocalWarning(event: AlertEvent) : void
+    + showConnectionStatus(result: ConnectionResult) : void
+    + promptUserForAlarmNote(event: AlertEvent, onConfirm: NoteConfirmCallback) : void
+    + showAllergies(list: Allergy[]) : void
+    + showCurrentMedication(list: Medication[]) : void
+    + showMedicationHistory(list: Medication[]) : void
+    + showCurrentProblems(list: HealthProblem[]) : void
+    + renderPatientHeader(header: PatientIdentificationHeader) : void
+  }
+  note right of PatientUiService
+    EuroRec 43 - renderPatientHeader()
+    e chemat din bara fixa a aplicatiei,
+    vizibila pe orice ecran cu date pacient.
+  end note
+}
+
+' ============================================================
+' COORDONATOR - punct de intrare al aplicatiei
+' ============================================================
+class WearableAppCoordinator <<Entry>> {
+  - bluetoothService : BluetoothService
+  - accelService     : AccelerometerService
+  - aggregator       : SensorAggregatorService
+  - alarmEvaluator   : AlarmEvaluatorService
+  - cloudSync        : CloudSyncService
+  - uiService        : PatientUiService
+  --
+  + start(patientId: UUID, sensorKitId: String) : void
+  + stop() : void
+  - onNewSensorSample(sample: SensorSample) : void
+  - onThirtySecondTick() : void
+  - onConnectivityChanged(isOnline: boolean) : void
+}
+
+' --- Relatii ---
+WearableAppCoordinator --> BluetoothService
+WearableAppCoordinator --> AccelerometerService
+WearableAppCoordinator --> SensorAggregatorService
+WearableAppCoordinator --> AlarmEvaluatorService
+WearableAppCoordinator --> CloudSyncService
+WearableAppCoordinator --> PatientUiService
+
+BluetoothService         ..> SensorSampleCallback         : notifies
+SensorAggregatorService  ..> AlarmEvaluatorService        : after window
+AlarmEvaluatorService    ..> CloudSyncService             : sendImmediateAlert
+AlarmEvaluatorService    ..> ClinicalAlertRenderingService : EuroRec 49
+PatientUiService         ..> NoteConfirmCallback          : uses
+
+MyAllergiesService       ..> CloudSyncService             : loadAllergies
+MyMedicationService      ..> CloudSyncService             : loadMedication
+MyProblemsService        ..> CloudSyncService             : loadProblems
+AccountService           ..> CloudSyncService             : POST /auth/change-password
+
+note right of WearableAppCoordinator
+  Flow principal:
+   BLE frame -> SensorSample
+      -> SensorAggregatorService (buffer)
+      -> AlarmEvaluatorService (check prag)
+      -> la 30 s: UplinkBatch -> CloudSyncService
+end note
+
+@enduml

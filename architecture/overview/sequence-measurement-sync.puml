@@ -1,0 +1,32 @@
+@startuml sequence-measurement-sync
+!theme plain
+title Secvență — măsurători și alarmă (modul → mobil → Azure)
+
+actor Pacient
+participant "Modul ESP32" as ESP
+participant "App Android" as APP
+participant "REST API\nAzure" as API
+database "Azure SQL" as DB
+
+loop la ~10 secunde
+  ESP -> APP : SensorSample\n(ECG, umiditate, temp, puls)
+  APP -> APP : evaluare vs AlarmRule\n+ corelare accelerometru 1Hz
+end
+
+APP -> APP : agregare / medie\nfereastră ~30 s\n+ burst accelerometru
+
+APP -> API : POST /ingestion/measurements\n(UplinkBatch)
+API -> DB : persistă MeasurementBatch
+API --> APP : 200 OK / IngestionAck
+
+alt valoare în afara limitelor
+  APP -> API : POST /ingestion/alerts\n(AlertEvent, asincron)
+  API -> DB : persistă AlertEvent
+  API --> APP : 202 Accepted
+end
+
+note over APP
+  Dacă offline: coadă locală;\nretry la reconectare.
+end note
+
+@enduml

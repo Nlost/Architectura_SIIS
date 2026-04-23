@@ -1,0 +1,1118 @@
+openapi: "3.0.3"
+info:
+  title: Wearable Health System — Cloud REST API
+  description: |
+    API-ul componentei cloud (Azure App Service) pentru sistemul purtabil
+    de supraveghere a stării de sănătate — Clinica „Sănătatea noastră".
+    Accesibil de aplicația web și aplicația mobilă Android.
+  version: "1.0.0"
+
+servers:
+  - url: https://<app-name>.azurewebsites.net/api/v1
+    description: Azure App Service (de completat cu numele real)
+
+security:
+  - bearerAuth: []
+
+tags:
+  - name: Auth
+  - name: Patients
+  - name: ClinicalVisits
+  - name: Recommendations
+  - name: AlarmRules
+  - name: Ingestion
+  - name: Monitoring
+  - name: Integration
+
+# ─────────────────────────────────────────────────────────────────────────────
+paths:
+
+  # ── AUTH ────────────────────────────────────────────────────────────────────
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Autentificare utilizator
+      operationId: login
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Autentificare reușită
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthTokens'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /auth/refresh:
+    post:
+      tags: [Auth]
+      summary: Reînnoire token acces
+      operationId: refreshToken
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refreshToken]
+              properties:
+                refreshToken:
+                  type: string
+      responses:
+        '200':
+          description: Token reînnoit
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthTokens'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /auth/logout:
+    post:
+      tags: [Auth]
+      summary: Revocare token
+      operationId: logout
+      responses:
+        '204':
+          description: Token revocat
+
+  # ── PATIENTS ────────────────────────────────────────────────────────────────
+  /patients:
+    get:
+      tags: [Patients]
+      summary: Listare pacienți ai medicului autentificat
+      operationId: listPatients
+      responses:
+        '200':
+          description: Listă pacienți
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PatientSummary'
+    post:
+      tags: [Patients]
+      summary: Creare pacient nou (medic)
+      operationId: createPatient
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePatientRequest'
+      responses:
+        '201':
+          description: Pacient creat
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PatientDetail'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /patients/{patientId}:
+    parameters:
+      - $ref: '#/components/parameters/patientId'
+    get:
+      tags: [Patients]
+      summary: Detalii pacient
+      operationId: getPatient
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PatientDetail'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      tags: [Patients]
+      summary: Modificare date pacient
+      operationId: updatePatient
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdatePatientRequest'
+      responses:
+        '200':
+          description: Pacient actualizat
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PatientDetail'
+    delete:
+      tags: [Patients]
+      summary: Ștergere pacient
+      operationId: deletePatient
+      responses:
+        '204':
+          description: Pacient șters
+
+  /patients/{patientId}/medical:
+    parameters:
+      - $ref: '#/components/parameters/patientId'
+    get:
+      tags: [Patients]
+      summary: Date medicale pacient
+      operationId: getMedicalRecord
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MedicalRecord'
+    patch:
+      tags: [Patients]
+      summary: Actualizare date medicale
+      operationId: updateMedicalRecord
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MedicalRecord'
+      responses:
+        '200':
+          description: Date medicale actualizate
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MedicalRecord'
+
+  /patients/{patientId}/device-binding:
+    parameters:
+      - $ref: '#/components/parameters/patientId'
+    get:
+      tags: [Patients]
+      summary: Asociere dispozitiv pacient
+      operationId: getDeviceBinding
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeviceBinding'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags: [Patients]
+      summary: Creare / actualizare asociere dispozitiv
+      operationId: upsertDeviceBinding
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeviceBinding'
+      responses:
+        '200':
+          description: Asociere salvată
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeviceBinding'
+
+  /patients/{patientId}/normal-range:
+    parameters:
+      - $ref: '#/components/parameters/patientId'
+    get:
+      tags: [Patients]
+      summary: Profil valori normale (pentru modul inteligent)
+      operationId: getNormalRangeProfile
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NormalRangeProfile'
+    patch:
+      tags: [Patients]
+      summary: Actualizare valori normale
+      operationId: updateNormalRangeProfile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NormalRangeProfile'
+      responses:
+        '200':
+          description: Profil actualizat
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NormalRangeProfile'
+
+  # ── CLINICAL VISITS ─────────────────────────────────────────────────────────
+  /patients/{patientId}/visits:
+    parameters:
+      - $ref: '#/components/parameters/patientId'
+    get:
+      tags: [ClinicalVisits]
+      summary: Listare consultații (tabelar)
+      operationId: listClinicalVisits
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ClinicalVisit'
+    post:
+      tags: [ClinicalVisits]
+      summary: Adăugare consultație nouă
+      operationId: createClinicalVisit
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClinicalVisit'
+      responses:
+        '201':
+          description: Consultație creată
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClinicalVisit'
+
+  /visits/{visitId}:
+    parameters:
+      - name: visitId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      tags: [ClinicalVisits]
+      summary: Detaliu consultație
+      operationId: getClinicalVisit
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClinicalVisit'
+    patch:
+      tags: [ClinicalVisits]
+      summary: Modificare consultație
+      operationId: updateClinicalVisit
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClinicalVisit'
+      responses:
+        '200':
+          description: Consultație actualizată
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClinicalVisit'
+
+  # ── RECOMMENDATIONS ──────────────────────────────────────────────────────────
+  /patients/{patientId}/recommendations:
+    parameters:
+      - $ref: '#/components/parameters/patientId'
+    get:
+      tags: [Recommendations]
+      summary: Listare recomandări pentru pacient
+      operationId: listRecommendations
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Recommendation'
+    post:
+      tags: [Recommendations]
+      summary: Creare recomandare nouă
+      operationId: createRecommendation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Recommendation'
+      responses:
+        '201':
+          description: Recomandare creată
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Recommendation'
+
+  /recommendations/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    patch:
+      tags: [Recommendations]
+      summary: Modificare recomandare
+      operationId: updateRecommendation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Recommendation'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Recommendation'
+    delete:
+      tags: [Recommendations]
+      summary: Ștergere recomandare
+      operationId: deleteRecommendation
+      responses:
+        '204':
+          description: Șters
+
+  # ── ALARM RULES ──────────────────────────────────────────────────────────────
+  /patients/{patientId}/alarm-rules:
+    parameters:
+      - $ref: '#/components/parameters/patientId'
+    get:
+      tags: [AlarmRules]
+      summary: Listare reguli alarmă
+      operationId: listAlarmRules
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AlarmRule'
+    post:
+      tags: [AlarmRules]
+      summary: Creare regulă alarmă
+      operationId: createAlarmRule
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AlarmRule'
+      responses:
+        '201':
+          description: Regulă creată
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AlarmRule'
+
+  /alarm-rules/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    patch:
+      tags: [AlarmRules]
+      summary: Modificare regulă alarmă
+      operationId: updateAlarmRule
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AlarmRule'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AlarmRule'
+    delete:
+      tags: [AlarmRules]
+      summary: Ștergere regulă alarmă
+      operationId: deleteAlarmRule
+      responses:
+        '204':
+          description: Șters
+
+  # ── INGESTION (from mobile) ───────────────────────────────────────────────────
+  /ingestion/measurements:
+    post:
+      tags: [Ingestion]
+      summary: Recepție batch măsurători de la mobil (~30 s)
+      operationId: receiveMeasurements
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UplinkBatch'
+      responses:
+        '200':
+          description: Batch acceptat
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IngestionAck'
+        '409':
+          description: Batch duplicat (idempotency)
+
+  /ingestion/alerts:
+    post:
+      tags: [Ingestion]
+      summary: Recepție alarmă asincronă de la mobil
+      operationId: receiveAlert
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AlertEvent'
+      responses:
+        '202':
+          description: Alarmă acceptată
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IngestionAck'
+
+  # ── MONITORING ───────────────────────────────────────────────────────────────
+  /patients/{patientId}/measurements:
+    parameters:
+      - $ref: '#/components/parameters/patientId'
+    get:
+      tags: [Monitoring]
+      summary: Serie temporală de măsurători (grafice)
+      operationId: getMeasurementSeries
+      parameters:
+        - name: from
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date-time
+        - name: to
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date-time
+        - name: parameter
+          in: query
+          required: true
+          schema:
+            $ref: '#/components/schemas/SensorParameter'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeasurementSeries'
+
+  /patients/{patientId}/alerts:
+    parameters:
+      - $ref: '#/components/parameters/patientId'
+    get:
+      tags: [Monitoring]
+      summary: Istoric alarme/avertizări
+      operationId: getAlertHistory
+      parameters:
+        - name: from
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: to
+          in: query
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AlertEvent'
+
+  /patients/{patientId}/reports:
+    parameters:
+      - $ref: '#/components/parameters/patientId'
+    get:
+      tags: [Monitoring]
+      summary: Generare raport (PDF / CSV)
+      operationId: exportReport
+      parameters:
+        - name: from
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date-time
+        - name: to
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date-time
+        - name: format
+          in: query
+          required: true
+          schema:
+            $ref: '#/components/schemas/ReportFormat'
+      responses:
+        '200':
+          description: Raport generat
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportFile'
+
+  # ── INTEGRATION HL7 / FHIR ───────────────────────────────────────────────────
+  /integrations/hl7/inbound:
+    post:
+      tags: [Integration]
+      summary: Recepție trimitere de la MF (mesaj HL7 v2)
+      operationId: receiveHl7Referral
+      requestBody:
+        required: true
+        content:
+          text/plain:
+            schema:
+              type: string
+      responses:
+        '201':
+          description: Trimitere înregistrată
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Hl7InboundReferral'
+
+  /integrations/hl7/inbound:
+    get:
+      tags: [Integration]
+      summary: Listare trimiteri primite
+      operationId: listInboundReferrals
+      parameters:
+        - $ref: '#/components/parameters/patientIdQuery'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Hl7InboundReferral'
+
+  /integrations/fhir/outbound:
+    post:
+      tags: [Integration]
+      summary: Trimitere scrisoare medicală FHIR Bundle către MF
+      operationId: sendFhirMedicalLetter
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [patientId, visitId]
+              properties:
+                patientId:
+                  type: string
+                  format: uuid
+                visitId:
+                  type: string
+                  format: uuid
+      responses:
+        '202':
+          description: Scrisoare trimisă
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FhirOutboundLetter'
+
+# ─────────────────────────────────────────────────────────────────────────────
+components:
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    patientId:
+      name: patientId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    patientIdQuery:
+      name: patientId
+      in: query
+      required: false
+      schema:
+        type: string
+        format: uuid
+
+  responses:
+    Unauthorized:
+      description: Token lipsă sau invalid
+    NotFound:
+      description: Resursă inexistentă
+    BadRequest:
+      description: Date invalide
+
+  schemas:
+
+    # ── Auth ──────────────────────────────────────────────────────────────────
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          format: password
+
+    AuthTokens:
+      type: object
+      properties:
+        accessToken:
+          type: string
+        refreshToken:
+          type: string
+        expiresIn:
+          type: integer
+          description: Secunde până la expirarea access token
+        role:
+          $ref: '#/components/schemas/UserRole'
+
+    UserRole:
+      type: string
+      enum: [DOCTOR, PATIENT]
+
+    # ── Demographics / MedicalRecord ─────────────────────────────────────────
+    Demographics:
+      type: object
+      required: [nume, prenume, cnp]
+      properties:
+        nume:
+          type: string
+        prenume:
+          type: string
+        varsta:
+          type: integer
+        cnp:
+          type: string
+          minLength: 13
+          maxLength: 13
+        strada:
+          type: string
+        localitate:
+          type: string
+        judet:
+          type: string
+        codPostal:
+          type: string
+        tara:
+          type: string
+        telefon:
+          type: string
+        email:
+          type: string
+          format: email
+        profesie:
+          type: string
+        locDeMunca:
+          type: string
+
+    MedicalRecord:
+      type: object
+      properties:
+        istoricMedical:
+          type: string
+        alergii:
+          type: string
+        consultatiiCardiologiceText:
+          type: string
+
+    PatientSummary:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        doctorId:
+          type: string
+          format: uuid
+        nume:
+          type: string
+        prenume:
+          type: string
+        cnp:
+          type: string
+
+    PatientDetail:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        doctorId:
+          type: string
+          format: uuid
+        demographics:
+          $ref: '#/components/schemas/Demographics'
+        medical:
+          $ref: '#/components/schemas/MedicalRecord'
+
+    CreatePatientRequest:
+      type: object
+      required: [demographics, medical]
+      properties:
+        demographics:
+          $ref: '#/components/schemas/Demographics'
+        medical:
+          $ref: '#/components/schemas/MedicalRecord'
+
+    UpdatePatientRequest:
+      type: object
+      properties:
+        demographics:
+          $ref: '#/components/schemas/Demographics'
+        medical:
+          $ref: '#/components/schemas/MedicalRecord'
+
+    # ── Device Binding ────────────────────────────────────────────────────────
+    DeviceBinding:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        patientId:
+          type: string
+          format: uuid
+        smartphoneDeviceId:
+          type: string
+        sensorKitId:
+          type: string
+
+    # ── Normal Range Profile ──────────────────────────────────────────────────
+    NormalRangeProfile:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        patientId:
+          type: string
+          format: uuid
+        note:
+          type: string
+        ranges:
+          type: array
+          items:
+            $ref: '#/components/schemas/AlarmRule'
+
+    # ── Clinical Visit ────────────────────────────────────────────────────────
+    ClinicalVisit:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        patientId:
+          type: string
+          format: uuid
+        visitedAt:
+          type: string
+          format: date-time
+        motivPrezentare:
+          type: string
+        simptome:
+          type: string
+        diagnosticICD10:
+          type: string
+          description: Cod ICD-10 (ex. I48.0)
+        trimiteri:
+          type: string
+        retete:
+          type: string
+
+    # ── Recommendation ────────────────────────────────────────────────────────
+    Recommendation:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        patientId:
+          type: string
+          format: uuid
+        tipActivitate:
+          type: string
+          description: "ex.: bicicletă, alergat, plimbare"
+        durataZilnicaMinute:
+          type: integer
+        alteIndicatii:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    # ── Alarm Rule ────────────────────────────────────────────────────────────
+    SensorParameter:
+      type: string
+      enum: [ECG, UMIDITATE, TEMPERATURA, PULS]
+
+    AlarmRule:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        patientId:
+          type: string
+          format: uuid
+        parametru:
+          $ref: '#/components/schemas/SensorParameter'
+        pragMin:
+          type: number
+          format: double
+        pragMax:
+          type: number
+          format: double
+        durataPersistentaSec:
+          type: integer
+          description: Câte secunde trebuie să persiste depășirea pentru a declanșa alarma
+        intervalDeLaDebutActivitateSec:
+          type: integer
+          description: Interval de grație de la debutul activității fizice (corelat cu accelerometru)
+
+    # ── Sensor / Measurements ─────────────────────────────────────────────────
+    SensorSample:
+      type: object
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+        ecgBytes:
+          type: string
+          format: byte
+          description: ECG raw bytes, base64
+        umiditate:
+          type: number
+          format: double
+        temperatura:
+          type: number
+          format: double
+        puls:
+          type: integer
+
+    AccelSample:
+      type: object
+      properties:
+        t:
+          type: string
+          format: date-time
+        x:
+          type: number
+          format: double
+        y:
+          type: number
+          format: double
+        z:
+          type: number
+          format: double
+
+    AccelerometerBurst:
+      type: object
+      properties:
+        intervalStart:
+          type: string
+          format: date-time
+        intervalEnd:
+          type: string
+          format: date-time
+        samples:
+          type: array
+          items:
+            $ref: '#/components/schemas/AccelSample'
+
+    UplinkBatch:
+      type: object
+      required: [batchId, patientId, deviceId, intervalStart, intervalEnd, samples]
+      properties:
+        batchId:
+          type: string
+          description: Cheie idempotency (UUID sau hash)
+        patientId:
+          type: string
+          format: uuid
+        deviceId:
+          type: string
+        intervalStart:
+          type: string
+          format: date-time
+        intervalEnd:
+          type: string
+          format: date-time
+        samples:
+          type: array
+          items:
+            $ref: '#/components/schemas/SensorSample'
+        accelBurst:
+          $ref: '#/components/schemas/AccelerometerBurst'
+
+    IngestionAck:
+      type: object
+      properties:
+        batchId:
+          type: string
+        accepted:
+          type: boolean
+        receivedAt:
+          type: string
+          format: date-time
+
+    # ── Alert Event ───────────────────────────────────────────────────────────
+    AlertSeverity:
+      type: string
+      enum: [WARNING, CRITICAL]
+
+    AlertEvent:
+      type: object
+      required: [patientId, ruleId, triggeredAt, severitate]
+      properties:
+        id:
+          type: string
+          format: uuid
+        patientId:
+          type: string
+          format: uuid
+        ruleId:
+          type: string
+          format: uuid
+        triggeredAt:
+          type: string
+          format: date-time
+        severitate:
+          $ref: '#/components/schemas/AlertSeverity'
+        textPacient:
+          type: string
+          description: Notă liberă introdusă de pacient pe telefon
+
+    # ── Monitoring ────────────────────────────────────────────────────────────
+    TimeValuePoint:
+      type: object
+      properties:
+        t:
+          type: string
+          format: date-time
+        value:
+          type: number
+          format: double
+
+    MeasurementSeries:
+      type: object
+      properties:
+        patientId:
+          type: string
+          format: uuid
+        parameter:
+          $ref: '#/components/schemas/SensorParameter'
+        points:
+          type: array
+          items:
+            $ref: '#/components/schemas/TimeValuePoint'
+
+    ReportFormat:
+      type: string
+      enum: [PDF, CSV]
+
+    ReportFile:
+      type: object
+      properties:
+        fileName:
+          type: string
+        mimeType:
+          type: string
+        contentB64:
+          type: string
+          format: byte
+
+    # ── Integration ───────────────────────────────────────────────────────────
+    Hl7InboundReferral:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        rawMessage:
+          type: string
+        receivedAt:
+          type: string
+          format: date-time
+        status:
+          type: string
+          enum: [RECEIVED, PROCESSED, ERROR]
+
+    FhirOutboundLetter:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        patientId:
+          type: string
+          format: uuid
+        visitId:
+          type: string
+          format: uuid
+        bundleJson:
+          type: string
+          description: FHIR Bundle serializat JSON
+        sentAt:
+          type: string
+          format: date-time

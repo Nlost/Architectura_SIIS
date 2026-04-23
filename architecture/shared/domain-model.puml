@@ -1,0 +1,149 @@
+@startuml domain-model
+!theme plain
+title Model de domeniu — entități derivate din tema PDF
+
+' Tipuri de bază
+class Demographics <<Entity>> {
+  nume : String
+  prenume : String
+  varsta : int
+  cnp : String
+  ' adresă pe câmpuri (stradă, localitate, cod poștal, țară, etc.)
+  adresaLinii : String
+  telefon : String
+  email : String
+  profesie : String
+  locDeMunca : String
+}
+
+class MedicalRecord <<Entity>> {
+  istoricMedical : String
+  alergii : String
+  consultatiiCardiologiceText : String
+}
+
+class Patient <<AggregateRoot>> {
+  id : UUID
+  doctorId : UUID
+}
+
+class DeviceBinding <<Entity>> {
+  id : UUID
+  patientId : UUID
+  smartphoneDeviceId : String
+  sensorKitId : String
+  ' asociere unică pacient ↔ telefon ↔ senzori
+}
+
+class ClinicalVisit <<Entity>> {
+  id : UUID
+  patientId : UUID
+  motivPrezentare : String
+  simptome : String
+  diagnosticICD10 : String
+  trimiteri : String
+  ' analize, spital, tratamente, proceduri — modelat detaliat în implementare
+  retete : String
+}
+
+class Recommendation <<Entity>> {
+  id : UUID
+  patientId : UUID
+  tipActivitate : String
+  ' ex.: bicicletă, alergat, plimbare
+  durataZilnica : Duration
+  alteIndicatii : String
+}
+
+class AlarmRule <<Entity>> {
+  id : UUID
+  patientId : UUID
+  ' praguri personalizate + persistență + interval de la debut activitate fizică
+  parametru : SensorParameter
+  pragMin : Decimal
+  pragMax : Decimal
+  durataPersistenta : Duration
+  intervalDeLaDebutActivitate : Duration
+}
+
+enum SensorParameter {
+  ECG
+  UMIDITATE
+  TEMPERATURA
+  PULS
+}
+
+class NormalRangeProfile <<Entity>> {
+  id : UUID
+  patientId : UUID
+  ' valori normale pentru modul inteligent, per pacient
+  note : String
+}
+
+class SensorSample <<ValueObject>> {
+  timestamp : DateTime
+  ecg : Bytes
+  umiditate : Decimal
+  temperatura : Decimal
+  puls : int
+}
+
+class MeasurementBatch <<Entity>> {
+  id : UUID
+  patientId : UUID
+  deviceId : String
+  intervalStart : DateTime
+  intervalEnd : DateTime
+  ' medie/agregat din ferestre de 10 s, trimis la ~30 s
+}
+
+class AccelerometerBurst <<ValueObject>> {
+  intervalStart : DateTime
+  ' un eșantion/secundă pe fereastra de încărcare (~30 s)
+  esantioaneAccel : AccelSample
+}
+
+class AccelSample <<ValueObject>> {
+  t : DateTime
+  x : Decimal
+  y : Decimal
+  z : Decimal
+}
+
+class AlertEvent <<Entity>> {
+  id : UUID
+  patientId : UUID
+  ruleId : UUID
+  triggeredAt : DateTime
+  severitate : String
+  textPacient : String
+  ' introdus pe telefon, trimis asincron cu alarma
+}
+
+class Hl7InboundReferral <<Entity>> {
+  id : UUID
+  rawMessage : String
+  status : String
+}
+
+class FhirOutboundLetter <<Entity>> {
+  id : UUID
+  patientId : UUID
+  bundleJson : String
+  trimisLa : DateTime
+}
+
+Patient "1" *-- "1" Demographics : are
+Patient "1" *-- "1" MedicalRecord : are
+Patient "1" o-- "0..1" DeviceBinding : asociere
+Patient "1" *-- "*" ClinicalVisit : consultatii
+Patient "1" *-- "*" Recommendation : recomandari
+Patient "1" *-- "*" AlarmRule : reguli
+Patient "1" *-- "0..1" NormalRangeProfile : praguri normale
+Patient "1" *-- "*" MeasurementBatch : masuratori
+Patient "1" *-- "*" AlertEvent : alarme
+MeasurementBatch "1" *-- "*" SensorSample : contine
+MeasurementBatch "0..1" o-- "0..1" AccelerometerBurst : burst 30s
+AccelerometerBurst "1" *-- "*" AccelSample : burst_1Hz
+
+@enduml

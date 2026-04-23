@@ -1,0 +1,50 @@
+@startuml azure-deployment
+!theme plain
+title Deployment — referință Azure (wearable health)
+
+node "Microsoft Azure" {
+
+  node "Resource group (ex. rg-mpsam-wearable)" {
+
+    node "App Service Plan" as plan {
+      artifact "API Web App\n(REST + OpenAPI)" as api
+    }
+
+    database "Azure SQL Database\n(Server + DB)" as dbsql {
+      artifact "Tabele: users, doctors_patients,\npatients, visits, recommendations,\nalarm_rules, measurements, alerts..."
+    }
+
+    node "Supporting" {
+      storage "Storage Account\n(Blobs opțional)" as blob
+      artifact "Application Insights" as ai
+      artifact "Azure Key Vault" as kv
+    }
+
+    node "Integrare (opțional)" {
+      artifact "Azure API for FHIR\nsau conector HL7" as fhir
+      artifact "Notification Hubs" as nh
+    }
+  }
+}
+
+node "Utilizatori" {
+  actor "Medic / Pacient\n(browser)" as user
+  node "Android\n(app mobilă)" as and
+}
+
+node "Edge" {
+  artifact "ESP32\nmodul inteligent" as esp
+}
+
+user --> api : HTTPS
+and --> api : HTTPS\n(ingestie, sync)
+api --> dbsql : TDS / SQL
+api --> kv : secrete
+api --> ai : telemetrie
+api --> blob : fișiere (opțional)
+api --> fhir : HL7/FHIR
+api --> nh : push (opțional)
+esp ..> and : BLE
+
+
+@enduml

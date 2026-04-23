@@ -1,0 +1,47 @@
+@startuml system-components
+!theme plain
+title Sistem purtabil — diagramă de componente (tema MPSAM)
+
+package "Clienți" {
+  [Browser\nAplicație web] as WEB
+  [Smartphone Android\nAplicație mobilă] as MOB
+}
+
+package "Modul purtabil" {
+  [ESP32 + senzori\nECG, umiditate, temperatură, puls] as ESP
+}
+
+cloud "Microsoft Azure\nComponentă cloud" as AZURE {
+  package "API " {
+    [REST API\n(App Service / Functions)] as API
+  }
+  package "Date" {
+    database "Azure SQL\n(fișe, consultații,\nreguli alarme)" as SQL
+  }
+  package "Opțional" {
+    [Notification Hubs\n(push Android)] as NH
+    [Key Vault] as KV
+  }
+}
+
+package "Sisteme externe" {
+  [Sistem MF / HL7] as HL7
+  [FHIR endpoint] as FHIR
+}
+
+ESP -down-> MOB : Bluetooth LE\n(măsurători ~10 s)
+MOB -down-> API : HTTPS\ningestie ~30 s\n+ alarmă asincronă
+WEB -down-> API : HTTPS\nfișă, grafice, rapoarte
+API -down-> SQL : CRUD / istoric
+API ..> NH : notificări (opțional)
+API ..> KV : secrete
+API ..> HL7 : mesaje trimitere (intrare)
+API ..> FHIR : scrisoare medicală (ieșire)
+
+note right of MOB
+  Accelerometru 1 Hz;
+  burst la 30 s;
+  coadă offline dacă fără internet.
+end note
+
+@enduml

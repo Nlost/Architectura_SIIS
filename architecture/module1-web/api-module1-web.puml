@@ -1,0 +1,268 @@
+@startuml api-module1-web
+title Modul 1 - Aplicatie web: servicii (Service Layer)
+
+skinparam classAttributeIconSize 0
+skinparam ClassBackgroundColor #FAFAFA
+skinparam ClassBorderColor #999999
+skinparam ArrowColor #555555
+skinparam NoteBackgroundColor #FFFDE7
+skinparam NoteBorderColor #D4A017
+skinparam PackageBackgroundColor transparent
+skinparam PackageBorderColor #999999
+
+' ============================================================
+' CONTRACT MODUL
+' ============================================================
+note as CONTRACT
+  == Responsabilitatea modulului ==
+  Aplicatie web (SPA) folosita de admin, medic si pacient:
+   1) login + schimbare parola
+   2) admin: gestiune utilizatori, roluri si drepturi
+   3) medic: CRUD pacienti + probleme + alergii + medicatie + consultatii
+      + recomandari + reguli alarma
+   4) medic: grafice, istoric, audit, scrisoare FHIR / primire HL7
+   5) pacient: portal self-service pe datele proprii
+   6) afiseaza PatientIdentificationHeader pe orice ecran de date (EuroRec 43)
+
+  == Ce NU face modulul ==
+   - NU stocheaza date local - totul via Cloud (Modul 2)
+   - NU vorbeste cu senzorii / ESP32 / Android
+   - NU implementeaza auth proprie - foloseste /auth din cloud
+
+  == Conformitate EuroRec Seal Level 2 ==
+   Aceste servicii implementeaza cerintele de prezentare / UI
+   ale criteriilor "da". Mapping: eurorec-compliance.md
+
+  == Granita de iesire ==
+   Singura granita = HTTPS + JWT catre Cloud (Modul 2).
+   Fiecare <<Service>> e un adapter peste endpoint-urile din
+   module2-cloud/openapi-cloud.yaml.
+end note
+
+' ============================================================
+' SESIUNE / CONTEXT
+' ============================================================
+package "Sesiune" #F5F5F5 {
+  class WebSessionContext <<ValueObject>> {
+    userId      : UUID
+    role        : UserRole
+    permissions : String[]
+    accessToken : String
+    expiresAt   : Instant
+  }
+}
+
+' ============================================================
+' AUTH + CONT
+' ============================================================
+package "Auth & cont" #E3F2FD {
+  class AuthService <<Service>> {
+    + login(req: LoginRequest) : AuthTokens
+    + logout(accessToken: String) : void
+    + refreshSession(refreshToken: String) : AuthTokens
+  }
+  class AccountService <<Service>> {
+    ' EuroRec 29 - user schimba parola
+    + changeMyPassword(current: String, newPassword: String) : void
+    + getMyProfile() : UserAccount
+  }
+}
+
+' ============================================================
+' ADMIN - gestiune utilizatori si drepturi  (EuroRec 1, 25, 34, 36, 40)
+' ============================================================
+package "Admin - utilizatori & roluri" #D1C4E9 {
+  class UserAdminService <<Service>> {
+    ' Vizibil doar pentru rol ADMIN.
+    + listUsers() : UserAccount[]
+    + createUser(account: UserAccount) : UserAccount
+    + updateUser(userId: UUID, update: UserAccount) : UserAccount
+    + deactivateUser(userId: UUID) : void
+    + assignRole(userId: UUID, role: UserRole) : RoleAssignment
+    + listPermissionsForRole(role: UserRole) : Permission[]
+    + updatePermissionsForRole(role: UserRole, permissions: Permission[]) : Permission[]
+  }
+}
+
+' ============================================================
+' AUDIT - vizualizare  (EuroRec 26, 28)
+' ============================================================
+package "Admin - audit" #ECEFF1 {
+  class AuditLogViewService <<Service>> {
+    ' Read-only: jurnalul e append-only in cloud.
+    + listUserAudit(userId: UUID, from: DateTime, to: DateTime) : AuditEvent[]
+    + listResourceAudit(resourceType: String, resourceId: UUID) : AuditEvent[]
+  }
+}
+
+' ============================================================
+' MEDIC - CRUD pacient  (EuroRec 2, 3, 38, 39, 43, 45)
+' ============================================================
+package "Medic - gestiune pacienti" #E8F5E9 {
+  class PatientService <<Service>> {
+    + createPatient(demographics: Demographics, medical: MedicalRecord) : PatientDetail
+    + getPatient(patientId: UUID) : PatientDetail
+    + updatePatient(patientId: UUID, demographics: Demographics) : PatientDetail
+    + deletePatient(patientId: UUID) : void
+    + listPatientsForDoctor() : PatientSummary[]
+    + updateMedicalRecord(patientId: UUID, record: MedicalRecord) : MedicalRecord
+    + registerDeviceBinding(patientId: UUID, binding: DeviceBinding) : DeviceBinding
+    + getDeviceBinding(patientId: UUID) : DeviceBinding
+    + getNormalRangeProfile(patientId: UUID) : NormalRangeProfile
+    + updateNormalRangeProfile(patientId: UUID, profile: NormalRangeProfile) : NormalRangeProfile
+  }
+  class PatientIdentificationBarService <<Service>> {
+    ' EuroRec 43 - afiseaza header (nume/prenume/sex/varsta)
+    ' pe orice ecran cu date pacient. Apelat de shell-ul UI.
+    + loadHeader(patientId: UUID) : PatientIdentificationHeader
+    + formatForToolbar(header: PatientIdentificationHeader) : String
+  }
+}
+
+' ============================================================
+' MEDIC - probleme sanatate (EuroRec 4, 17)
+' ============================================================
+package "Medic - probleme sanatate" #E1F5FE {
+  class HealthProblemService <<Service>> {
+    ' EuroRec 4 - ecran cu probleme CURENTE.
+    + listCurrentProblems(patientId: UUID) : HealthProblem[]
+    + listAllProblems(patientId: UUID) : HealthProblem[]
+    + createProblem(patientId: UUID, problem: HealthProblem) : HealthProblem
+    + changeProblemStatus(problemId: UUID, newStatus: HealthItemStatus) : HealthProblem
+    + getProblemVersionHistory(problemId: UUID) : HealthProblem[]
+  }
+}
+
+' ============================================================
+' MEDIC - alergii (EuroRec 14, 44)
+' ============================================================
+package "Medic - alergii" #FFEBEE {
+  class AllergyService <<Service>> {
+    + listActiveAllergies(patientId: UUID) : Allergy[]
+    + createAllergy(patientId: UUID, allergy: Allergy) : Allergy
+    + updateAllergy(allergyId: UUID, allergy: Allergy) : Allergy
+    + deleteAllergy(allergyId: UUID) : Allergy
+  }
+}
+
+' ============================================================
+' MEDIC - medicatie (EuroRec 9, 10, 44, 50)
+' ============================================================
+package "Medic - medicatie" #FFF3E0 {
+  class MedicationService <<Service>> {
+    + listCurrentMedication(patientId: UUID) : Medication[]
+    + listMedicationHistory(patientId: UUID) : Medication[]
+    + prescribe(patientId: UUID, req: PrescriptionRequest) : Medication
+    + updateMedicationStatus(medicationId: UUID, newStatus: HealthItemStatus) : Medication
+    + checkPrescriptionSafety(patientId: UUID, product: CodedValue) : PrescriptionDecisionSupport
+  }
+  note right of MedicationService
+    La prescriere UI apeleaza intai
+    checkPrescriptionSafety() si afiseaza
+    alergiile cunoscute (EuroRec 44).
+  end note
+}
+
+' ============================================================
+' MEDIC - consultatii  (EuroRec 8)
+' ============================================================
+package "Medic - consultatii" #FFF8E1 {
+  class ClinicalVisitService <<Service>> {
+    + listClinicalVisits(patientId: UUID) : ClinicalVisit[]
+    + getClinicalVisit(visitId: UUID) : ClinicalVisit
+    + createClinicalVisit(patientId: UUID, visit: ClinicalVisit) : ClinicalVisit
+    + updateClinicalVisit(visitId: UUID, visit: ClinicalVisit) : ClinicalVisit
+    + finalizeClinicalVisit(visitId: UUID) : ClinicalVisit
+    + getVisitVersionHistory(visitId: UUID) : ClinicalVisit[]
+  }
+  class Icd10LookupService <<Service>> {
+    ' EuroRec 8 - suport pentru coduri ICD-10 la diagnostic.
+    + searchCodes(query: String) : CodedValue[]
+    + getByCode(code: String) : CodedValue
+  }
+}
+
+' ============================================================
+' MEDIC - recomandari
+' ============================================================
+package "Medic - recomandari" #E0F7FA {
+  class RecommendationService <<Service>> {
+    + listRecommendations(patientId: UUID) : Recommendation[]
+    + createRecommendation(patientId: UUID, rec: Recommendation) : Recommendation
+    + updateRecommendation(id: UUID, rec: Recommendation) : Recommendation
+    + deleteRecommendation(id: UUID) : void
+  }
+}
+
+' ============================================================
+' MEDIC - reguli alarma
+' ============================================================
+package "Medic - reguli alarma" #FCE4EC {
+  class AlarmRuleService <<Service>> {
+    + listAlarmRules(patientId: UUID) : AlarmRule[]
+    + createAlarmRule(patientId: UUID, rule: AlarmRule) : AlarmRule
+    + updateAlarmRule(id: UUID, rule: AlarmRule) : AlarmRule
+    + deleteAlarmRule(id: UUID) : void
+  }
+}
+
+' ============================================================
+' MEDIC - monitorizare + alerte clinice (EuroRec 35, 49)
+' ============================================================
+package "Medic - monitorizare & alerte" #F3E5F5 {
+  class MonitoringService <<Service>> {
+    + getMeasurementSeries(query: TimeRangeQuery) : MeasurementSeries
+    + getAlertHistory(patientId: UUID, query: TimeRangeQuery) : AlertEvent[]
+    + exportReport(params: ReportParams) : ReportFile
+    + getConsolidatedPatientView(patientId: UUID) : PatientDetail
+  }
+  class ClinicalAlertRenderingService <<Service>> {
+    ' EuroRec 49 - mod consistent de afisare
+    ' (RED = critical / HIGH abnormal, YELLOW = WARNING, GREEN = normal)
+    + renderingFor(severity: AlertSeverity) : ClinicalAlertRendering
+    + renderingForLabResult(value: Decimal, ref: TimeRangeQuery) : ClinicalAlertRendering
+  }
+}
+
+' ============================================================
+' MEDIC - integrare MF
+' ============================================================
+package "Medic - integrare MF" #E0F2F1 {
+  class IntegrationService <<Service>> {
+    + receiveHl7Referral(rawHl7Message: String) : Hl7InboundReferral
+    + listInboundReferrals(patientId: UUID) : Hl7InboundReferral[]
+    + sendFhirMedicalLetter(patientId: UUID, visitId: UUID) : FhirOutboundLetter
+  }
+}
+
+' ============================================================
+' PACIENT - portal  (EuroRec 35 pe propriile date)
+' ============================================================
+package "Pacient - portal" #FFECB3 {
+  class PatientPortalService <<Service>> {
+    + getMyProfile(patientId: UUID) : PatientDetail
+    + getMyAllergies(patientId: UUID) : Allergy[]
+    + getMyCurrentMedication(patientId: UUID) : Medication[]
+    + getMyCurrentProblems(patientId: UUID) : HealthProblem[]
+    + getMyRecommendations(patientId: UUID) : Recommendation[]
+    + getMyAlertHistory(patientId: UUID, query: TimeRangeQuery) : AlertEvent[]
+    + getMyMeasurementSeries(query: TimeRangeQuery) : MeasurementSeries
+  }
+}
+
+' --- Dependente ---
+PatientPortalService ..> MonitoringService      : reuse
+PatientPortalService ..> RecommendationService  : reuse
+PatientPortalService ..> AllergyService         : read-only
+PatientPortalService ..> MedicationService      : read-only
+ClinicalVisitService ..> IntegrationService     : trigger FHIR la finalize
+MedicationService    ..> AllergyService         : EuroRec 44 cross-check
+
+note bottom of AuthService
+  Toate celelalte <<Service>> pun automat
+  "Authorization: Bearer <jwt>" pe fiecare request.
+  Sesiunea contine si "permissions" folosite pentru
+  afisarea butoanelor (EuroRec 24, 25, 34, 40).
+end note
+
+@enduml
