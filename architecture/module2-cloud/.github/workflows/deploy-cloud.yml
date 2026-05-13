@@ -1,0 +1,116 @@
+name: Deploy Cloud Backend — SeniorWatch
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - "module2-cloud/backend/**"
+      - "module2-cloud/Dockerfile"
+      - ".github/workflows/deploy-cloud.yml"
+  workflow_dispatch:
+
+env:
+  AWS_REGION:    eu-central-1
+  ECR_REPO:      ${{ secrets.ECR_REPOSITORY_URL }}
+  EB_APP_NAME:   ${{ secrets.EB_APP_NAME }}
+  EB_ENV_NAME:   ${{ secrets.EB_ENV_NAME }}
+
+jobs:
+  build-and-deploy:
+    name: Build → Push ECR → Deploy EB
+    runs-on: ubuntu-latest
+
+    steps:
+      # ─── Checkout ──────────────────────────────────────────────────────────
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ─── Java + Maven build ────────────────────────────────────────────────
+      - name: Setup Java 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: "21"
+          distribution: "temurin"
+          cache: maven
+
+      - name: Build JAR (Spring Boot)
+        working-directory: module2-cloud/backend
+        run: mvn clean package -DskipTests --batch-mode
+
+      # ─── AWS credentials ───────────────────────────────────────────────────
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region:            ${{ env.AWS_REGION }}
+
+      # ─── ECR login + Docker push ───────────────────────────────────────────
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build & push Docker image
+        id: build-image
+        run: |
+          IMAGE_TAG="${{ github.sha }}"
+          docker build -t $ECR_REPO:$IMAGE_TAG -t $ECR_REPO:latest \
+            -f module2-cloud/Dockerfile module2-cloud/
+          docker push $ECR_REPO:$IMAGE_TAG
+          docker push $ECR_REPO:latest
+          echo "image=$ECR_REPO:$IMAGE_TAG" >> $GITHUB_OUTPUT
+
+      # ─── Elastic Beanstalk deploy ──────────────────────────────────────────
+      - name: Generate Dockerrun.aws.json
+        run: |
+          cat > Dockerrun.aws.json <<EOF
+          {
+            "AWSEBDockerrunVersion": "1",
+            "Image": {
+              "Name": "${{ steps.build-image.outputs.image }}",
+              "Update": "true"
+            },
+            "Ports": [{ "ContainerPort": 8080, "HostPort": 8080 }],
+            "Logging": "/var/log/app"
+          }
+          EOF
+
+      - name: Create EB application version & deploy
+        run: |
+          VERSION="${{ github.sha }}"
+          S3_KEY="deployments/$VERSION/Dockerrun.aws.json"
+          BUCKET=$(aws elasticbeanstalk describe-application-versions \
+            --application-name "$EB_APP_NAME" \
+            --query "ApplicationVersions[0].SourceBundle.S3Bucket" \
+            --output text 2>/dev/null || echo "elasticbeanstalk-$AWS_REGION-$(aws sts get-caller-identity --query Account --output text)")
+
+          aws s3 cp Dockerrun.aws.json "s3://$BUCKET/$S3_KEY"
+
+          aws elasticbeanstalk create-application-version \
+            --application-name "$EB_APP_NAME" \
+            --version-label "$VERSION" \
+            --source-bundle S3Bucket="$BUCKET",S3Key="$S3_KEY" \
+            --auto-create-application
+
+          aws elasticbeanstalk update-environment \
+            --application-name "$EB_APP_NAME" \
+            --environment-name "$EB_ENV_NAME" \
+            --version-label "$VERSION"
+
+      - name: Wait for deployment to complete
+        run: |
+          echo "Astept finalizarea deploy-ului (max 10 minute)..."
+          aws elasticbeanstalk wait environment-updated \
+            --application-name "$EB_APP_NAME" \
+            --environment-names "$EB_ENV_NAME" || true
+
+          STATUS=$(aws elasticbeanstalk describe-environments \
+            --application-name "$EB_APP_NAME" \
+            --environment-names "$EB_ENV_NAME" \
+            --query "Environments[0].Health" --output text)
+
+          echo "Stare environment dupa deploy: $STATUS"
+          if [ "$STATUS" != "Green" ] && [ "$STATUS" != "Ok" ]; then
+            echo "Deploy esuat sau environment degradat!"
+            exit 1
+          fi

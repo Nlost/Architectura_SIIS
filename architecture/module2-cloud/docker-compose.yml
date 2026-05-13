@@ -1,0 +1,60 @@
+# Docker Compose pentru DEZVOLTARE LOCALA
+# Nu se foloseste in productie (productia foloseste Elastic Beanstalk)
+#
+# Pornire: docker compose up -d
+# Oprire:  docker compose down
+# Logs:    docker compose logs -f backend
+
+version: "3.9"
+
+services:
+
+  db:
+    image: postgres:15-alpine
+    container_name: seniorwatch-db
+    environment:
+      POSTGRES_DB:       ${DB_NAME:-seniorwatch}
+      POSTGRES_USER:     ${DB_ADMIN_USER:-seniorwatch_admin}
+      POSTGRES_PASSWORD: ${DB_ADMIN_PASSWORD:-dev_password_local}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/01_schema.sql
+      - ./database/seed.sql:/docker-entrypoint-initdb.d/02_seed.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_ADMIN_USER:-seniorwatch_admin}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: seniorwatch-backend
+    ports:
+      - "8080:8080"
+    environment:
+      DB_HOST:     db
+      DB_PORT:     5432
+      DB_NAME:     ${DB_NAME:-seniorwatch}
+      DB_USER:     ${DB_APP_USER:-sw_app}
+      DB_PASSWORD: ${DB_APP_PASSWORD:-dev_app_password}
+      JWT_SECRET:  ${JWT_SECRET:-dev_jwt_secret_minim_32_caractere_!!}
+      SERVER_PORT: 8080
+      # S3 si SNS - mock local (sau lasa gol pentru dev fara cloud)
+      S3_REPORTS_BUCKET:   ""
+      SNS_ALERTS_TOPIC_ARN: ""
+      AWS_REGION_APP:      eu-central-1
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/api/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  postgres_data:

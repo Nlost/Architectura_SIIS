@@ -1,0 +1,74 @@
+# Template Spring Boot application.yml pentru module2-cloud
+# Acest fisier merge in: backend/src/main/resources/application.yml
+# Toate valorile sensibile vin din variabile de mediu (injectate de EB sau .env local)
+
+spring:
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:seniorwatch}
+    username: ${DB_USER:sw_app}
+    password: ${DB_PASSWORD:}
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 2
+      connection-timeout: 30000
+      idle-timeout: 600000
+  jpa:
+    hibernate:
+      # "validate" — schema gestionata de schema.sql, nu de Hibernate
+      ddl-auto: validate
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        jdbc:
+          time_zone: UTC
+    open-in-view: false
+  sql:
+    init:
+      mode: never  # schema.sql rulat manual, nu la startup
+
+server:
+  port: ${SERVER_PORT:8080}
+  servlet:
+    context-path: /api/v1
+  tomcat:
+    max-threads: 50
+
+# ─── JWT ──────────────────────────────────────────────────────────────────────
+jwt:
+  secret:                ${JWT_SECRET:}
+  expiry-seconds:        ${JWT_EXPIRY_SECONDS:3600}
+  refresh-expiry-seconds: ${JWT_REFRESH_EXPIRY_SECONDS:604800}
+
+# ─── AWS ──────────────────────────────────────────────────────────────────────
+aws:
+  region: ${AWS_REGION_APP:eu-central-1}
+  s3:
+    reports-bucket: ${S3_REPORTS_BUCKET:}
+  sns:
+    alerts-topic-arn: ${SNS_ALERTS_TOPIC_ARN:}
+
+# ─── Logging ──────────────────────────────────────────────────────────────────
+logging:
+  level:
+    root:            INFO
+    ro.seniorwatch:  DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+
+# ─── Actuator (health check pentru Elastic Beanstalk) ─────────────────────────
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: when-authorized
+
+# ─── CORS (permite cereri din aplicatia web si Android) ──────────────────────
+spring.web.cors:
+  allowed-origins: "*"
+  allowed-methods: GET,POST,PUT,PATCH,DELETE,OPTIONS
+  allowed-headers: "*"
+  max-age: 3600

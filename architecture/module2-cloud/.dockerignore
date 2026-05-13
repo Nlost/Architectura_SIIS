@@ -1,0 +1,14 @@
+terraform/
+database/
+backend-config/
+.github/
+.git/
+*.md
+*.pdf
+backend/src/
+backend/.mvn/
+backend/target/surefire-reports/
+.env
+.env.local
+*.tfstate
+*.tfvars
