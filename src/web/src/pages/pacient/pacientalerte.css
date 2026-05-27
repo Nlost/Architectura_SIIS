@@ -1,0 +1,146 @@
+@import "../../App.css";
+
+.alerte-hero {
+  min-height: 190px;
+  padding: 34px;
+  border-radius: 34px;
+  background: rgba(255, 255, 255, 0.88);
+  border: 1px solid rgba(124, 58, 237, 0.1);
+  box-shadow: 0 24px 70px rgba(83, 47, 147, 0.12);
+
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.alerte-hero p {
+  margin: 0 0 10px;
+  color: #7c3aed;
+  font-size: 13px;
+  font-weight: 1000;
+  letter-spacing: 0.8px;
+}
+
+.alerte-hero h1 {
+  margin: 0;
+  color: #16072f;
+  font-size: 38px;
+  font-weight: 1000;
+}
+
+.alerte-hero span {
+  display: block;
+  margin-top: 12px;
+  color: #66547f;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.alerte-status {
+  min-width: 240px;
+  padding: 24px;
+  border-radius: 24px;
+  background: #faf7ff;
+  border: 1px solid #eadfff;
+  box-shadow: 0 12px 28px rgba(83, 47, 147, 0.08);
+
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.alerte-status b {
+  color: #16072f;
+  font-size: 16px;
+  font-weight: 1000;
+}
+
+.alerte-status span {
+  margin: 0;
+  color: #7c3aed;
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.alerte-list {
+  margin-top: 28px;
+
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.alerta-card {
+  padding: 28px;
+  border-radius: 30px;
+  border: 1px solid transparent;
+
+  box-shadow: 0 18px 50px rgba(89, 56, 142, 0.09);
+}
+
+.alerta-card.critical {
+  background: rgba(255, 240, 244, 0.95);
+  border-color: rgba(255, 90, 120, 0.18);
+}
+
+.alerta-card.warning {
+  background: rgba(255, 248, 236, 0.95);
+  border-color: rgba(255, 184, 0, 0.2);
+}
+
+.alerta-card.info {
+  background: rgba(245, 242, 255, 0.95);
+  border-color: rgba(124, 58, 237, 0.15);
+}
+
+.alerta-top {
+  margin-bottom: 18px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid rgba(124, 58, 237, 0.12);
+}
+
+
+.alerta-top h2 {
+  margin: 0;
+
+  color: #16072f;
+  font-size: 24px;
+  font-weight: 1000;
+}
+
+.alerta-top span {
+  display: block;
+  margin-top: 6px;
+
+  color: #7c6f96;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.alerta-content {
+  padding: 20px;
+  border-radius: 20px;
+
+  background: rgba(255, 255, 255, 0.65);
+
+  color: #4b3f66;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.7;
+}
+
+.sidebar nav a {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+@media (max-width: 1200px) {
+
+  .alerte-hero {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 20px;
+  }
+
+}

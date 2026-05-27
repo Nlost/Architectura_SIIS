@@ -1,0 +1,188 @@
+@import "../../App.css";
+
+.valori-hero {
+  min-height: 190px;
+  padding: 34px;
+  border-radius: 34px;
+  background: rgba(255, 255, 255, 0.86);
+  border: 1px solid rgba(124, 58, 237, 0.1);
+  box-shadow: 0 24px 70px rgba(83, 47, 147, 0.12);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.valori-hero p,
+.valori-panel-head p {
+  margin: 0 0 10px;
+  color: #7c3aed;
+  font-size: 13px;
+  font-weight: 1000;
+  letter-spacing: 0.8px;
+}
+
+.valori-hero h1,
+.valori-panel-head h2 {
+  margin: 0;
+  color: #16072f;
+  font-size: 36px;
+  font-weight: 1000;
+}
+
+.valori-hero span {
+  display: block;
+  margin-top: 12px;
+  color: #66547f;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.valori-sync-card {
+  min-width: 230px;
+  padding: 22px;
+  border-radius: 24px;
+  background: #faf7ff;
+  border: 1px solid #eadfff;
+  box-shadow: 0 12px 28px rgba(83, 47, 147, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.valori-sync-card b {
+  color: #16072f;
+  font-size: 16px;
+  font-weight: 1000;
+}
+
+.valori-sync-card span {
+  margin: 0;
+  color: #7c3aed;
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.valori-grid {
+  margin-top: 26px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 22px;
+}
+
+.valori-card {
+  min-height: 150px;
+  padding: 26px;
+  border-radius: 26px;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(124, 58, 237, 0.1);
+  box-shadow: 0 18px 45px rgba(89, 56, 142, 0.1);
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.valori-icon {
+  width: 62px;
+  height: 62px;
+  border-radius: 18px;
+  display: grid;
+  place-items: center;
+  color: white;
+  font-size: 26px;
+}
+
+.valori-icon.purple,
+.valori-icon.violet {
+  background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+}
+
+.valori-icon.green {
+  background: linear-gradient(135deg, #34d399, #10b981);
+}
+
+.valori-card p {
+  margin: 0;
+  color: #77669b;
+  font-weight: 900;
+}
+
+.valori-card h2 {
+  margin: 8px 0;
+  color: #16072f;
+  font-size: 30px;
+  font-weight: 1000;
+}
+
+.valori-card span {
+  color: #7d6d9e;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.valori-panel {
+  margin-top: 26px;
+  padding: 30px;
+  border-radius: 30px;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(124, 58, 237, 0.1);
+  box-shadow: 0 18px 50px rgba(89, 56, 142, 0.09);
+}
+
+.valori-panel-head {
+  margin-bottom: 22px;
+}
+
+.valori-panel-head h2 {
+  font-size: 24px;
+}
+
+.valori-table {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.valori-row {
+  min-height: 64px;
+  padding: 0 20px;
+  border-radius: 18px;
+  background: #faf7ff;
+  border: 1px solid #eadfff;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1.4fr;
+  align-items: center;
+  color: #16072f;
+  font-weight: 900;
+}
+
+.valori-header {
+  background: #ede3ff;
+  color: #5b21b6;
+  text-transform: uppercase;
+  font-size: 13px;
+  letter-spacing: 0.4px;
+}
+
+.sidebar nav a {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+@media (max-width: 1200px) {
+  .valori-hero {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 20px;
+  }
+
+  .valori-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .valori-row {
+    grid-template-columns: 1fr;
+    gap: 8px;
+    padding: 18px 20px;
+  }
+}

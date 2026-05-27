@@ -1,0 +1,439 @@
+  @import "../../App.css";
+
+  .consultatii-content {
+    grid-template-columns: 1fr;
+    width: 100%;
+  }
+
+  .fullPanel {
+    width: 100%;
+    max-width: none;
+  }
+
+  .consultatii-content .panel {
+    width: 100%;
+    background: #ffffff;
+    border: 1px solid rgba(109, 40, 217, 0.12);
+  }
+
+  .consultatii-row {
+    grid-template-columns: 1.4fr 0.6fr 0.9fr 0.9fr 1.3fr 0.9fr 1.5fr;
+    width: 100%;
+    min-height: 82px;
+    background: #ffffff;
+    color: #1a093d;
+    font-weight: 900;
+    border: 1px solid #e5d8ff;
+    box-shadow: 0 10px 28px rgba(83, 47, 147, 0.06);
+    transition: 0.2s ease;
+  }
+
+  .consultatii-row:hover {
+    background: #f5efff;
+    border-color: #c4b5fd;
+    transform: translateY(-1px);
+  }
+
+  .tableHeader {
+    background: #ede3ff !important;
+    color: #5b21b6 !important;
+    border: 1px solid #d8caff;
+    box-shadow: none;
+    min-height: 64px;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+  }
+
+  .consultatii-tools {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .consultatii-search {
+    width: 620px;
+    height: 56px;
+    background: #ffffff;
+    border: 1px solid #eadfff;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    padding: 0 10px 0 18px;
+    box-shadow: 0 12px 28px rgba(83, 47, 147, 0.08);
+  }
+
+  .consultatii-search span {
+    color: #64748b;
+    font-size: 22px;
+    margin-right: 12px;
+  }
+
+  .consultatii-search input {
+    flex: 1;
+    border: none;
+    outline: none;
+    background: transparent;
+    color: #13072f;
+    font-size: 15px;
+    font-weight: 600;
+  }
+
+  .consultatii-search input::placeholder {
+    color: #6b7280;
+  }
+
+  .consultatii-search button {
+    height: 42px;
+    padding: 0 18px;
+    border-radius: 12px;
+    border: 1px solid #cdb8ff;
+    background: #f8f3ff;
+    color: #5b21b6;
+    font-weight: 900;
+    font-size: 14px;
+    cursor: pointer;
+  }
+
+.add-consultatie-btn {
+  height: 56px;
+  border: none;
+  border-radius: 18px;
+  padding: 0 22px;
+  background: linear-gradient(135deg, #8b5cf6, #6d28d9) !important;
+  color: #ffffff !important;
+  font-weight: 900;
+  font-size: 15px;
+  cursor: pointer;
+  box-shadow: 0 14px 30px rgba(109, 40, 217, 0.22);
+  transition: all 0.2s ease;
+}
+
+.add-consultatie-btn:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.04);
+}
+
+  .consultatie-badge {
+    width: fit-content;
+    padding: 8px 14px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 1000;
+    border: 1px solid transparent;
+  }
+
+  .consultatie-badge.Programată {
+    background: #e0e7ff;
+    color: #4338ca;
+    border-color: #a5b4fc;
+  }
+
+  .consultatie-badge.Finalizată {
+    background: #c8fadd;
+    color: #047857;
+    border-color: #86efac;
+  }
+
+  .consultatie-badge.În desfășurare,
+  .consultatie-badge.Îndesfășurare {
+    background: #ffe0a3;
+    color: #b45309;
+    border-color: #fbbf24;
+  }
+
+  .consultatieActions {
+    display: flex;
+    gap: 8px;
+  }
+
+  .consultatieActions button {
+    border: none;
+    padding: 10px 13px;
+    border-radius: 13px;
+    font-weight: 1000;
+    cursor: pointer;
+    transition: 0.2s ease;
+  }
+
+  .consultatieActions button:nth-child(1) {
+    background: #6d28d9;
+    color: white;
+  }
+
+  .consultatieActions button:nth-child(2) {
+    background: #10b981;
+    color: white;
+  }
+
+  .consultatieActions button:nth-child(3) {
+    background: #e11d48;
+    color: white;
+  }
+
+  .consultatieActions button:hover {
+    transform: translateY(-2px);
+    filter: brightness(0.96);
+  }
+
+  @media (max-width: 1200px) {
+    .consultatii-row {
+      grid-template-columns: 1fr;
+      gap: 10px;
+    }
+
+    .consultatii-tools {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .consultatii-search {
+      width: 100%;
+    }
+
+    .consultatieActions {
+      flex-wrap: wrap;
+    }
+  }
+  .consultatieModalOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: rgba(19, 7, 47, 0.58);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 28px;
+  overflow: hidden;
+}
+
+.consultatieModal {
+  width: 1080px;
+  max-width: 96vw;
+  height: 86vh;
+  background: #ffffff;
+  border-radius: 28px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 30px 90px rgba(19, 7, 47, 0.38);
+}
+
+.consultatieModalHeader {
+  flex-shrink: 0;
+  display: grid;
+  grid-template-columns: 46px 1fr 44px;
+  gap: 16px;
+  align-items: center;
+  padding: 24px 30px;
+  background: linear-gradient(135deg, #f4edff, #ffffff);
+  border-bottom: 1px solid #eadfff;
+}
+
+.consultatieModalIcon {
+  width: 46px;
+  height: 46px;
+  border-radius: 16px;
+  background: #f0e7ff;
+  color: #7c3aed;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+}
+
+.consultatieModalHeader h2 {
+  margin: 0;
+  color: #15072f;
+  font-size: 22px;
+  font-weight: 1000;
+}
+
+.consultatieModalHeader p {
+  margin: 5px 0 0;
+  color: #6b617f;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.closeConsultatieModalBtn {
+  width: 42px;
+  height: 42px;
+  border: none;
+  border-radius: 14px;
+  background: #f1e9ff;
+  color: #6d28d9;
+  font-size: 28px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.consultatieForm {
+  flex: 1;
+  overflow-y: auto;
+  padding: 26px 30px;
+}
+
+.consultatieSection {
+  padding-bottom: 24px;
+  margin-bottom: 24px;
+  border-bottom: 1px solid #eadfff;
+}
+
+.consultatieFormGrid {
+  display: grid;
+  gap: 16px;
+}
+
+.consultatieFormGrid.threeCols {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.consultatieFormGrid.twoCols {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.consultatieFormGrid label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  color: #2a1f3d;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.consultatieFormGrid input,
+.consultatieFormGrid select,
+.consultatieFormGrid textarea {
+  width: 100%;
+  border: 1px solid #dfd4f7;
+  border-radius: 15px;
+  padding: 0 15px;
+  outline: none;
+  background: #fbf9ff;
+  color: #14082f;
+  font-size: 14px;
+  font-weight: 700;
+  box-sizing: border-box;
+}
+
+.consultatieFormGrid input,
+.consultatieFormGrid select {
+  height: 50px;
+}
+
+.consultatieFormGrid textarea {
+  min-height: 110px;
+  padding-top: 14px;
+  resize: vertical;
+}
+
+.consultatieFormGrid input:focus,
+.consultatieFormGrid select:focus,
+.consultatieFormGrid textarea:focus {
+  background: #ffffff;
+  border-color: #8b5cf6;
+  box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.13);
+}
+
+.fullField {
+  grid-column: 1 / -1;
+}
+
+.consultatieModalActions {
+  flex-shrink: 0;
+  padding: 18px 30px;
+  background: #ffffff;
+  border-top: 1px solid #eadfff;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.consultatieModalActions button {
+  height: 46px;
+  border: none;
+  border-radius: 15px;
+  padding: 0 22px;
+  font-size: 14px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.consultatieModalActions button:first-child {
+  background: #f1ecff;
+  color: #4c1d95;
+}
+
+.consultatieModalActions button:last-child {
+  background: linear-gradient(135deg, #7c3aed, #6d28d9);
+  color: white;
+  box-shadow: 0 12px 24px rgba(109, 40, 217, 0.26);
+}
+
+.consultatieModalActions button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.consultatieForm::-webkit-scrollbar {
+  width: 10px;
+}
+
+.consultatieForm::-webkit-scrollbar-thumb {
+  background: #c4b5fd;
+  border-radius: 999px;
+}
+
+.consultatieForm::-webkit-scrollbar-track {
+  background: transparent;
+}
+.sectionTitle {
+  margin-bottom: 18px;
+}
+
+.sectionTitle h3 {
+  margin: 0;
+  color: #16072f;
+  font-size: 18px;
+  font-weight: 1000;
+}
+
+.sectionTitle p {
+  margin-top: 6px;
+  color: #6b617f;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.consultatieSection:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+.consultatieFormGrid textarea {
+  line-height: 1.5;
+}
+
+.consultatieFormGrid input[type="number"]::-webkit-inner-spin-button,
+.consultatieFormGrid input[type="number"]::-webkit-outer-spin-button {
+  opacity: 1;
+}
+
+.consultatieSection {
+  animation: fadeSection 0.25s ease;
+}
+
+@keyframes fadeSection {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

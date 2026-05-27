@@ -1,0 +1,166 @@
+@import "../../App.css";
+
+.alerte-content {
+  grid-template-columns: 1fr;
+  width: 100%;
+}
+
+.fullPanel {
+  width: 100%;
+  max-width: none;
+}
+
+.alerte-content .panel {
+  width: 100%;
+  background: #ffffff;
+  border: 1px solid rgba(109, 40, 217, 0.12);
+}
+
+.alerte-tools {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.alerte-search {
+  width: 560px;
+  height: 56px;
+  background: #ffffff;
+  border: 1px solid #eadfff;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  padding: 0 10px 0 18px;
+  box-shadow: 0 12px 28px rgba(83, 47, 147, 0.08);
+}
+
+.alerte-search span {
+  color: #64748b;
+  font-size: 22px;
+  margin-right: 12px;
+}
+
+.alerte-search input {
+  flex: 1;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: #13072f;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.alerte-search button,
+.filter-alert-btn {
+  height: 42px;
+  padding: 0 18px;
+  border-radius: 12px;
+  border: 1px solid #cdb8ff;
+  background: #f8f3ff;
+  color: #5b21b6;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.filter-alert-btn {
+  height: 56px;
+}
+
+.alerte-row {
+  grid-template-columns: 1.5fr 1.2fr 1fr 1fr 1fr 1.7fr;
+  width: 100%;
+  min-height: 82px;
+  background: #ffffff;
+  color: #1a093d;
+  font-weight: 900;
+  border: 1px solid #e5d8ff;
+  box-shadow: 0 10px 28px rgba(83, 47, 147, 0.06);
+  transition: 0.2s ease;
+}
+
+.alerte-row:hover {
+  background:#f5efff;
+  border-color:#c4b5fd;
+  transform: translateY(-1px);
+}
+
+.alertSeverity {
+  width: fit-content;
+  padding: 8px 14px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 1000;
+}
+.alertSeverity.CRITICAL {
+  background: #ffd1dc;
+  color: #be123c;
+  border: 1px solid #fb7185;
+}
+
+.alertSeverity.WARNING {
+  background: #ffe0a3;
+  color: #b45309;
+  border: 1px solid #fbbf24;
+}
+
+.alertSeverity.Info {
+  background: #e0e7ff;
+  color: #4338ca;
+  border: 1px solid #a5b4fc;
+}
+
+
+
+.alerteActions {
+  display: flex;
+  gap: 8px;
+}
+
+.alerteActions button {
+  border: none;
+  padding: 10px 13px;
+  border-radius: 13px;
+  font-weight: 1000;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.alerteActions button:nth-child(1) {
+  background: #6d28d9;
+  color: white;
+}
+
+.alerteActions button:nth-child(2) {
+  background: #10b981;
+  color: white;
+}
+
+.alerteActions button:nth-child(3) {
+  background: #e11d48;
+  color: white;
+}
+
+.alerteActions button:hover {
+  transform: translateY(-2px);
+  filter: brightness(0.96);
+}
+
+@media (max-width: 1200px) {
+  .alerte-row {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .alerte-tools {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .alerte-search {
+    width: 100%;
+  }
+
+  .alerteActions {
+    flex-wrap: wrap;
+  }
+}

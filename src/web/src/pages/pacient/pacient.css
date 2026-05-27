@@ -1,0 +1,500 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: "Inter", "Segoe UI", sans-serif;
+  background: #f6f3ff;
+  color: #16072f;
+}
+
+.patient-app {
+  min-height: 100vh;
+  display: flex;
+  background:
+    radial-gradient(circle at 82% 10%, rgba(124, 58, 237, 0.18), transparent 28%),
+    radial-gradient(circle at 45% 0%, rgba(196, 181, 253, 0.35), transparent 25%),
+    radial-gradient(circle at 78% 78%, rgba(167, 139, 250, 0.22), transparent 30%),
+    linear-gradient(135deg, #f5efff 0%, #eee4ff 45%, #f9f6ff 100%);
+  position: relative;
+  overflow-x: hidden;
+}
+
+.patient-sidebar {
+  width: 285px;
+  height: 100vh;
+  position: fixed;
+  left: 0;
+  top: 0;
+  padding: 32px 24px;
+  background: linear-gradient(180deg, #7c3aed, #8f33f2);
+  color: white;
+  border-radius: 0 28px 28px 0;
+  z-index: 5;
+}
+
+.patient-brand {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 45px;
+}
+
+.patient-logo {
+  width: 58px;
+  height: 58px;
+  border-radius: 18px;
+  background: white;
+  color: #6d28d9;
+  display: grid;
+  place-items: center;
+  font-size: 24px;
+  font-weight: 900;
+}
+
+.patient-brand h2 {
+  margin: 0;
+  font-size: 24px;
+}
+
+.patient-brand p {
+  margin: 4px 0 0;
+  color: #d8caff;
+  font-size: 14px;
+}
+
+.patient-sidebar nav {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.patient-sidebar nav a {
+  padding: 16px 18px;
+  border-radius: 16px;
+  color: white;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.patient-sidebar nav a.active,
+.patient-sidebar nav a:hover {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.patient-profile {
+  position: absolute;
+  left: 24px;
+  right: 24px;
+  bottom: 28px;
+  padding: 16px;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.16);
+  display: flex;
+  align-items: center;
+  gap: 13px;
+}
+
+.patient-profile div {
+  width: 50px;
+  height: 50px;
+  border-radius: 16px;
+  background: white;
+  color: #6d28d9;
+  display: grid;
+  place-items: center;
+  font-weight: 900;
+}
+
+.patient-profile span {
+  display: flex;
+  flex-direction: column;
+  font-size: 13px;
+  color: #ddd2ff;
+}
+
+.patient-profile b {
+  color: white;
+  font-size: 14px;
+}
+
+.patient-main {
+  margin-left: 285px;
+  width: calc(100% - 285px);
+  padding: 42px 48px;
+}
+
+.patient-hero {
+  min-height: 210px;
+  position: relative;
+  overflow: hidden;
+  border-radius: 34px;
+  padding: 38px;
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(18px);
+  box-shadow: 0 24px 70px rgba(83, 47, 147, 0.12);
+}
+
+.patient-heroText p {
+  margin: 0 0 12px;
+  color: #7c3aed;
+  font-weight: 900;
+}
+
+.patient-heroText h1 {
+  margin: 0;
+  font-size: 38px;
+}
+
+.patient-heroText span {
+  display: block;
+  margin-top: 14px;
+  color: #5d4d82;
+  font-size: 16px;
+  font-weight: 700;
+  max-width: 620px;
+}
+
+.patient-status-card {
+  position: absolute;
+  right: 38px;
+  top: 38px;
+  width: 260px;
+  padding: 24px;
+  border-radius: 26px;
+  background: white;
+  box-shadow: 0 18px 45px rgba(109, 40, 217, 0.13);
+}
+
+.patient-status-card p {
+  margin: 0;
+  color: #77669b;
+  font-weight: 900;
+}
+
+.patient-status-card h2 {
+  margin: 10px 0;
+  color: #10b981;
+  font-size: 32px;
+}
+
+.patient-status-card span {
+  color: #7d6d9e;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.patient-stats {
+  margin-top: 28px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 22px;
+}
+
+.patient-stat {
+  min-height: 150px;
+  background: rgba(255,255,255,0.9);
+  border-radius: 26px;
+  padding: 26px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  box-shadow: 0 18px 45px rgba(89, 56, 142, 0.1);
+}
+
+.patient-icon {
+  width: 62px;
+  height: 62px;
+  border-radius: 18px;
+  display: grid;
+  place-items: center;
+  color: white;
+  font-size: 26px;
+}
+
+.patient-icon.purple,
+.patient-icon.violet {
+  background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+}
+
+.patient-icon.green {
+  background: linear-gradient(135deg, #34d399, #10b981);
+}
+
+.patient-icon.pink {
+  background: linear-gradient(135deg, #fb7185, #e11d48);
+}
+
+.patient-stat p {
+  margin: 0;
+  color: #77669b;
+  font-weight: 900;
+}
+
+.patient-stat h2 {
+  margin: 8px 0;
+  font-size: 30px;
+}
+
+.patient-stat span {
+  color: #7d6d9e;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.patient-content {
+  margin-top: 26px;
+  display: grid;
+  grid-template-columns: 1.7fr 1fr;
+  gap: 24px;
+}
+
+.patient-panel {
+  background: rgba(255,255,255,0.92);
+  border-radius: 28px;
+  padding: 28px;
+  box-shadow: 0 18px 50px rgba(89, 56, 142, 0.09);
+}
+
+.patient-panelHead {
+  margin-bottom: 25px;
+}
+
+.patient-panelHead p {
+  margin: 0 0 7px;
+  color: #8b5cf6;
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: 0.8px;
+}
+
+.patient-panelHead h2 {
+  margin: 0;
+  font-size: 23px;
+}
+
+.recommendation {
+  padding: 18px 20px;
+  border-radius: 20px;
+  margin-bottom: 14px;
+  background: #f6f1ff;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-weight: 800;
+}
+
+.recommendation span {
+  color: #5b4b7d;
+  font-size: 14px;
+}
+
+.patient-right {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.patient-alert {
+  padding: 18px 20px;
+  border-radius: 20px;
+  margin-bottom: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-weight: 800;
+}
+
+.patient-alert span {
+  color: #5b4b7d;
+}
+
+.patient-alert.critical {
+  background: #fff0f5;
+  border: 1px solid #ffbdd2;
+}
+
+.patient-alert.warning {
+  background: #fff7e6;
+  border: 1px solid #ffd58a;
+}
+
+.patient-alert.info {
+  background: #f1edff;
+  border: 1px solid #d8cbff;
+}
+
+.dashboardRecommendations {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.dashboardRecommendationCard {
+  min-height: 96px;
+  padding: 18px 22px;
+  border-radius: 22px;
+  background: #faf7ff;
+  border: 1px solid #eadfff;
+
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  transition: 0.2s ease;
+}
+
+.dashboardRecommendationCard:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 28px rgba(83, 47, 147, 0.08);
+}
+
+.dashboardRecommendationLeft {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.dashboardRecommendationIcon {
+  width: 54px;
+  height: 54px;
+  border-radius: 18px;
+
+  background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  font-size: 24px;
+}
+
+.dashboardRecommendationIcon.warning {
+  background: linear-gradient(135deg, #f59e0b, #f97316);
+}
+
+.dashboardRecommendationLeft h3 {
+  margin: 0;
+  color: #16072f;
+  font-size: 17px;
+  font-weight: 1000;
+}
+
+.dashboardRecommendationLeft span {
+  display: block;
+  margin-top: 5px;
+
+  color: #7c6f96;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.dashboardRecommendationRight {
+  max-width: 280px;
+  text-align: right;
+}
+
+.dashboardRecommendationRight small {
+  display: block;
+  margin-bottom: 8px;
+
+  color: #8b5cf6;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.dashboardRecommendationRight p {
+  margin: 0;
+
+  color: #5f5478;
+  font-size: 13px;
+  line-height: 1.5;
+  font-weight: 700;
+}
+@import "../../App.css";
+
+.sidebar nav a {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.icon {
+  font-size: 15px;
+  font-weight: 1000;
+}
+
+.recommendationTable {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.recommendationHeader {
+  display: grid;
+  grid-template-columns: 1.8fr 0.8fr 0.8fr;
+  padding: 16px 20px;
+  border-radius: 18px;
+  background: #ede3ff;
+  color: #5b21b6;
+  font-size: 13px;
+  font-weight: 1000;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.recommendationRow {
+  display: grid;
+  grid-template-columns: 1.8fr 0.8fr 0.8fr;
+  align-items: center;
+  gap: 18px;
+  padding: 18px 20px;
+  border-radius: 20px;
+  background: #ffffff;
+  border: 1px solid #eadfff;
+  box-shadow: 0 10px 24px rgba(83, 47, 147, 0.05);
+}
+
+.recommendationRow b {
+  display: block;
+  margin-bottom: 7px;
+  color: #16072f;
+  font-size: 16px;
+  font-weight: 1000;
+}
+
+.recommendationRow small {
+  display: block;
+  color: #6b617f;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.recommendationRow span {
+  color: #4b3f66;
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.panelHead button {
+  border: 1px solid #d8caff;
+  background: #f6f1ff;
+  color: #6d28d9;
+  border-radius: 16px;
+  padding: 12px 18px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.panelHead button:hover {
+  background: #ede3ff;
+}
+
+@media (max-width: 1200px) {
+  .recommendationHeader,
+  .recommendationRow {
+    grid-template-columns: 1fr;
+  }
+}

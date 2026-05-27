@@ -1,0 +1,203 @@
+@import "../../App.css";
+
+.pacient-fisa-wrapper {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 26px;
+}
+
+.pacient-fisa-top-card {
+  min-height: 150px;
+  padding: 28px 34px;
+  border-radius: 28px;
+  background: rgba(255, 255, 255, 0.88);
+  border: 1px solid rgba(124, 58, 237, 0.12);
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  box-shadow: 0 18px 50px rgba(89, 56, 142, 0.09);
+}
+
+.pacient-fisa-avatar {
+  width: 82px;
+  height: 82px;
+  border-radius: 24px;
+  background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 34px;
+  font-weight: 1000;
+  flex-shrink: 0;
+}
+
+.pacient-fisa-title h1 {
+  margin: 0;
+  color: #16072f;
+  font-size: 28px;
+  font-weight: 1000;
+}
+
+.pacient-fisa-title p {
+  margin: 10px 0 0;
+  color: #66547f;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+
+.pacient-fisa-title span {
+  display: block;
+  margin-top: 10px;
+  color: #66547f;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.pacient-fisa-section {
+  padding: 30px;
+  border-radius: 30px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 18px 50px rgba(89, 56, 142, 0.09);
+  border: 1px solid rgba(124, 58, 237, 0.1);
+}
+
+.pacient-fisa-section h2 {
+  margin: 0 0 24px;
+  color: #16072f;
+  font-size: 24px;
+  font-weight: 1000;
+}
+
+.pacient-fisa-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+}
+
+.pacient-fisa-grid label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  color: #2a1f3d;
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.pacient-fisa-grid input,
+.pacient-fisa-grid textarea {
+  width: 100%;
+  border: 1px solid #dfd4f7;
+  border-radius: 16px;
+  background: #fbf9ff;
+  color: #16072f;
+  font-size: 15px;
+  font-weight: 800;
+  outline: none;
+}
+
+.pacient-fisa-grid input {
+  height: 52px;
+  padding: 0 16px;
+}
+
+.pacient-fisa-grid textarea {
+  min-height: 120px;
+  padding: 14px 16px;
+  resize: vertical;
+  line-height: 1.5;
+}
+
+.pacient-fisa-grid input:read-only,
+.pacient-fisa-grid textarea:read-only {
+  cursor: default;
+}
+
+.pacient-fisa-grid input:focus,
+.pacient-fisa-grid textarea:focus {
+  border-color: #8b5cf6;
+  box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.13);
+  background: white;
+}
+
+.wide {
+  grid-column: 1 / -1;
+}
+
+.sidebar nav a {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+@media (max-width: 1200px) {
+  .pacient-fisa-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .pacient-fisa-top-card {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+.pacient-recommendation-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.pacient-recommendation-item {
+  padding: 20px;
+  border-radius: 22px;
+  background: #faf7ff;
+  border: 1px solid #eadfff;
+  box-shadow: 0 12px 28px rgba(83, 47, 147, 0.06);
+}
+
+.pacient-recommendation-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.pacient-recommendation-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+  display: grid;
+  place-items: center;
+  font-size: 22px;
+}
+
+.pacient-recommendation-head h3 {
+  margin: 0;
+  color: #16072f;
+  font-size: 18px;
+  font-weight: 1000;
+}
+
+.pacient-recommendation-head span {
+  display: block;
+  margin-top: 4px;
+  color: #7c6f96;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.pacient-recommendation-item p {
+  margin: 0 0 8px;
+  color: #2a1f3d;
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.pacient-recommendation-item small {
+  color: #6b617f;
+  font-size: 14px;
+  line-height: 1.6;
+  font-weight: 700;
+}
