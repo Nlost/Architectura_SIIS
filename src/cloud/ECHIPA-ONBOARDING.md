@@ -42,14 +42,15 @@ O aplicație de teleasistență medicală cu 3 componente:
 
 ---
 
-## Ce este deja gata (infrastructura AWS)
+## Ce este deja gata
 
-Cloud a configurat tot ce ține de AWS:
+Cloud a configurat și deploiat tot:
 
 | Resursă | Ce este | Status |
 |---|---|---|
 | **RDS PostgreSQL** | Baza de date cu 21 tabele + date inițiale | ✅ Pornit |
-| **Elastic Beanstalk** | Serverul unde rulează backend-ul Spring Boot | ✅ Pornit |
+| **Backend Spring Boot** | API REST — deploiat pe Elastic Beanstalk, funcțional | ✅ Live |
+| **Autentificare JWT** | Login testat, token returnat corect | ✅ Funcțional |
 | **S3 Bucket** | Stocare rapoarte PDF | ✅ Configurat |
 | **SNS** | Trimitere alerte pe email / push | ✅ Configurat |
 | **CloudFront + S3** | Hosting site web la `seniorwatch.mardelean.com` | ✅ Activ |
@@ -61,78 +62,39 @@ Cloud a configurat tot ce ține de AWS:
 
 ## Pentru modulul Cloud (Spring Boot)
 
-### Ce ai disponibil
+**Backend-ul este deja deploiat și funcțional.** Codul sursă se află în `src/cloud/backend/`.
 
-Aplicația va rula pe **Elastic Beanstalk** la URL-ul:
+### URL backend live
 
 ```
 http://seniorwatch-dev.eba-g2g95ywt.eu-central-1.elasticbeanstalk.com
 ```
 
-Toate variabilele de configurare sunt **deja setate** în mediul EB. Spring Boot le citește automat:
+### Verificare rapidă
 
-| Variabilă | Valoare (deja setată în AWS) |
-|---|---|
-| `DB_HOST` | endpoint RDS |
-| `DB_PORT` | `5432` |
-| `DB_NAME` | `seniorwatch` |
-| `DB_USER` | `sw_app` |
-| `DB_PASSWORD` | setat |
-| `JWT_SECRET` | setat |
-| `AWS_REGION_APP` | `eu-central-1` |
-| `S3_REPORTS_BUCKET` | `seniorwatch-reports-31m9` |
-| `SNS_ALERTS_TOPIC_ARN` | ARN topic alertă |
-
-**Nu trebuie atinsă nicio configurație AWS.** `application.yml` citește aceste variabile automat.
-
-### Cum faci deploy
-
-**Opțiunea simplă — JAR:**
-1. `mvn package` → obții `target/seniorwatch-backend.jar`
-2. EB Console → `seniorwatch-dev` → Upload and deploy → selectezi JAR-ul
-
-**Opțiunea recomandată — Docker:**
-1. Există deja un `Dockerfile` în `src/cloud/`
-2. Build + push în ECR → EB face pull automat
-3. (Cloud poate configura GitHub Actions pentru deploy automat)
-
-### Ce trebuie implementat obligatoriu
-
-**1. CORS** — fără asta, modulul Web nu poate apela API-ul:
-
-```java
-@Configuration
-public class CorsConfig implements WebMvcConfigurer {
-    @Override
-    public void addCorsMappings(CorsRegistry registry) {
-        registry.addMapping("/api/**")
-            .allowedOrigins("https://seniorwatch.mardelean.com")
-            .allowedMethods("GET", "POST", "PUT", "DELETE")
-            .allowedHeaders("*");
-    }
-}
+```powershell
+# Login testat — returnează JWT token
+Invoke-RestMethod -Uri "http://seniorwatch-dev.eba-g2g95ywt.eu-central-1.elasticbeanstalk.com/api/auth/login" `
+  -Method POST -ContentType "application/json" `
+  -Body '{"email":"admin@seniorwatch.local","password":"Admin@SeniorWatch2026!"}'
 ```
 
-**2. Server port** — aplicația trebuie să asculte pe portul 8080:
+### Cum faci re-deploy (după modificări de cod)
 
-```yaml
-# application.yml — deja configurat dacă folosești variabila
-server:
-  port: ${SERVER_PORT:8080}
-```
+1. Build JAR (din `src/cloud/backend/`):
 
-**3. Schema DB** — tabelele sunt deja create. Nu rula `CREATE TABLE` din nou. Dacă folosești Flyway/Liquibase, setează `baseline-on-migrate: true`.
+   ```powershell
+   docker run --rm -v "${PWD}:/app" -w /app maven:3.9-eclipse-temurin-21 mvn clean package -DskipTests
+   ```
 
-### Endpoint-uri minime necesare
+2. Creare ZIP:
 
-```
-POST   /api/auth/login               → returnează JWT token
-GET    /api/patients                 → lista pacienți (doctor)
-GET    /api/patients/{id}            → detalii pacient
-POST   /api/measurements             → primește date senzori de la Embedded
-GET    /api/measurements/{patientId} → istoricul măsurătorilor
-POST   /api/alerts                   → alertă trimisă de Embedded
-```
+   ```powershell
+   cd target
+   Compress-Archive -Force -Path Dockerfile, seniorwatch-cloud.jar -DestinationPath seniorwatch-deploy.zip
+   ```
+
+3. EB Console → `seniorwatch-dev` → **Upload and deploy** → `seniorwatch-deploy.zip`
 
 ---
 
@@ -141,25 +103,52 @@ POST   /api/alerts                   → alertă trimisă de Embedded
 ### Ce ai disponibil
 
 - **Site-ul** rulează la `https://seniorwatch.mardelean.com` (CloudFront + S3)
+- **Backend API** rulează la `http://seniorwatch-dev.eba-g2g95ywt.eu-central-1.elasticbeanstalk.com`
 - **Deploy**: trimiți fișierele în S3 cu scriptul primit, CloudFront face distribuirea automat
 
-### Cum apelezi backend-ul
+### Credențiale de test (există în DB)
+
+| Email                     | Parolă                   | Rol   |
+|---------------------------|--------------------------|-------|
+| `admin@seniorwatch.local` | `Admin@SeniorWatch2026!` | ADMIN |
+
+> Dacă ai nevoie de conturi cu parole simple (ex. `1234`) pentru test, anunță modulul Cloud să le creeze.
+
+### Ce trebuie modificat în frontend
+
+Momentan login-ul din aplicație este hardcodat. Trebuie înlocuit cu apeluri reale la API:
+
+**1. Login — înlocuiește logica hardcodată:**
 
 ```javascript
 const API_BASE = 'http://seniorwatch-dev.eba-g2g95ywt.eu-central-1.elasticbeanstalk.com'
 
-// Login
-const response = await fetch(`${API_BASE}/api/auth/login`, {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ email: 'doctor@test.com', password: '...' })
-})
-const { token } = await response.json()
+async function login(email, password) {
+  const res = await fetch(`${API_BASE}/api/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password })
+  })
+  if (!res.ok) throw new Error('Credențiale invalide')
+  const { token } = await res.json()
+  localStorage.setItem('sw_token', token)
+}
+```
 
-// Orice alt request — trimiți token-ul
-const patients = await fetch(`${API_BASE}/api/patients`, {
-  headers: { 'Authorization': `Bearer ${token}` }
-})
+**2. Orice request după login — adaugă header Authorization:**
+
+```javascript
+async function apiFetch(path) {
+  const token = localStorage.getItem('sw_token')
+  const res = await fetch(`${API_BASE}${path}`, {
+    headers: { 'Authorization': `Bearer ${token}` }
+  })
+  return res.json()
+}
+
+// Exemple:
+const patients = await apiFetch('/api/patients')
+const details  = await apiFetch('/api/patients/123e4567-...')
 ```
 
 ### Flux de autentificare
@@ -167,14 +156,15 @@ const patients = await fetch(`${API_BASE}/api/patients`, {
 1. User introduce email + parolă pe site
 2. Site-ul face `POST /api/auth/login`
 3. Backend returnează un **JWT token**
-4. Site-ul salvează token-ul (localStorage sau cookie)
-5. Toate request-urile următoare includ `Authorization: Bearer <token>`
+4. Site-ul salvează token-ul în `localStorage`
+5. Toate request-urile ulterioare includ `Authorization: Bearer <token>`
+6. Token-ul expiră după 24 ore — redirecționează la login dacă primești 401
 
 ---
 
 ## Pentru modulul Embedded (Android)
 
-### URL backend
+### URL backend (live, funcțional)
 
 ```kotlin
 const val BASE_URL = "http://seniorwatch-dev.eba-g2g95ywt.eu-central-1.elasticbeanstalk.com"
@@ -243,19 +233,6 @@ Dacă lucrezi în afara acestui interval și ai nevoie de server:
 
 ---
 
-## Mediu local pentru backend (fără AWS)
-
-Dacă vrei să testezi fără să depinzi de AWS:
-
-```bash
-# Din src/cloud/
-cp .env.example .env
-# Editează .env cu valorile locale (DB locală, etc.)
-docker-compose up
-```
-
-Există un `docker-compose.yml` care pornește PostgreSQL local + aplicația Spring Boot.
-
 ---
 
 ## Întrebări frecvente
@@ -264,7 +241,7 @@ Există un `docker-compose.yml` care pornește PostgreSQL local + aplicația Spr
 A: Discută cu modulul Cloud înainte. Schema e în `src/cloud/database/schema.sql`. Modificările se aplică via migrări (Flyway), nu manual.
 
 **Q: Cum verific că backend-ul rulează corect pe EB?**  
-A: Accesează `http://<EB_URL>/actuator/health` — trebuie să returneze `{"status":"UP"}`.
+A: Accesează `http://seniorwatch-dev.eba-g2g95ywt.eu-central-1.elasticbeanstalk.com/api/actuator/health` — trebuie să returneze `{"status":"UP"}`.
 
 **Q: Site-ul web nu poate apela API-ul (eroare CORS)?**  
 A: Verifică că modulul Cloud a configurat CORS în Spring Boot să permită `https://seniorwatch.mardelean.com`.

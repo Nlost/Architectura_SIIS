@@ -42,7 +42,8 @@ RDS-ul este în subnets private — nu este accesibil direct din internet.
 **Schema:** 21 tabele — users, patients, demographics, medical_records, device_bindings, alarm_rules, clinical_visits, health_problems, allergies, medications, recommendations, measurement_batches, sensor_samples, accel_bursts, accel_samples, alert_events, audit_events, hl7_inbound_referrals, fhir_outbound_letters, permissions.
 
 **Date inițiale (seed):**
-- 1 user admin: `admin@seniorwatch.local` / rol `ADMIN`
+
+- 1 user admin: `admin@seniorwatch.local` / parolă: `Admin@SeniorWatch2026!` / rol `ADMIN` ✅ testat
 - 32 permisiuni pentru rolurile DOCTOR, PATIENT, ADMIN
 
 #### Cum te conectezi la RDS
@@ -68,6 +69,7 @@ psql -h seniorwatch-postgres.ckaqkenutyfa.eu-central-1.rds.amazonaws.com -U post
 | Platform | Docker / Amazon Linux 2023 |
 | Instance type | `t3.small` |
 | **URL** | `http://seniorwatch-dev.eba-g2g95ywt.eu-central-1.elasticbeanstalk.com` |
+| **Status backend** | ✅ Spring Boot 3.3.4 / Java 21 — deployed și funcțional (2026-06-01) |
 
 **Variabile de mediu configurate în EB** (Spring Boot le citește automat):
 
@@ -264,51 +266,42 @@ api.sendMeasurements(
 
 ## Deploy backend
 
-### Opțiunea 1 — JAR (simplu)
+### Metoda curentă — Docker ZIP (folosită la deploy inițial)
 
-```bash
-mvn package
-# Rezultat: target/seniorwatch-backend.jar
+Platforma EB este Docker — necesită un ZIP cu `Dockerfile` + JAR.
+
+**Pas 1 — build JAR** (fără Java/Maven local, folosind Docker):
+
+```powershell
+cd Architectura_SIIS/src/cloud/backend
+docker run --rm -v "${PWD}:/app" -w /app maven:3.9-eclipse-temurin-21 mvn clean package -DskipTests
 ```
 
-AWS Console → Elastic Beanstalk → `seniorwatch-dev` → **Upload and deploy** → selectezi JAR-ul.
+**Pas 2 — creare ZIP deploy:**
 
-### Opțiunea 2 — Docker (recomandat)
-
-```bash
-docker build -t seniorwatch-backend .
-docker tag seniorwatch-backend:latest <ECR_URL>/seniorwatch-backend:latest
-docker push <ECR_URL>/seniorwatch-backend:latest
+```powershell
+cd target
+# Dockerfile-ul este deja în target/
+Compress-Archive -Force -Path Dockerfile, seniorwatch-cloud.jar -DestinationPath seniorwatch-deploy.zip
 ```
 
-EB face pull automat la deploy.
+**Pas 3 — upload în EB:**
+
+AWS Console → Elastic Beanstalk → `seniorwatch-dev` → **Upload and deploy** → selectezi `seniorwatch-deploy.zip`.
 
 ### Verificare după deploy
 
 ```
-GET http://seniorwatch-dev.eba-g2g95ywt.eu-central-1.elasticbeanstalk.com/actuator/health
+GET http://seniorwatch-dev.eba-g2g95ywt.eu-central-1.elasticbeanstalk.com/api/actuator/health
 ```
 
 Răspuns așteptat: `{"status":"UP"}`
 
 ---
 
-## Mediu local (fără AWS)
-
-```bash
-cd src/cloud
-cp .env.example .env
-# Completează .env cu valorile locale
-docker-compose up
-```
-
-Pornește PostgreSQL local + aplicația Spring Boot. Util pentru development fără dependență de AWS.
-
----
-
 ## Note importante
 
-- **Schema DB nu se modifică manual** — folosește migrări Flyway/Liquibase. Dacă ai Flyway, setează `spring.flyway.baseline-on-migrate=true` (schema e deja creată).
-- **CORS obligatoriu** — backend-ul trebuie să permită request-uri de pe `https://seniorwatch.mardelean.com`.
-- **Nu commita `.env`** — conține parole. Fișierul e în `.gitignore`.
+- **Schema DB nu se modifică manual** — tabelele sunt deja create. `ddl-auto: none` în application.yml.
+- **CORS** — configurat în SecurityConfig pentru `https://seniorwatch.mardelean.com`.
 - **Credențialele AWS** — gestionate de modulul Cloud. Web și Embedded nu au nevoie de acces la AWS Console.
+- **Nu commita parole** — `.env` este în `.gitignore`.
