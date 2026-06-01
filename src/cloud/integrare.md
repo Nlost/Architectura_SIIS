@@ -164,6 +164,31 @@ const details  = await apiFetch('/api/patients/123e4567-...')
 
 ## Pentru modulul Embedded (Android)
 
+### Cum funcționează împreună cu Web
+
+Embedded și Web **nu comunică între ele** — amândoi vorbesc cu același backend:
+
+```
+ESP32 ──Bluetooth──► Android ──POST /api/measurements──► Backend ──► RDS
+                                                                       │
+                     Web browser ◄──GET /api/measurements ◄── Backend ┘
+```
+
+Android scrie date în baza de date → web citește automat aceleași date. Nu necesită nicio coordonare directă între module.
+
+### Dependință față de modulul Web
+
+> **Embedded are nevoie de `patientId`** — UUID-ul pacientului din baza de date.
+
+Acest UUID se obține după ce modulul Web creează pacienții prin `POST /api/patients`. **Ordinea de lucru:**
+
+1. Modulul Web creează un pacient în aplicație
+2. Backend-ul returnează `patientId` (UUID)
+3. Modulul Web comunică acel UUID echipei Embedded
+4. Android folosește `patientId` la trimiterea datelor
+
+Pentru testare, modulul Cloud poate crea pacienți direct în DB și comunica UUID-urile.
+
 ### URL backend (live, funcțional)
 
 ```kotlin
@@ -176,31 +201,66 @@ const val BASE_URL = "http://seniorwatch-dev.eba-g2g95ywt.eu-central-1.elasticbe
 1. Android face login → primește JWT token
 2. ESP32 trimite date prin Bluetooth la Android
 3. Android acumulează datele într-un batch
-4. La interval regulat: POST /api/measurements cu batch-ul + token JWT
+4. La interval regulat (ex. 30 sec): POST /api/measurements + token JWT
 5. Dacă valori anormale: POST /api/alerts → backend trimite SNS → notificare email/push
+```
+
+### Exemplu login
+
+```kotlin
+interface SeniorWatchApi {
+    @POST("/api/auth/login")
+    suspend fun login(@Body credentials: LoginRequest): LoginResponse
+}
+
+data class LoginRequest(val email: String, val password: String)
+data class LoginResponse(val token: String)
+
+// La pornirea aplicației:
+val response = api.login(LoginRequest("pacient@seniorwatch.local", "parola"))
+val jwtToken = response.token  // salvat în memorie, folosit la toate requesturile
 ```
 
 ### Exemplu trimitere date senzori
 
 ```kotlin
-// Retrofit
 @POST("/api/measurements")
 suspend fun sendMeasurements(
     @Header("Authorization") token: String,
     @Body batch: MeasurementBatch
 ): Response<Unit>
 
-// Apel
+// Apel la fiecare 30 secunde:
 api.sendMeasurements(
     token = "Bearer $jwtToken",
     batch = MeasurementBatch(
-        patientId = currentPatientId,
-        batchId = UUID.randomUUID().toString(), // idempotență
+        patientId = currentPatientId,       // UUID primit de la modulul Web
+        batchId = UUID.randomUUID().toString(), // unic per batch — evită duplicate la retry
         intervalStart = startTime,
         intervalEnd = endTime,
         samples = listOf(
             Sample(ts = now, puls = 72, temperatura = 36.5f)
         )
+    )
+)
+```
+
+### Exemplu trimitere alertă
+
+```kotlin
+@POST("/api/alerts")
+suspend fun sendAlert(
+    @Header("Authorization") token: String,
+    @Body alert: AlertRequest
+): Response<Unit>
+
+// Dacă puls > 120 sau temperatura > 38.5:
+api.sendAlert(
+    token = "Bearer $jwtToken",
+    alert = AlertRequest(
+        patientId = currentPatientId,
+        severitate = "WARNING",   // sau "CRITICAL"
+        textPacient = "Puls ridicat: 125 bpm"
     )
 )
 ```
@@ -227,9 +287,7 @@ api.sendMeasurements(
 
 Resursele **se opresc automat** în fiecare zi la **23:00** și repornesc la **09:00** (ora României, vară).
 
-Dacă lucrezi în afara acestui interval și ai nevoie de server:
-- Anunță modulul Cloud să pornească manual resursele
-- Sau lucrează pe mediu local cu Docker (vezi `docker-compose.yml` în `src/cloud/`)
+Dacă lucrezi în afara acestui interval și ai nevoie de server, anunță modulul Cloud să pornească manual resursele din AWS Console.
 
 ---
 
