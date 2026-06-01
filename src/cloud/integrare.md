@@ -160,6 +160,49 @@ const details  = await apiFetch('/api/patients/123e4567-...')
 5. Toate request-urile ulterioare includ `Authorization: Bearer <token>`
 6. Token-ul expiră după 24 ore — redirecționează la login dacă primești 401
 
+### Gestionarea utilizatorilor (din portal)
+
+Adminul poate crea conturi noi de doctori și pacienți **direct din aplicație**, fără acces la AWS.
+
+**Cont inițial (există în DB):**
+
+| Email                     | Parolă                   | Rol   |
+|---------------------------|--------------------------|-------|
+| `admin@seniorwatch.local` | `Admin@SeniorWatch2026!` | ADMIN |
+
+> Nu hardcoda credențialele în cod. Formularul de login trimite email + parolă la API.
+
+**Lista utilizatori — înlocuiește lista hardcodată:**
+
+```javascript
+// GET /api/users — doar pentru ADMIN
+const users = await apiFetch('/api/users')
+// Returnează: [{ id, email, role, active, createdAt }, ...]
+```
+
+**Creare user nou — înlocuiește `alert()` din `handleCreateUser()`:**
+
+```javascript
+async function handleCreateUser(formData) {
+  const res = await fetch(`${API_BASE}/api/users`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${localStorage.getItem('sw_token')}`
+    },
+    body: JSON.stringify({
+      email: formData.email,
+      password: formData.password,  // minim 8 caractere
+      role: formData.rol            // "ADMIN", "DOCTOR" sau "PATIENT"
+    })
+  })
+  if (!res.ok) throw new Error('Eroare la crearea userului')
+  return res.json()  // returnează userul creat cu id-ul lui
+}
+```
+
+> Endpoint-urile `/api/users` sunt protejate — funcționează **doar** cu token de ADMIN.
+
 ---
 
 ## Pentru modulul Embedded (Android)
