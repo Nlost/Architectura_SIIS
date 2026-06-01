@@ -36,6 +36,9 @@ private:
     const unsigned long FRAME_INTERVAL = 10000;   // 10 sec
     const unsigned long SAMPLE_INTERVAL = 1000;   // 1 sec
 
+    unsigned long lastEcgTime = 0;
+    const int ECG_INTERVAL = 5; // ms ~200 Hz
+
     SensorAggregator aggregator;
 
 };

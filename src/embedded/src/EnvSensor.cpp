@@ -22,17 +22,24 @@ EnvReading EnvSensor::readHumidityAndTemperature()
 {
     EnvReading r;
 
-    if (!initialized) {
+    if (!initialized)
+    {
         r.validReading = false;
         return r;
     }
 
     unsigned long now = millis();
 
+    // =========================
+    // DHT11 poate fi citit doar la 2 sec
+    // =========================
     if (now - lastReadTime < readIntervalMs)
     {
-        //  NU mai returna date vechi ca "adevărate"
-        r.validReading = false;
+        // returnăm ULTIMA valoare validă
+        r.tempCelsius = lastTemp;
+        r.humidityPct = lastHumidity;
+        r.validReading = lastValid;
+
         return r;
     }
 
@@ -43,11 +50,15 @@ EnvReading EnvSensor::readHumidityAndTemperature()
 
     if (isnan(humidity) || isnan(temperature))
     {
-        Serial.println("[EnvSensor] Read failed");
-        r.validReading = false;
+        // păstrăm ultima valoare bună
+        r.tempCelsius = lastTemp;
+        r.humidityPct = lastHumidity;
+        r.validReading = lastValid;
+
         return r;
     }
 
+    // salvăm noua valoare bună
     lastTemp = temperature;
     lastHumidity = humidity;
     lastValid = true;

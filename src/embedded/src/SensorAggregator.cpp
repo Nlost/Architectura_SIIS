@@ -12,9 +12,19 @@ void SensorAggregator::addSample(const SensorFrame& frame)
     if (index >= MAX_SAMPLES) return;
 
     hr[index] = frame.pulseOx.heartRateBpm;
-    spo2[index] = frame.pulseOx.spO2Percent;
-    temp[index] = frame.env.tempCelsius;
-    hum[index] = frame.env.humidityPct;
+
+    if (frame.env.validReading)
+    {
+        temp[index] = frame.env.tempCelsius;
+        hum[index] = frame.env.humidityPct;
+    }
+    else
+    {
+        temp[index] = 0;
+        hum[index] = 0;
+    }
+
+    
 
     index++;
 }
@@ -24,51 +34,62 @@ bool SensorAggregator::isReady()
     return (millis() - startTime >= 10000);
 }
 
-void SensorAggregator::computeAndSend()
+SensorFrame SensorAggregator::computeAverageFrame(uint32_t seq)
 {
-    float hrSum = 0, spo2Sum = 0, tempSum = 0, humSum = 0;
-    int hrCount = 0, spo2Count = 0, tempCount = 0, humCount = 0;
+    SensorFrame frame;
 
-    // ✔ calcul medii fără valori 0
-    for (int i = 0; i < index; i++)
+    float hrSum=0, tempSum=0, humSum=0;
+    int hrCount=0, tempCount=0, humCount=0;
+
+    for (int i=0;i<index;i++)
     {
-        if (hr[i] != 0) { hrSum += hr[i]; hrCount++; }
-        if (spo2[i] != 0) { spo2Sum += spo2[i]; spo2Count++; }
-        if (temp[i] != 0) { tempSum += temp[i]; tempCount++; }
-        if (hum[i] != 0) { humSum += hum[i]; humCount++; }
+        if (hr[i] > 30 && hr[i] < 220)
+        {
+            hrSum += hr[i];
+            hrCount++;
+        }
+
+        if (temp[i] > 0 && temp[i] < 60)
+        {
+            tempSum += temp[i];
+            tempCount++;
+        }
+
+        if (hum[i] >= 0 && hum[i] <= 100)
+        {
+            humSum += hum[i];
+            humCount++;
+        }
     }
 
-    float hrAvg = hrCount ? hrSum / hrCount : 0;
-    float spo2Avg = spo2Count ? spo2Sum / spo2Count : 0;
-    float tempAvg = tempCount ? tempSum / tempCount : 0;
-    float humAvg = humCount ? humSum / humCount : 0;
+    frame.pulseOx.heartRateBpm =
+        hrCount ? hrSum / hrCount : 0;
 
-    // =========================
-    // 🟢 SERIAL MONITOR OUTPUT
-    // =========================
-    Serial.println("\n========== 10s AGGREGATED FRAME ==========");
+    frame.env.tempCelsius =
+        tempCount ? tempSum / tempCount : 0;
 
-    Serial.print("HR avg: ");
-    Serial.println(hrAvg);
+    frame.env.humidityPct =
+        humCount ? humSum / humCount : 0;
 
-    Serial.print("SpO2 avg: ");
-    Serial.println(spo2Avg);
+    frame.env.validReading =
+        (tempCount > 0 && humCount > 0);
 
-    Serial.print("Temp avg: ");
-    Serial.println(tempAvg);
+    // 🔥 ECG OUTPUT
+    for (int i = 0; i < ecgIndex; i++)
+    {
+        frame.ecg.rawAdcValues[i] = ecgBuffer[i];
+    }
 
-    Serial.print("Humidity avg: ");
-    Serial.println(humAvg);
+    frame.ecg.sampleCount = ecgIndex;
 
-    Serial.println("ECG samples in this window:");
+    
 
-    // dacă ai ECG buffer separat îl afișezi aici
-    // (dacă nu, doar mesaj)
-    Serial.println("(ECG raw values handled separately)");
+    return frame;
+}
 
-    Serial.println("=========================================\n");
-
-    // ✔ reset buffer
+void SensorAggregator::reset()
+{
     index = 0;
+    ecgIndex = 0;
     startTime = millis();
 }

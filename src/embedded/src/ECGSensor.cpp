@@ -8,9 +8,11 @@ bool ECGSensor::init(uint8_t outputPin,
     loPlus = loPlusPin;
     loMinus = loMinusPin;
 
-    pinMode(ecgPin, INPUT);
     pinMode(loPlus, INPUT);
     pinMode(loMinus, INPUT);
+
+    analogReadResolution(12);
+    analogSetPinAttenuation(ecgPin, ADC_11db);
 
     Serial.println("[ECGSensor] Init OK");
 
@@ -26,21 +28,51 @@ EcgSample ECGSensor::readSample()
     s.sampleCount = 0;
 
     bool leadOff =
-        digitalRead(loPlus) == HIGH ||
-        digitalRead(loMinus) == HIGH;
+        digitalRead(loPlus) == LOW ||
+        digitalRead(loMinus) == LOW;
 
     s.leadOff = leadOff;
 
-    if (leadOff || !initialized) {
+    if (leadOff || !initialized)
         return s;
-    }
 
-    // colectăm 50 de eșantioane rapide
-    for (int i = 0; i < 50; i++) {
-        s.rawAdcValues[i] = analogRead(ecgPin);
-        delayMicroseconds(1000); // ~1ms sampling
-        s.sampleCount++;
-    }
+    uint32_t t0 = micros();
+
+    for (int i = 0; i < 50; i++)
+{
+    int raw = analogRead(ecgPin);
+
+    // =========================
+    // 1. OFFSET NORMALIZATION
+    // =========================
+    raw = raw - 2048;   // center around 0
+    raw = raw + 2048;   // bring back to ADC range
+
+    // =========================
+    // 2. CLAMP (anti saturation spikes)
+    // =========================
+    if (raw > 3900) raw = 3900;
+    if (raw < 100) raw = 100;
+
+    // =========================
+    // 3. SMOOTH FILTER (low-pass)
+    // =========================
+    static float filtered = 0;
+    filtered = 0.9f * filtered + 0.1f * raw;
+
+    raw = (int)filtered;
+
+    // =========================
+    // STORE VALUE
+    // =========================
+    s.rawAdcValues[i] = raw;
+
+    Serial.println(raw);
+
+    delayMicroseconds(1000);
+
+    s.sampleCount++;
+}
 
     return s;
 }

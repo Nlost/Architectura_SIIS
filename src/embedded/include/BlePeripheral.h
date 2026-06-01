@@ -32,6 +32,14 @@ public:
         const SensorFrame& frame
     );
 
+    bool sendEcgStream(uint16_t value);
+
+    bool sendEcgBatch(const EcgSample& s);
+
+    bool sendEcgStart();
+    bool sendEcgValue(uint16_t value);
+    bool sendEcgEnd();
+
     void onClientConnected(
         ConnectCallback cb
     );
@@ -51,6 +59,12 @@ public:
     DisconnectCallback disconnectCallback = nullptr;
 
     static BlePeripheral* instance;
+
+    BLECharacteristic* ecgCharacteristic;
+
+
+
+
 };
 
 #endif

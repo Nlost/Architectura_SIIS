@@ -62,39 +62,61 @@ void FirmwareMainLoop::loop()
 
         SensorFrame frame = runMeasurementCycle();
 
+        if (!frame.ecg.leadOff && frame.ecg.sampleCount > 0)
+        {
+            ble.sendEcgStart();
+
+            for (int i = 0; i < frame.ecg.sampleCount; i++)
+            {
+                ble.sendEcgValue(frame.ecg.rawAdcValues[i]);
+            }
+
+        ble.sendEcgEnd();
+
+        Serial.println("[ECG STREAM SENT]");
+    }
+
+
         aggregator.addSample(frame);
 
         // LIVE DEBUG (opțional)
         Serial.print("[LIVE] HR: ");
         Serial.print(frame.pulseOx.heartRateBpm);
 
-        Serial.print(" | SpO2: ");
-        Serial.print(frame.pulseOx.spO2Percent);
+        
 
         Serial.print(" | T: ");
         Serial.print(frame.env.tempCelsius);
 
         Serial.print(" | H: ");
         Serial.println(frame.env.humidityPct);
+
+        Serial.print("ECG count: ");
+        Serial.println(frame.ecg.sampleCount);
     }
 
     // =========================
     // 🟢 2. FINAL LA 10 SEC
     // =========================
     if (now - lastFrameTime >= FRAME_INTERVAL)
-    {
-        lastFrameTime = now;
+{
+    lastFrameTime = now;
 
-        aggregator.computeAndSend();
+    SensorFrame avg =
+        aggregator.computeAverageFrame(seq++);
 
-        SensorFrame frame = runMeasurementCycle();
-        ble.sendFrameNotification(frame);
+    ble.sendFrameNotification(avg);
 
-        Serial.println("=== DATA SENT VIA BLE ===");
+    aggregator.reset();   // 🔥 AICI ESTE CORECT
 
-        Serial.print("SEQ FINAL: ");
-        Serial.println(frame.seqNumber);
-    }
+    Serial.println("=== DATA SENT VIA BLE (AVERAGE) ===");
+
+    Serial.print("SEQ FINAL: ");
+    Serial.println(avg.seqNumber);
+}
+
+
+
 
     // ❌ scoate sleep-ul agresiv
     delay(10);

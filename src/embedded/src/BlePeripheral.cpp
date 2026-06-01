@@ -76,6 +76,14 @@ void BlePeripheral::startBlePeripheral(
         new BLE2902()
     );
 
+    ecgCharacteristic =
+    service->createCharacteristic(
+        "0000FF03-0000-1000-8000-00805F9B34FB",
+        BLECharacteristic::PROPERTY_NOTIFY
+    );
+
+ecgCharacteristic->addDescriptor(new BLE2902());
+
     service->start();
 
     BLEAdvertising* advertising =
@@ -94,47 +102,92 @@ BlePeripheral::getConnectionState()
     return connectionState;
 }
 
-bool BlePeripheral::sendFrameNotification(
-    const SensorFrame& frame
-)
+bool BlePeripheral::sendFrameNotification(const SensorFrame& frame)
 {
     Serial.println("[BLE] Trying to send frame...");
 
-    if (connectionState !=
-        BleConnectionState::CONNECTED)
-    {
+    if (connectionState != BleConnectionState::CONNECTED)
         return false;
-    }
 
-    // =========================
-    // Construire mesaj text
-    // FORMAT:
-    // puls;temperatura;umiditate;ecgStatus
-    // =========================
+    char buffer[80];
 
-    String ecgStatus = "Normal";
-
-    String message =
-        String((int)frame.pulseOx.heartRateBpm) + ";" +
-        String(frame.env.tempCelsius, 1) + ";" +
-        String(frame.env.humidityPct, 1) + ";" +
-        ecgStatus;
-
-    // DEBUG SERIAL
-    Serial.print("[BLE] TEXT SENT: ");
-    Serial.println(message);
-
-    // Trimite TEXT prin BLE
-    txCharacteristic->setValue(
-        message.c_str()
+    snprintf(buffer, sizeof(buffer),
+        "%d;%.1f;%.1f",
+        (int)frame.pulseOx.heartRateBpm,
+        frame.env.tempCelsius,
+        frame.env.humidityPct
     );
 
+    Serial.print("[BLE] TEXT SENT: ");
+    Serial.println(buffer);
+
+    txCharacteristic->setValue((uint8_t*)buffer, strlen(buffer));
     txCharacteristic->notify();
 
     Serial.println("[BLE] Text notification sent");
 
     return true;
 }
+
+bool BlePeripheral::sendEcgStream(uint16_t value)
+{
+    if (connectionState != BleConnectionState::CONNECTED)
+        return false;
+
+    char buf[16];
+
+    snprintf(buf, sizeof(buf), "%u", value);
+
+    Serial.print("[ECG BLE] ");
+    Serial.println(buf);   // 🔥 DEBUG IMPORTANT
+
+    ecgCharacteristic->setValue((uint8_t*)buf, strlen(buf));
+    ecgCharacteristic->notify();
+
+    return true;
+}
+
+bool BlePeripheral::sendEcgStart()
+{
+    if (connectionState != BleConnectionState::CONNECTED)
+        return false;
+
+    ecgCharacteristic->setValue("S");
+    ecgCharacteristic->notify();
+
+    delay(30);
+    return true;
+}
+
+bool BlePeripheral::sendEcgValue(uint16_t value)
+{
+    if (connectionState != BleConnectionState::CONNECTED)
+        return false;
+
+    char buf[16];
+    snprintf(buf, sizeof(buf), "%u", value);
+
+    ecgCharacteristic->setValue(buf);
+    ecgCharacteristic->notify();
+
+    delay(20);
+    return true;
+}
+
+bool BlePeripheral::sendEcgEnd()
+{
+    if (connectionState != BleConnectionState::CONNECTED)
+        return false;
+
+    ecgCharacteristic->setValue("E");
+    ecgCharacteristic->notify();
+
+    delay(30);
+
+    return true;
+}
+
+
 void BlePeripheral::onClientConnected(
     ConnectCallback cb
 )
