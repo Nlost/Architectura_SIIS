@@ -18,12 +18,19 @@ public:
 
     EcgSample readSample();
 
+    // Fast single-sample path for continuous streaming
+    uint16_t readRaw();
+    bool isLeadOff();
+
 private:
     uint8_t ecgPin;
     uint8_t loPlus;
     uint8_t loMinus;
 
     bool initialized = false;
+
+    // Retained low-pass filter state across single-sample reads
+    float filtered = 0.0f;
 };
 
 #endif

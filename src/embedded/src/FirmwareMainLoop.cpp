@@ -54,6 +54,21 @@ void FirmwareMainLoop::loop()
     unsigned long now = millis();
 
     // =========================
+    // 🟢 0. ECG STREAM CONTINUU (~200 Hz)
+    // =========================
+    // Trimite un eșantion ECG la fiecare ECG_INTERVAL ms, fără
+    // blocare, ca să nu mai depindă de ciclul de 1 secundă.
+    if (now - lastEcgTime >= (unsigned long)ECG_INTERVAL)
+    {
+        lastEcgTime = now;
+
+        if (!ecg.isLeadOff())
+        {
+            ble.sendEcgStream(ecg.readRaw());
+        }
+    }
+
+    // =========================
     // 🟢 1. COLECTARE LA 1 SEC
     // =========================
     if (now - lastSampleTime >= SAMPLE_INTERVAL)
@@ -61,21 +76,6 @@ void FirmwareMainLoop::loop()
         lastSampleTime = now;
 
         SensorFrame frame = runMeasurementCycle();
-
-        if (!frame.ecg.leadOff && frame.ecg.sampleCount > 0)
-        {
-            ble.sendEcgStart();
-
-            for (int i = 0; i < frame.ecg.sampleCount; i++)
-            {
-                ble.sendEcgValue(frame.ecg.rawAdcValues[i]);
-            }
-
-        ble.sendEcgEnd();
-
-        Serial.println("[ECG STREAM SENT]");
-    }
-
 
         aggregator.addSample(frame);
 
@@ -118,6 +118,7 @@ void FirmwareMainLoop::loop()
 
 
 
-    // ❌ scoate sleep-ul agresiv
-    delay(10);
+    // Loop rapid: ECG_INTERVAL este 5 ms (~200 Hz), deci nu putem
+    // bloca 10 ms aici sau am rata eșantioanele ECG.
+    delay(1);
 }

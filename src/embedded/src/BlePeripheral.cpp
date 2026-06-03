@@ -138,9 +138,8 @@ bool BlePeripheral::sendEcgStream(uint16_t value)
 
     snprintf(buf, sizeof(buf), "%u", value);
 
-    Serial.print("[ECG BLE] ");
-    Serial.println(buf);   // 🔥 DEBUG IMPORTANT
-
+    // No Serial print and no delay here: this runs at ~200 Hz,
+    // so any blocking/logging would throttle the stream.
     ecgCharacteristic->setValue((uint8_t*)buf, strlen(buf));
     ecgCharacteristic->notify();
 
