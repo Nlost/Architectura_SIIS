@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Backend-ul ruleaza pe http:// (nu https), iar Android 9+ blocheaza cleartext
+    by default. Acest fisier permite HTTP DOAR catre domeniul Elastic Beanstalk,
+    restul ramane securizat.
+
+    Pune-l in: app/src/main/res/xml/network_security_config.xml
+    si refera-l in AndroidManifest.xml (vezi instructiunile din chat).
+-->
+<network-security-config>
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">eba-g2g95ywt.eu-central-1.elasticbeanstalk.com</domain>
+    </domain-config>
+</network-security-config>

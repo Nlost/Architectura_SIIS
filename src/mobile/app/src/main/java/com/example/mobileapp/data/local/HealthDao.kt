@@ -42,4 +42,31 @@ interface HealthDao {
 
     @Query("DELETE FROM alerts")
     suspend fun clearAlerts()
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // SINCRONIZARE CLOUD — folosite de CloudSyncRepository
+    // ─────────────────────────────────────────────────────────────────────────
+
+    @Query("SELECT * FROM sensor_measurements WHERE synced = 0 ORDER BY id ASC")
+    suspend fun getUnsyncedMeasurements(): List<SensorMeasurementEntity>
+
+    @Query("UPDATE sensor_measurements SET synced = 1 WHERE id IN (:ids)")
+    suspend fun markMeasurementsSynced(ids: List<Int>)
+
+    @Query("SELECT * FROM alerts WHERE synced = 0 ORDER BY id ASC")
+    suspend fun getUnsyncedAlerts(): List<AlertEntity>
+
+    @Query("UPDATE alerts SET synced = 1 WHERE id IN (:ids)")
+    suspend fun markAlertsSynced(ids: List<Int>)
+
+    // ── Burst accelerometru (cerinta g, offline) ──────────────────────────────
+
+    @Insert
+    suspend fun insertAccelBurst(burst: AccelBurstEntity)
+
+    @Query("SELECT * FROM accel_bursts WHERE synced = 0 ORDER BY id ASC")
+    suspend fun getUnsyncedAccelBursts(): List<AccelBurstEntity>
+
+    @Query("UPDATE accel_bursts SET synced = 1 WHERE id IN (:ids)")
+    suspend fun markAccelBurstsSynced(ids: List<Int>)
 }
