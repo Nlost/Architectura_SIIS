@@ -2,6 +2,8 @@ package ro.seniorwatch.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.JdbcType;
+import org.hibernate.dialect.PostgreSQLEnumJdbcType;
 import ro.seniorwatch.entity.enums.UserRole;
 
 import java.time.OffsetDateTime;
@@ -26,6 +28,7 @@ public class User {
     private String passwordHash;
 
     @Enumerated(EnumType.STRING)
+    @JdbcType(PostgreSQLEnumJdbcType.class)
     @Column(nullable = false, columnDefinition = "user_role")
     private UserRole role;
 

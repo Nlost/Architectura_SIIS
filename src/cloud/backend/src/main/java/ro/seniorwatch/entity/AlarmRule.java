@@ -2,6 +2,8 @@ package ro.seniorwatch.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.JdbcType;
+import org.hibernate.dialect.PostgreSQLEnumJdbcType;
 import ro.seniorwatch.entity.enums.HealthItemStatus;
 import ro.seniorwatch.entity.enums.SensorParameter;
 
@@ -26,6 +28,7 @@ public class AlarmRule {
     private Patient patient;
 
     @Enumerated(EnumType.STRING)
+    @JdbcType(PostgreSQLEnumJdbcType.class)
     @Column(nullable = false, columnDefinition = "sensor_parameter")
     private SensorParameter parametru;
 
@@ -64,6 +67,7 @@ public class AlarmRule {
     private User responsiblePerson;
 
     @Enumerated(EnumType.STRING)
+    @JdbcType(PostgreSQLEnumJdbcType.class)
     @Column(nullable = false, columnDefinition = "health_item_status")
     @Builder.Default
     private HealthItemStatus status = HealthItemStatus.ACTIVE;

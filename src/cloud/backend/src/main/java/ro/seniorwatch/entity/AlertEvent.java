@@ -2,6 +2,8 @@ package ro.seniorwatch.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.JdbcType;
+import org.hibernate.dialect.PostgreSQLEnumJdbcType;
 import ro.seniorwatch.entity.enums.AlertSeverity;
 
 import java.time.OffsetDateTime;
@@ -30,6 +32,7 @@ public class AlertEvent {
     private OffsetDateTime triggeredAt;
 
     @Enumerated(EnumType.STRING)
+    @JdbcType(PostgreSQLEnumJdbcType.class)
     @Column(nullable = false, columnDefinition = "alert_severity")
     private AlertSeverity severitate;
 
