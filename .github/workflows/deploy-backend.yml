@@ -6,6 +6,13 @@ on:
     paths:
       - 'src/cloud/backend/**'
 
+env:
+  AWS_REGION:   eu-central-1
+  ECR_REPO:     096506568929.dkr.ecr.eu-central-1.amazonaws.com/seniorwatch-backend
+  EB_APP_NAME:  seniorwatch-cloud
+  EB_ENV_NAME:  seniorwatch-dev
+  S3_BUCKET:    seniorwatch-reports-31m9
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -24,34 +31,74 @@ jobs:
         run: mvn clean package -DskipTests
         working-directory: src/cloud/backend
 
-      - name: Create deploy ZIP
-        run: |
-          cd src/cloud/backend
-          cp Dockerfile target/Dockerfile
-          cd target
-          zip seniorwatch-deploy.zip Dockerfile seniorwatch-cloud.jar
-
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: eu-central-1
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Create ECR repository (if not exists)
+        run: |
+          aws ecr describe-repositories --repository-names seniorwatch-backend 2>/dev/null || \
+          aws ecr create-repository --repository-name seniorwatch-backend
+
+      - name: Login to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build & push Docker image to ECR
+        run: |
+          IMAGE_TAG="${{ github.sha }}"
+          docker build -t $ECR_REPO:$IMAGE_TAG -t $ECR_REPO:latest \
+            -f src/cloud/backend/Dockerfile src/cloud/backend/
+          docker push $ECR_REPO:$IMAGE_TAG
+          docker push $ECR_REPO:latest
+
+      - name: Create Dockerrun.aws.json
+        run: |
+          cat > Dockerrun.aws.json <<EOF
+          {
+            "AWSEBDockerrunVersion": "1",
+            "Image": {
+              "Name": "$ECR_REPO:${{ github.sha }}",
+              "Update": "true"
+            },
+            "Ports": [{ "ContainerPort": 8080, "HostPort": 8080 }],
+            "Logging": "/var/log/app"
+          }
+          EOF
+          zip seniorwatch-deploy.zip Dockerrun.aws.json
 
       - name: Upload ZIP to S3
         run: |
-          aws s3 cp src/cloud/backend/target/seniorwatch-deploy.zip \
-            s3://seniorwatch-reports-31m9/deploys/seniorwatch-${{ github.sha }}.zip
+          aws s3 cp seniorwatch-deploy.zip \
+            s3://$S3_BUCKET/deploys/seniorwatch-${{ github.sha }}.zip
 
       - name: Create EB application version
         run: |
           aws elasticbeanstalk create-application-version \
-            --application-name seniorwatch-cloud \
+            --application-name $EB_APP_NAME \
             --version-label "gh-${{ github.sha }}" \
-            --source-bundle S3Bucket=seniorwatch-reports-31m9,S3Key=deploys/seniorwatch-${{ github.sha }}.zip
+            --source-bundle S3Bucket=$S3_BUCKET,S3Key=deploys/seniorwatch-${{ github.sha }}.zip
 
       - name: Deploy to Elastic Beanstalk
         run: |
           aws elasticbeanstalk update-environment \
-            --environment-name seniorwatch-dev \
+            --environment-name $EB_ENV_NAME \
             --version-label "gh-${{ github.sha }}"
+
+      - name: Wait for deployment
+        run: |
+          echo "Astept finalizarea deploy-ului (max 10 minute)..."
+          aws elasticbeanstalk wait environment-updated \
+            --application-name $EB_APP_NAME \
+            --environment-names $EB_ENV_NAME || true
+          STATUS=$(aws elasticbeanstalk describe-environments \
+            --application-name $EB_APP_NAME \
+            --environment-names $EB_ENV_NAME \
+            --query "Environments[0].Health" --output text)
+          echo "Stare EB dupa deploy: $STATUS"
+          if [ "$STATUS" != "Green" ] && [ "$STATUS" != "Ok" ]; then
+            echo "Deploy esuat!"
+            exit 1
+          fi
