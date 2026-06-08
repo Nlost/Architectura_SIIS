@@ -1,3 +1,4 @@
+# SeniorWatch Cloud Backend
 FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
 COPY seniorwatch-cloud.jar app.jar
