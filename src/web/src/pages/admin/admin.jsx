@@ -1,116 +1,101 @@
 import { useState } from "react";
 import "./admin.css";
 import { useNavigate } from "react-router-dom";
+import { createUser } from "../../api";
 
 function AdminDashboard() {
+  const navigate = useNavigate();
   const [showCreateUser, setShowCreateUser] = useState(false);
 
   const [formData, setFormData] = useState({
     nume: "",
     prenume: "",
-    email: "",
     rol: "",
-    status: "Activ",
-    telefon: "",
-    departament: "",
-    observatii: "",
-    permissions: {
-      READ: true,
-      WRITE: false,
-      DELETE: false,
-      EXPORT: false,
-    },
   });
 
   const [errors, setErrors] = useState({});
-const navigate = useNavigate();
-  const handleChange = (e) => {
-    const { name, value } = e.target;
 
-    if (name === "telefon") {
-      const onlyNumbers = value.replace(/\D/g, "").slice(0, 10);
-      setFormData({ ...formData, telefon: onlyNumbers });
-      return;
-    }
-
-    setFormData({ ...formData, [name]: value });
+  const normalizeText = (text) => {
+    return text
+      .toLowerCase()
+      .trim()
+      .replace(/\s+/g, "")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "");
   };
 
-  const handlePermissionChange = (permission) => {
-    setFormData({
-      ...formData,
-      permissions: {
-        ...formData.permissions,
-        [permission]: !formData.permissions[permission],
-      },
-    });
+  const generateEmail = () => {
+    return `${normalizeText(formData.prenume)}.${normalizeText(
+      formData.nume
+    )}@seniorwatch.com`;
   };
+
+ const generatePassword = () => {
+  return "Senior123!";
+};
 
   const validateForm = () => {
     const newErrors = {};
 
-    if (!formData.nume.trim()) newErrors.nume = "Numele este obligatoriu";
-    if (!formData.prenume.trim()) newErrors.prenume = "Prenumele este obligatoriu";
-
-    if (!formData.email.trim()) {
-      newErrors.email = "Emailul este obligatoriu";
-    } else if (!formData.email.includes("@")) {
-      newErrors.email = "Emailul trebuie să conțină @";
+    if (!formData.nume.trim()) {
+      newErrors.nume = "Numele este obligatoriu";
     }
 
-    if (!formData.rol) newErrors.rol = "Rolul este obligatoriu";
-    if (!formData.status) newErrors.status = "Statusul este obligatoriu";
-
-    if (!formData.telefon.trim()) {
-      newErrors.telefon = "Telefonul este obligatoriu";
-    } else if (formData.telefon.length !== 10) {
-      newErrors.telefon = "Telefonul trebuie să aibă exact 10 cifre";
+    if (!formData.prenume.trim()) {
+      newErrors.prenume = "Prenumele este obligatoriu";
     }
 
-    if (!formData.departament.trim()) {
-      newErrors.departament = "Departamentul este obligatoriu";
-    }
-
-    if (!formData.observatii.trim()) {
-      newErrors.observatii = "Observațiile sunt obligatorii";
-    }
-
-    const hasPermission = Object.values(formData.permissions).some(Boolean);
-
-    if (!hasPermission) {
-      newErrors.permissions = "Selectează cel puțin o permisiune";
+    if (!formData.rol) {
+      newErrors.rol = "Rolul este obligatoriu";
     }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleCreateUser = () => {
-    if (!validateForm()) return;
-
-    alert("Utilizator creat cu succes!");
-
-    setShowCreateUser(false);
+  const handleChange = (e) => {
+    const { name, value } = e.target;
 
     setFormData({
-      nume: "",
-      prenume: "",
-      email: "",
-      rol: "",
-      status: "Activ",
-      telefon: "",
-      departament: "",
-      observatii: "",
-      permissions: {
-        READ: true,
-        WRITE: false,
-        DELETE: false,
-        EXPORT: false,
-      },
+      ...formData,
+      [name]: value,
     });
-
-    setErrors({});
   };
+
+  const handleCreateUser = async () => {
+    if (!validateForm()) return;
+
+    const email = generateEmail();
+    const password = generatePassword();
+
+    try {console.log("Date trimise:", {
+  email,
+  password,
+  role: formData.rol,
+});
+      await createUser(email, password, formData.rol);
+
+      alert(
+        `Utilizator creat cu succes!\n\nEmail: ${email}\nParolă: ${password}`
+      );
+
+      setShowCreateUser(false);
+
+      setFormData({
+        nume: "",
+        prenume: "",
+        rol: "",
+      });
+
+      setErrors({});
+    } catch (error) {
+      console.log(error);
+      alert("Eroare la crearea utilizatorului.");
+    }
+  };
+
+  const formIsValid =
+    formData.nume.trim() && formData.prenume.trim() && formData.rol;
 
   return (
     <div className="admin-app">
@@ -124,28 +109,28 @@ const navigate = useNavigate();
           </div>
         </div>
 
-      <nav>
-  <a className="active">📊 Dashboard</a>
-<a onClick={() => navigate("/admin/adminutilizatori")}>
-  👥 Utilizatori
-</a> 
-<a onClick={() => navigate("/admin/roluri")}>
-  🛡️ Roluri
-</a>
-<a onClick={() => navigate("/admin/adminaudit")}>
-  📝 Audit
-</a>
-  <a onClick={() => navigate("/admin/adminstatus")}>
-  🟢 Status sistem
-</a>
-</nav>
+        <nav>
+          <a className="active">📊 Dashboard</a>
+
+          <a onClick={() => navigate("/admin/adminutilizatori")}>
+            👥 Utilizatori
+          </a>
+
+          <a onClick={() => navigate("/admin/adminroluri")}>🛡️ Roluri</a>
+
+          <a onClick={() => navigate("/admin/adminaudit")}>📝 Audit</a>
+
+          <a onClick={() => navigate("/admin/adminstatus")}>
+            🟢 Status sistem
+          </a>
+        </nav>
 
         <div className="admin-profile">
           <div>A</div>
 
           <span>
             <b>Administrator</b>
-            admin@clinic.ro
+            {localStorage.getItem("sw_email") || "admin@seniorwatch.com"}
           </span>
         </div>
       </aside>
@@ -288,7 +273,10 @@ const navigate = useNavigate();
 
                 <div>
                   <h2>Utilizator nou</h2>
-                  <p>Completează datele utilizatorului pentru platformă.</p>
+                  <p>
+                    Completează numele, prenumele și rolul. Emailul și parola
+                    se generează automat.
+                  </p>
                 </div>
               </div>
 
@@ -314,7 +302,9 @@ const navigate = useNavigate();
                       value={formData.nume}
                       onChange={handleChange}
                     />
-                    {errors.nume && <span className="admin-error">{errors.nume}</span>}
+                    {errors.nume && (
+                      <span className="admin-error">{errors.nume}</span>
+                    )}
                   </div>
 
                   <div className="admin-field">
@@ -326,19 +316,22 @@ const navigate = useNavigate();
                       value={formData.prenume}
                       onChange={handleChange}
                     />
-                    {errors.prenume && <span className="admin-error">{errors.prenume}</span>}
+                    {errors.prenume && (
+                      <span className="admin-error">{errors.prenume}</span>
+                    )}
                   </div>
 
                   <div className="admin-field">
-                    <label>Email *</label>
+                    <label>Email generat</label>
                     <input
-                      name="email"
-                      type="email"
-                      placeholder="exemplu@email.ro"
-                      value={formData.email}
-                      onChange={handleChange}
+                      type="text"
+                      value={
+                        formData.nume.trim() && formData.prenume.trim()
+                          ? generateEmail()
+                          : "Se generează automat"
+                      }
+                      readOnly
                     />
-                    {errors.email && <span className="admin-error">{errors.email}</span>}
                   </div>
 
                   <div className="admin-field">
@@ -351,115 +344,19 @@ const navigate = useNavigate();
                       <option value="DOCTOR">Medic</option>
                       <option value="PATIENT">Pacient</option>
                     </select>
-                    {errors.rol && <span className="admin-error">{errors.rol}</span>}
+                    {errors.rol && (
+                      <span className="admin-error">{errors.rol}</span>
+                    )}
                   </div>
 
                   <div className="admin-field">
-                    <label>Status *</label>
-                    <select name="status" value={formData.status} onChange={handleChange}>
-                      <option value="Activ">Activ</option>
-                      <option value="Inactiv">Inactiv</option>
-                    </select>
-                    {errors.status && <span className="admin-error">{errors.status}</span>}
+                    <label>Status</label>
+                    <input type="text" value="Activ implicit" readOnly />
                   </div>
 
                   <div className="admin-field">
                     <label>Parolă</label>
                     <input type="text" value="Generată automat" readOnly />
-                  </div>
-                </div>
-              </div>
-
-              <div className="admin-formSection">
-                <h3>Permisiuni rol</h3>
-
-                <div className="admin-permissionsGrid">
-                  <label>
-                    <input
-                      type="checkbox"
-                      checked={formData.permissions.READ}
-                      onChange={() => handlePermissionChange("READ")}
-                    />
-                    READ
-                  </label>
-
-                  <label>
-                    <input
-                      type="checkbox"
-                      checked={formData.permissions.WRITE}
-                      onChange={() => handlePermissionChange("WRITE")}
-                    />
-                    WRITE
-                  </label>
-
-                  <label>
-                    <input
-                      type="checkbox"
-                      checked={formData.permissions.DELETE}
-                      onChange={() => handlePermissionChange("DELETE")}
-                    />
-                    DELETE
-                  </label>
-
-                  <label>
-                    <input
-                      type="checkbox"
-                      checked={formData.permissions.EXPORT}
-                      onChange={() => handlePermissionChange("EXPORT")}
-                    />
-                    EXPORT
-                  </label>
-                </div>
-
-                {errors.permissions && (
-                  <span className="admin-error">{errors.permissions}</span>
-                )}
-              </div>
-
-              <div className="admin-formSection">
-                <h3>Detalii cont</h3>
-
-                <div className="admin-formGrid">
-                  <div className="admin-field">
-                    <label>Telefon *</label>
-                    <input
-                      name="telefon"
-                      type="text"
-                      placeholder="ex: 0712345678"
-                      value={formData.telefon}
-                      onChange={handleChange}
-                    />
-                    {errors.telefon && (
-                      <span className="admin-error">{errors.telefon}</span>
-                    )}
-                  </div>
-
-                  <div className="admin-field">
-                    <label>Departament *</label>
-                    <input
-                      name="departament"
-                      type="text"
-                      placeholder="ex: Cardiologie"
-                      value={formData.departament}
-                      onChange={handleChange}
-                    />
-                    {errors.departament && (
-                      <span className="admin-error">{errors.departament}</span>
-                    )}
-                  </div>
-
-                  <div className="admin-field">
-                    <label>Observații *</label>
-                    <input
-                      name="observatii"
-                      type="text"
-                      placeholder="Detalii suplimentare..."
-                      value={formData.observatii}
-                      onChange={handleChange}
-                    />
-                    {errors.observatii && (
-                      <span className="admin-error">{errors.observatii}</span>
-                    )}
                   </div>
                 </div>
               </div>
@@ -474,21 +371,13 @@ const navigate = useNavigate();
                 </button>
 
                 <button
-  type="button"
-  className="admin-submitBtn"
-  onClick={handleCreateUser}
-  disabled={
-    !formData.nume ||
-    !formData.prenume ||
-    !formData.email.includes("@") ||
-    !formData.rol ||
-    formData.telefon.length !== 10 ||
-    !formData.departament ||
-    !formData.observatii
-  }
->
-  Creează utilizator
-</button>
+                  type="button"
+                  className="admin-submitBtn"
+                  onClick={handleCreateUser}
+                  disabled={!formIsValid}
+                >
+                  Creează utilizator
+                </button>
               </div>
             </form>
           </div>

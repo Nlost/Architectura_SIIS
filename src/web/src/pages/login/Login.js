@@ -1,6 +1,7 @@
 import { useState } from "react";
 import "./Login.css";
 import { useNavigate } from "react-router-dom";
+import { loginUser } from "../../api";
 
 function Login() {
   const navigate = useNavigate();
@@ -11,21 +12,30 @@ function Login() {
   const [showPopup, setShowPopup] = useState(false);
   const [showResetModal, setShowResetModal] = useState(false);
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
 
-    if (email === "admin@test.com" && password === "1234") {
-      navigate("/admin");
-    } else if (email === "medic@test.com" && password === "1234") {
-      navigate("/medic");
-    } else if (email === "pacient@test.com" && password === "1234") {
-      navigate("/pacient");
-    } else {
-      setShowPopup(true);
+    try {
+      const data = await loginUser(email, password);
 
-      setTimeout(() => {
-        setShowPopup(false);
-      }, 3000);
+      localStorage.setItem("sw_token", data.token);
+      localStorage.setItem("sw_role", data.role);
+      localStorage.setItem("sw_email", data.email);
+
+      if (data.role === "ADMIN") {
+        navigate("/admin");
+      } else if (data.role === "DOCTOR") {
+        navigate("/medic");
+      } else if (data.role === "PATIENT") {
+        navigate("/pacient");
+      } else {
+        setShowPopup(true);
+        setTimeout(() => setShowPopup(false), 3000);
+      }
+    } catch (error) {
+      console.log(error);
+      setShowPopup(true);
+      setTimeout(() => setShowPopup(false), 3000);
     }
   };
 
@@ -58,9 +68,7 @@ function Login() {
           </div>
 
           {showPopup && (
-            <div className="login-error">
-              Email sau parolă incorectă!
-            </div>
+            <div className="login-error">Email sau parolă incorectă!</div>
           )}
 
           <button className="login-button" type="submit">
@@ -77,35 +85,44 @@ function Login() {
         </form>
       </div>
 
-     {showResetModal && (
-  <div className="modal-overlay">
-    <div className="reset-modal">
-      <h2>Resetare parolă</h2>
+      {showResetModal && (
+        <div className="modal-overlay">
+          <div className="reset-modal">
+            <h2>Resetare parolă</h2>
 
-      <input
-        type="password"
-        placeholder="Noua parolă"
-        className="modal-input"
-      />
+            <input
+              type="password"
+              placeholder="Noua parolă"
+              className="modal-input"
+            />
 
-      <input
-        type="password"
-        placeholder="Confirmă parola"
-        className="modal-input"
-      />
+            <input
+              type="password"
+              placeholder="Confirmă parola"
+              className="modal-input"
+            />
 
-      <div className="modal-actions">
-        <button type="button" className="cancel-btn" onClick={() => setShowResetModal(false)}>
-          Anulează
-        </button>
+            <div className="modal-actions">
+              <button
+                type="button"
+                className="cancel-btn"
+                onClick={() => setShowResetModal(false)}
+              >
+                Anulează
+              </button>
 
-        <button type="button" className="save-btn" onClick={() => setShowResetModal(false)}>
-          Salvează
-        </button>
-      </div>
-    </div>
-  </div>
-)}
+              <button
+                type="button"
+                className="save-btn"
+                onClick={() => setShowResetModal(false)}
+              >
+                Salvează
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="bg-circle"></div>
     </div>
   );
