@@ -1,0 +1,30 @@
+# Generated deploy artifacts (deploy-manual.ps1)
+Dockerrun.aws.json
+deploy-manual.zip
+seniorwatch-deploy.zip
+
+# Maven
+target/
+*.class
+*.jar
+!src/cloud/backend/target/*.jar
+
+# IDE
+.idea/
+*.iml
+.vscode/
+*.suo
+*.user
+
+# Node / React
+node_modules/
+dist/
+.env
+.env.local
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
