@@ -79,7 +79,8 @@ jobs:
           aws elasticbeanstalk create-application-version \
             --application-name $EB_APP_NAME \
             --version-label "gh-${{ github.sha }}" \
-            --source-bundle S3Bucket=$S3_BUCKET,S3Key=deploys/seniorwatch-${{ github.sha }}.zip
+            --source-bundle S3Bucket=$S3_BUCKET,S3Key=deploys/seniorwatch-${{ github.sha }}.zip \
+          || echo "Version already exists, skipping creation"
 
       - name: Deploy to Elastic Beanstalk
         run: |
