@@ -78,14 +78,18 @@ jobs:
         run: |
           aws elasticbeanstalk create-application-version \
             --application-name $EB_APP_NAME \
-            --version-label "gh-${{ github.sha }}" \
+            --version-label "$VERSION_LABEL" \
             --source-bundle S3Bucket=$S3_BUCKET,S3Key=deploys/seniorwatch-${{ github.sha }}.zip
+        env:
+          VERSION_LABEL: gh-${{ github.sha }}-${{ github.run_number }}.${{ github.run_attempt }}
 
       - name: Deploy to Elastic Beanstalk
         run: |
           aws elasticbeanstalk update-environment \
             --environment-name $EB_ENV_NAME \
-            --version-label "gh-${{ github.sha }}"
+            --version-label "$VERSION_LABEL"
+        env:
+          VERSION_LABEL: gh-${{ github.sha }}-${{ github.run_number }}.${{ github.run_attempt }}
 
       - name: Wait for deployment
         run: |
