@@ -54,7 +54,7 @@ jobs:
           docker push $ECR_REPO:$IMAGE_TAG
           docker push $ECR_REPO:latest
 
-      - name: Create Dockerrun.aws.json
+      - name: Create deployment bundle
         run: |
           cat > Dockerrun.aws.json <<EOF
           {
@@ -67,7 +67,17 @@ jobs:
             "Logging": "/var/log/app"
           }
           EOF
-          zip seniorwatch-deploy.zip Dockerrun.aws.json
+          # Point the EB health check at the app's actual path (context-path is /api),
+          # otherwise EB probes "/" -> 404 -> environment health stays Yellow.
+          mkdir -p .ebextensions
+          cat > .ebextensions/01-healthcheck.config <<'EOF'
+          option_settings:
+            aws:elasticbeanstalk:application:
+              Application Healthcheck URL: /api/actuator/health
+            aws:elasticbeanstalk:environment:process:default:
+              HealthCheckPath: /api/actuator/health
+          EOF
+          zip -r seniorwatch-deploy.zip Dockerrun.aws.json .ebextensions
 
       - name: Upload ZIP to S3
         run: |
@@ -97,13 +107,29 @@ jobs:
           aws elasticbeanstalk wait environment-updated \
             --application-name $EB_APP_NAME \
             --environment-names $EB_ENV_NAME || true
-          STATUS=$(aws elasticbeanstalk describe-environments \
+
+          # Health can lag behind the environment update completing, so poll until
+          # the environment is Ready AND health is Green/Ok (or until we time out).
+          DEADLINE=$((SECONDS + 600))
+          HEALTH=""
+          while [ $SECONDS -lt $DEADLINE ]; do
+            read HEALTH HEALTH_STATUS ENV_STATUS < <(aws elasticbeanstalk describe-environments \
+              --application-name $EB_APP_NAME \
+              --environment-names $EB_ENV_NAME \
+              --query "Environments[0].[Health,HealthStatus,Status]" --output text)
+            echo "Stare EB: Health=$HEALTH HealthStatus=$HEALTH_STATUS Status=$ENV_STATUS"
+            if [ "$ENV_STATUS" = "Ready" ] && { [ "$HEALTH" = "Green" ] || [ "$HEALTH" = "Ok" ]; }; then
+              echo "Deploy reusit!"
+              exit 0
+            fi
+            sleep 20
+          done
+
+          echo "Deploy esuat! Ultima stare: Health=$HEALTH"
+          echo "----- Ultimele evenimente EB -----"
+          aws elasticbeanstalk describe-events \
             --application-name $EB_APP_NAME \
-            --environment-names $EB_ENV_NAME \
-            --query "Environments[0].Health" --output text)
-          echo "Stare EB dupa deploy: $STATUS"
-          if [ "$STATUS" = "Red" ] || [ "$STATUS" = "Severe" ]; then
-            echo "Deploy esuat! Stare critica: $STATUS"
-            exit 1
-          fi
-          echo "Deploy finalizat cu succes (stare: $STATUS)"
+            --environment-name $EB_ENV_NAME \
+            --max-items 20 \
+            --query "Events[].[EventDate,Severity,Message]" --output text || true
+          exit 1
