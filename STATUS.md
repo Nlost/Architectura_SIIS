@@ -1,6 +1,37 @@
-# SeniorWatch — Status Deploy (2026-06-08)
+# SeniorWatch — Status Deploy (2026-06-09)
 
-## Ce s-a facut azi
+## Ce s-a facut azi (2026-06-09)
+
+### Frontend — fix proxy dev local
+
+- **Eroare rezolvata:** `SyntaxError: Unexpected token '<', "<!doctype "... is not valid JSON` la login
+  - Cauza: `API_BASE = ""` in `api.js` + CRA dev server (`:3000`) nu stia de `/api/*` → returna `index.html` in loc de JSON
+  - Fix: adaugat `"proxy": "http://localhost:8080"` in `src/web/package.json`
+  - In **productie** (EB + nginx): `API_BASE = ""` ramane corect — nginx ruteaza `/api/*` la backend automat
+  - In **dev local**: proxy-ul CRA forward-eaza cererile la backend pe `localhost:8080`
+  - **Important:** dupa modificarea `package.json` e necesar restart `npm start` ca proxy-ul sa fie activat
+
+### Baza de date — reset parola admin
+
+- Generat hash bcrypt (rounds=10) pentru parola `Admin@SeniorWatch2026!`:
+
+  ```text
+  $2b$10$ilWGlNf7qu1T0dGk4TzVkeguLRRkekzKtoJ8JTewPvvqo12Nh2UdS
+  ```
+
+- Aplicat in RDS via:
+
+  ```sql
+  UPDATE users
+  SET password_hash = '$2b$10$ilWGlNf7qu1T0dGk4TzVkeguLRRkekzKtoJ8JTewPvvqo12Nh2UdS'
+  WHERE email = 'admin@seniorwatch.local';
+  ```
+
+- Login cu `admin@seniorwatch.local` / `Admin@SeniorWatch2026!` ar trebui sa returneze `200 OK` acum
+
+---
+
+## Ce s-a facut anterior (2026-06-08)
 
 ### Backend (Spring Boot → Docker → ECR → EB)
 - **Fix `@JdbcType`** pe entitatile cu enum PostgreSQL custom:
