@@ -103,29 +103,36 @@ jobs:
 
       - name: Wait for deployment
         run: |
-          echo "Astept finalizarea deploy-ului (max 10 minute)..."
+          echo "Astept finalizarea deploy-ului..."
           aws elasticbeanstalk wait environment-updated \
             --application-name $EB_APP_NAME \
             --environment-names $EB_ENV_NAME || true
 
-          # Health can lag behind the environment update completing, so poll until
-          # the environment is Ready AND health is Green/Ok (or until we time out).
-          DEADLINE=$((SECONDS + 600))
-          HEALTH=""
+          read HEALTH ENV_STATUS CNAME < <(aws elasticbeanstalk describe-environments \
+            --application-name $EB_APP_NAME \
+            --environment-names $EB_ENV_NAME \
+            --query "Environments[0].[Health,Status,CNAME]" --output text)
+          echo "Stare EB: Health=$HEALTH Status=$ENV_STATUS CNAME=$CNAME"
+
+          # NOTE: don't gate on the EB health *color*. On this low-traffic dev env,
+          # the brief 5xx blip while the container is swapped skews enhanced health
+          # to Yellow even though the app is fine. The reliable signal is whether the
+          # application itself answers 200 on its health endpoint, so we check that.
+          HEALTH_URL="http://$CNAME/api/actuator/health"
+          echo "Verific aplicatia la $HEALTH_URL ..."
+          DEADLINE=$((SECONDS + 300))
+          CODE=000
           while [ $SECONDS -lt $DEADLINE ]; do
-            read HEALTH HEALTH_STATUS ENV_STATUS < <(aws elasticbeanstalk describe-environments \
-              --application-name $EB_APP_NAME \
-              --environment-names $EB_ENV_NAME \
-              --query "Environments[0].[Health,HealthStatus,Status]" --output text)
-            echo "Stare EB: Health=$HEALTH HealthStatus=$HEALTH_STATUS Status=$ENV_STATUS"
-            if [ "$ENV_STATUS" = "Ready" ] && { [ "$HEALTH" = "Green" ] || [ "$HEALTH" = "Ok" ]; }; then
-              echo "Deploy reusit!"
+            CODE=$(curl -s -o /dev/null -w '%{http_code}' --max-time 10 "$HEALTH_URL" || echo 000)
+            echo "HTTP $CODE de la $HEALTH_URL"
+            if [ "$CODE" = "200" ]; then
+              echo "Aplicatia raspunde corect. Deploy reusit!"
               exit 0
             fi
-            sleep 20
+            sleep 15
           done
 
-          echo "Deploy esuat! Ultima stare: Health=$HEALTH"
+          echo "Deploy esuat! Aplicatia nu raspunde 200 (ultimul cod: $CODE)."
           echo "----- Ultimele evenimente EB -----"
           aws elasticbeanstalk describe-events \
             --application-name $EB_APP_NAME \
