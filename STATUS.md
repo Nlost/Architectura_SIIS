@@ -29,6 +29,68 @@
 
 - Login cu `admin@seniorwatch.local` / `Admin@SeniorWatch2026!` ar trebui sa returneze `200 OK` acum
 
+### Workflow Git — branch-uri si deploy
+
+- **Feature branch** = lucrezi izolat fara sa afectezi productia
+- Push pe `feature/*` nu triggerează niciun workflow → site-ul rămâne neschimbat
+- Deploy automat se face **doar** la push pe `master`
+- Comenzi utile:
+
+  ```bash
+  git checkout master && git pull          # pornesti de la cod curat
+  git checkout -b feature/nume-branch      # creezi branch nou
+  git branch                               # vezi pe care esti (* = curent)
+  git checkout master                      # revii pe master
+  git merge feature/nume-branch            # mergi modificarile in master
+  git checkout .                           # anulezi TOATE modificarile locale
+  git checkout -- src/web/src/api.js       # anulezi un singur fisier
+  ```
+
+### Bug identificat — deploy-cloud.yml path gresit
+
+- `.github/workflows/deploy-cloud.yml` are path-ul gresit la trigger:
+
+  ```yaml
+  paths:
+    - "module2-cloud/backend/**"   # ← GRESIT, folderul nu exista
+  ```
+
+  Ar trebui:
+
+  ```yaml
+  paths:
+    - "src/cloud/backend/**"       # ← CORECT
+  ```
+
+- **Consecinta:** pipeline-ul de backend **nu se triggerează automat** la niciun push
+- Backend-ul se poate deploya doar manual via `src/cloud/backend/deploy-manual.ps1`
+- **TODO:** de corectat path-ul in `deploy-cloud.yml`
+
+### Testare locala frontend — problema API
+
+- `npm start` din `src/web/` porneste pe `localhost:3000`
+- Cu `API_BASE = ""`, cererile merg la `localhost:3000/api/*` → CRA nu stie → returna `index.html` → JSON parse error
+- **Solutia recomandata pentru dev local (fara commit):**
+  - Modifica temporar `api.js` (nu comiti):
+
+    ```js
+    const API_BASE = "http://seniorwatch-dev.eba-g2g95ywt.eu-central-1.elasticbeanstalk.com";
+    ```
+
+  - Necesita CORS configurat in Spring Boot pentru `http://localhost:3000`
+- **Alternativa (totul local):** adauga `"proxy": "http://localhost:8080"` in `package.json` (fara commit) + pornesti backend-ul cu `docker compose up -d` din `src/cloud/`
+
+### Modificare schedule auto-shutdown/startup
+
+- Configurat in **AWS Console → EventBridge → Rules**
+- Cauta regulile de start/stop pentru seniorwatch
+- Expresii cron sunt in UTC (Romania = UTC+3 vara, UTC+2 iarna)
+
+  | Actiune | Ora RO (vara) | Cron UTC              |
+  | ------- | ------------- | --------------------- |
+  | Pornire | 12:00         | `cron(0 9 * * ? *)`   |
+  | Oprire  | 03:00         | `cron(0 0 * * ? *)`   |
+
 ---
 
 ## Ce s-a facut anterior (2026-06-08)
