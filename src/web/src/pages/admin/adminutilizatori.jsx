@@ -149,11 +149,11 @@ function AdminUtilizatori() {
         </div>
 
         <nav>
-          <a onClick={() => navigate("/admin")}>📊 Dashboard</a>
-          <a className="active">👥 Utilizatori</a>
-          <a onClick={() => navigate("/admin/adminroluri")}>🛡️ Roluri</a>
-          <a onClick={() => navigate("/admin/adminaudit")}>📝 Audit</a>
-          <a onClick={() => navigate("/admin/adminstatus")}>🟢 Status sistem</a>
+          <a href="#" onClick={(e) => { e.preventDefault(); navigate("/admin"); }}>📊 Dashboard</a>
+          <a href="#" className="active">👥 Utilizatori</a>
+          <a href="#" onClick={(e) => { e.preventDefault(); navigate("/admin/adminroluri"); }}>🛡️ Roluri</a>
+          <a href="#" onClick={(e) => { e.preventDefault(); navigate("/admin/adminaudit"); }}>📝 Audit</a>
+          <a href="#" onClick={(e) => { e.preventDefault(); navigate("/admin/adminstatus"); }}>🟢 Status sistem</a>
         </nav>
 
         <div className="users-profile">

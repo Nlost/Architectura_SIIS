@@ -81,20 +81,19 @@ function AdminAudit() {
         </div>
 
         <nav>
-          <a onClick={() => navigate("/admin")}>📊 Dashboard</a>
+          <a href="#" onClick={(e) => { e.preventDefault(); navigate("/admin"); }}>📊 Dashboard</a>
 
-          <a onClick={() => navigate("/admin/adminutilizatori")}>
+          <a href="#" onClick={(e) => { e.preventDefault(); navigate("/admin/adminutilizatori"); }}>
             👥 Utilizatori
           </a>
 
-          <a onClick={() => navigate("/admin/adminroluri")}>🛡️ Roluri</a>
+          <a href="#" onClick={(e) => { e.preventDefault(); navigate("/admin/adminroluri"); }}>🛡️ Roluri</a>
 
+          <a href="#" className="active">📝 Audit</a>
 
-          <a className="active">📝 Audit</a>
-
-  <a onClick={() => navigate("/admin/adminstatus")}>
-  🟢 Status sistem
-</a>
+          <a href="#" onClick={(e) => { e.preventDefault(); navigate("/admin/adminstatus"); }}>
+            🟢 Status sistem
+          </a>
         </nav>
 
         <div className="audit-profile">

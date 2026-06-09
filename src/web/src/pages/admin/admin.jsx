@@ -110,17 +110,17 @@ function AdminDashboard() {
         </div>
 
         <nav>
-          <a className="active">📊 Dashboard</a>
+          <a href="#" className="active">📊 Dashboard</a>
 
-          <a onClick={() => navigate("/admin/adminutilizatori")}>
+          <a href="#" onClick={(e) => { e.preventDefault(); navigate("/admin/adminutilizatori"); }}>
             👥 Utilizatori
           </a>
 
-          <a onClick={() => navigate("/admin/adminroluri")}>🛡️ Roluri</a>
+          <a href="#" onClick={(e) => { e.preventDefault(); navigate("/admin/adminroluri"); }}>🛡️ Roluri</a>
 
-          <a onClick={() => navigate("/admin/adminaudit")}>📝 Audit</a>
+          <a href="#" onClick={(e) => { e.preventDefault(); navigate("/admin/adminaudit"); }}>📝 Audit</a>
 
-          <a onClick={() => navigate("/admin/adminstatus")}>
+          <a href="#" onClick={(e) => { e.preventDefault(); navigate("/admin/adminstatus"); }}>
             🟢 Status sistem
           </a>
         </nav>

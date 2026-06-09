@@ -73,18 +73,17 @@ function AdminRoluri() {
         </div>
 
         <nav>
-          <a onClick={() => navigate("/admin")}>📊 Dashboard</a>
+          <a href="#" onClick={(e) => { e.preventDefault(); navigate("/admin"); }}>📊 Dashboard</a>
 
-          <a onClick={() => navigate("/admin/adminutilizatori")}>
+          <a href="#" onClick={(e) => { e.preventDefault(); navigate("/admin/adminutilizatori"); }}>
             👥 Utilizatori
           </a>
 
-          <a className="active">🛡️ Roluri</a>
+          <a href="#" className="active">🛡️ Roluri</a>
 
+          <a href="#" onClick={(e) => { e.preventDefault(); navigate("/admin/adminaudit"); }}>📝 Audit</a>
 
-          <a onClick={() => navigate("/admin/adminaudit")}>📝 Audit</a>
-
-          <a onClick={() => navigate("/admin/adminstatus")}>
+          <a href="#" onClick={(e) => { e.preventDefault(); navigate("/admin/adminstatus"); }}>
             🟢 Status sistem
           </a>
         </nav>

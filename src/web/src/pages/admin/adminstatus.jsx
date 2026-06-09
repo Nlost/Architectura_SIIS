@@ -47,24 +47,23 @@ function AdminStatus() {
         </div>
 
         <nav>
-          <a onClick={() => navigate("/admin")}>
+          <a href="#" onClick={(e) => { e.preventDefault(); navigate("/admin"); }}>
             📊 Dashboard
           </a>
 
-          <a onClick={() => navigate("/admin/adminutilizatori")}>
+          <a href="#" onClick={(e) => { e.preventDefault(); navigate("/admin/adminutilizatori"); }}>
             👥 Utilizatori
           </a>
 
-          <a onClick={() => navigate("/admin/adminroluri")}>
+          <a href="#" onClick={(e) => { e.preventDefault(); navigate("/admin/adminroluri"); }}>
             🛡️ Roluri
           </a>
 
-
-          <a onClick={() => navigate("/admin/adminaudit")}>
+          <a href="#" onClick={(e) => { e.preventDefault(); navigate("/admin/adminaudit"); }}>
             📝 Audit
           </a>
 
-          <a className="active">
+          <a href="#" className="active">
             🟢 Status sistem
           </a>
         </nav>
