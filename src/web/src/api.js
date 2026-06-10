@@ -86,6 +86,29 @@ export async function getPatients() {
   return text ? JSON.parse(text) : [];
 }
 
+export async function createPatient(demographics) {
+  const token = localStorage.getItem("sw_token");
+
+  const response = await fetch(`${API_BASE}/api/patients`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ demographics }),
+  });
+
+  const text = await response.text();
+
+  if (!response.ok) {
+    console.log("Create patient status:", response.status);
+    console.log("Create patient backend response:", text);
+    throw new Error(text || "Nu s-a putut crea pacientul");
+  }
+
+  return text ? JSON.parse(text) : {};
+}
+
 export async function updateUser(id, role) {
   const token = localStorage.getItem("sw_token");
 

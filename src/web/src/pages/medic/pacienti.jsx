@@ -1,6 +1,7 @@
 import "./pacienti.css";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { getPatients, createPatient } from "../../api";
 
 const initialNewPatient = {
   nume: "", prenume: "", cnp: "", sex: "",
@@ -9,14 +10,6 @@ const initialNewPatient = {
   strada: "", cod_postal: "", tara: "Romania",
   profesie: "", loc_de_munca: "",
 };
-
-const patients = [
-  ["IP", "Ion Popescu",   "1580615123456", "67 ani", "78 bpm",  "36.7°C", "Stabil"],
-  ["MI", "Maria Ionescu", "2790101123456", "71 ani", "112 bpm", "37.9°C", "Alertă"],
-  ["EM", "Elena Matei",   "2620303123456", "64 ani", "84 bpm",  "36.5°C", "Observație"],
-  ["VR", "Victor Radu",   "1660924123456", "59 ani", "91 bpm",  "37.1°C", "Stabil"],
-  ["AP", "Ana Pop",       "2720404123456", "53 ani", "68 bpm",  "36.4°C", "Stabil"],
-];
 
 const judeteCNP = {
   "01":"Alba","02":"Arad","03":"Argeș","04":"Bacău",
@@ -42,6 +35,21 @@ function PacientiMedic() {
   const navigate = useNavigate();
   const [showAddModal, setShowAddModal] = useState(false);
   const [newPatient, setNewPatient] = useState(initialNewPatient);
+  const [patients, setPatients] = useState([]);
+  const [saving, setSaving] = useState(false);
+
+  const loadPatients = async () => {
+    try {
+      const data = await getPatients();
+      setPatients(data);
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  useEffect(() => {
+    loadPatients();
+  }, []);
 
   const calcAge = (birthDate) => {
     const today = new Date();
@@ -90,11 +98,38 @@ function PacientiMedic() {
     setNewPatient({ ...newPatient, [name]: value });
   };
 
-  const handleAddPatient = (e) => {
+  const handleAddPatient = async (e) => {
     e.preventDefault();
-    if (!isFormValid) return;
-    console.log("Payload:", { ...newPatient });
-    closeModal();
+    if (!isFormValid || saving) return;
+
+    const demographics = {
+      nume: newPatient.nume,
+      prenume: newPatient.prenume,
+      sex: newPatient.sex,
+      dataNasterii: newPatient.data_nasterii,
+      cnp: newPatient.cnp,
+      strada: newPatient.strada,
+      localitate: newPatient.localitate,
+      judet: newPatient.judet,
+      codPostal: newPatient.cod_postal,
+      tara: newPatient.tara,
+      telefon: newPatient.telefon,
+      email: newPatient.email,
+      profesie: newPatient.profesie,
+      locDeMunca: newPatient.loc_de_munca,
+    };
+
+    setSaving(true);
+    try {
+      await createPatient(demographics);
+      await loadPatients();
+      closeModal();
+    } catch (error) {
+      console.log(error);
+      alert("Eroare la salvarea pacientului.");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const closeModal = () => {
@@ -126,7 +161,7 @@ function PacientiMedic() {
 
       <main className="main">
         <section className="stats">
-          <div className="stat"><div className="icon purple">👥</div><div><p>Total pacienți</p><h2>128</h2><span>pacienți asociați medicului</span></div></div>
+          <div className="stat"><div className="icon purple">👥</div><div><p>Total pacienți</p><h2>{patients.length}</h2><span>pacienți asociați medicului</span></div></div>
           <div className="stat"><div className="icon green">💚</div><div><p>Stabili</p><h2>96</h2><span>fără alerte active</span></div></div>
           <div className="stat"><div className="icon pink">🔔</div><div><p>Cu alerte</p><h2>12</h2><span>necesită verificare</span></div></div>
           <div className="stat"><div className="icon violet">📈</div><div><p>Monitorizați azi</p><h2>84</h2><span>au trimis date recent</span></div></div>
@@ -153,22 +188,33 @@ function PacientiMedic() {
                 <span>Pacient</span><span>CNP</span><span>Vârstă</span>
                 <span>Puls</span><span>Temperatură</span><span>Status</span><span>Acțiuni</span>
               </div>
-              {patients.map((p, i) => (
-                <div className="tableRow pacienti-row" key={i}>
-                  <span className="patientName"><b>{p[0]}</b>{p[1]}</span>
-                  <span className="cnpText">{p[2]}</span>
-                  <span>{p[3]}</span>
-                  <span className={p[4]==="112 bpm" ? "dangerText" : ""}>{p[4]}</span>
-                  <span>{p[5]}</span>
-                  <span className={`badge ${p[6]}`}>{p[6]}</span>
-                  <span className="patientActions">
-                    
-                    <button onClick={() => navigate(`/medic/pacient/${p[0]}`)}>
-  Fișă
-</button><button>Grafice</button>  <button>Editează</button><button>Alerte</button>
-                  </span>
+              {patients.length === 0 && (
+                <div className="tableRow pacienti-row">
+                  <span>Niciun pacient înregistrat</span>
                 </div>
-              ))}
+              )}
+              {patients.map((p) => {
+                const d = p.demographics || {};
+                const fullName = [d.nume, d.prenume].filter(Boolean).join(" ");
+                const initials =
+                  `${(d.nume || "")[0] || ""}${(d.prenume || "")[0] || ""}`.toUpperCase() || "?";
+                const age = d.dataNasterii ? `${calcAge(d.dataNasterii)} ani` : "—";
+                return (
+                  <div className="tableRow pacienti-row" key={p.id}>
+                    <span className="patientName"><b>{initials}</b>{fullName || "—"}</span>
+                    <span className="cnpText">{d.cnp || "—"}</span>
+                    <span>{age}</span>
+                    <span>—</span>
+                    <span>—</span>
+                    <span className="badge Stabil">Stabil</span>
+                    <span className="patientActions">
+                      <button onClick={() => navigate(`/medic/pacient/${p.id}`)}>
+                        Fișă
+                      </button><button>Grafice</button>  <button>Editează</button><button>Alerte</button>
+                    </span>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </section>
@@ -231,7 +277,9 @@ function PacientiMedic() {
               {/* 3. BUTOANE — fix jos, în afara form */}
               <div className="modalFooter">
                 <button type="button" className="btnCancel" onClick={closeModal}>Renunță</button>
-                <button type="submit" form="addPatientForm" className="btnSave" disabled={!isFormValid}>Salvează pacient</button>
+                <button type="submit" form="addPatientForm" className="btnSave" disabled={!isFormValid || saving}>
+                  {saving ? "Se salvează…" : "Salvează pacient"}
+                </button>
               </div>
 
             </div>
