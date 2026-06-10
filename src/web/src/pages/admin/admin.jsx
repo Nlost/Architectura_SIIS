@@ -247,7 +247,8 @@ useEffect(() => {
                 <span>Acțiune</span>
               </div>
 
-{[...filteredUsers]  .reverse()
+{[...filteredUsers]
+.reverse()
   .slice(0, 5)
   .map((user) => {
     const username = user.email?.split("@")[0] || "utilizator";
