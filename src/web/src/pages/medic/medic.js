@@ -29,6 +29,7 @@ function Medic() {
           <a onClick={() => navigate("/medic/monitorizare")}>📈 Monitorizare</a>
                     <a onClick={() => navigate("/medic/alerte")}>🔔 Alerte</a>
           <a onClick={() => navigate("/medic/rapoarte")}>📋 Rapoarte</a>
+          <a onClick={() => navigate("/medic/hl7")}>🔗 HL7 FHIR</a>
         </nav>
 
         <div className="profile">

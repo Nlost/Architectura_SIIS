@@ -9,6 +9,7 @@ import ConsultatiiMedic from "./pages/medic/consultatii";
 import MonitorizareMedic from "./pages/medic/monitorizare";
 import AlerteMedic from "./pages/medic/alerte";
 import RapoarteMedic from "./pages/medic/rapoarte";
+import Hl7Export from "./pages/medic/hl7export";
 import FisaPacient from "./pages/medic/fisapacient";
 import PacientFisa from "./pages/pacient/pacientfisa";
 import PacientValori from "./pages/pacient/pacientvalori";
@@ -30,6 +31,7 @@ function App() {
       <Route path="/medic/monitorizare" element={<MonitorizareMedic />} />
       <Route path="/medic/alerte" element={<AlerteMedic />} />
       <Route path="/medic/rapoarte" element={<RapoarteMedic />} />
+      <Route path="/medic/hl7" element={<Hl7Export />} />
       <Route path="/medic/pacient/:id" element={<FisaPacient />} />
       <Route path="/pacient/pacientfisa" element={<PacientFisa />} />
       <Route path="/pacient/pacientvalori" element={<PacientValori />} />

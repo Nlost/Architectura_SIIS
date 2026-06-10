@@ -65,6 +65,27 @@ export async function getUsers() {
   return text ? JSON.parse(text) : [];
 }
 
+export async function getPatients() {
+  const token = localStorage.getItem("sw_token");
+
+  const response = await fetch(`${API_BASE}/api/patients`, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  const text = await response.text();
+
+  if (!response.ok) {
+    console.log("Get patients status:", response.status);
+    console.log("Get patients backend response:", text);
+    throw new Error(text || "Nu s-au putut încărca pacienții");
+  }
+
+  return text ? JSON.parse(text) : [];
+}
+
 export async function updateUser(id, role) {
   const token = localStorage.getItem("sw_token");
 

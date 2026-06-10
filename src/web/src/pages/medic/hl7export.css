@@ -1,0 +1,84 @@
+@import "../../App.css";
+
+.hl7-content {
+  grid-template-columns: 1fr;
+  width: 100%;
+}
+.hl7-content .panel {
+  width: 100%;
+  background: #ffffff;
+  border: 1px solid rgba(109, 40, 217, 0.12);
+}
+
+.hl7-tools {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.hl7-btn {
+  height: 48px;
+  padding: 0 20px;
+  border: none;
+  border-radius: 14px;
+  font-size: 14px;
+  font-weight: 900;
+  cursor: pointer;
+  transition: 0.2s ease;
+  color: #ffffff;
+}
+.hl7-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.hl7-btn:not(:disabled):hover {
+  transform: translateY(-2px);
+  filter: brightness(0.96);
+}
+.hl7-btn.regen {
+  background: #f8f3ff;
+  color: #5b21b6;
+  border: 1px solid #cdb8ff;
+}
+.hl7-btn.copy {
+  background: #10b981;
+  box-shadow: 0 10px 22px rgba(16, 185, 129, 0.2);
+}
+.hl7-btn.download {
+  background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+  box-shadow: 0 10px 22px rgba(109, 40, 217, 0.22);
+}
+
+.hl7-status {
+  margin-top: 18px;
+  padding: 18px 22px;
+  border-radius: 14px;
+  background: #f5efff;
+  border: 1px solid #d8caff;
+  color: #5b21b6;
+  font-weight: 800;
+}
+.hl7-status.hl7-error {
+  background: #ffd1dc;
+  border-color: #fb7185;
+  color: #be123c;
+}
+
+.hl7-xml-preview {
+  margin-top: 18px;
+  max-height: 560px;
+  overflow: auto;
+  padding: 22px;
+  border-radius: 16px;
+  background: #1a093d;
+  border: 1px solid #e5d8ff;
+  box-shadow: 0 10px 28px rgba(83, 47, 147, 0.1);
+}
+.hl7-xml-preview code {
+  display: block;
+  white-space: pre;
+  font-family: "Consolas", "Fira Code", "Courier New", monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  color: #e9d5ff;
+}
