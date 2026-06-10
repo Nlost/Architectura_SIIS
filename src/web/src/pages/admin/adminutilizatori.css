@@ -579,3 +579,24 @@ body {
 .users-actions .activate:hover {
   background: #bbf7d0;
 }
+.users-successModal {
+  max-width: 700px;
+}
+
+.users-successModal .users-modalIcon {
+  background: #dff5e8;
+  color: #16a34a;
+}
+.users-successFields {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.users-successFields .users-field {
+  width: 100%;
+}
+
+.users-successFields input {
+  width: 100%;
+}

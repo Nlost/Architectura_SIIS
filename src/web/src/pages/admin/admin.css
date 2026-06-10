@@ -595,3 +595,25 @@ body {
   transform: none;
   box-shadow: none;
 }
+
+.admin-successModal {
+  max-width: 700px;
+}
+
+.admin-successModal .admin-modalIcon {
+  background: #dff5e8;
+  color: #16a34a;
+}
+.admin-successFields {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.admin-successFields .admin-field {
+  width: 100%;
+}
+
+.admin-successFields input {
+  width: 100%;
+}

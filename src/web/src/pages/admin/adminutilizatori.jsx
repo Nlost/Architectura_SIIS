@@ -13,6 +13,7 @@ function AdminUtilizatori() {
   const [showForm, setShowForm] = useState(false);
 const [showEditForm, setShowEditForm] = useState(false);
 const [selectedUser, setSelectedUser] = useState(null);
+const [createdUserInfo, setCreatedUserInfo] = useState(null);
   const [formData, setFormData] = useState({
     nume: "",
     prenume: "",
@@ -91,9 +92,10 @@ const [selectedUser, setSelectedUser] = useState(null);
     try {
       await createUser(email, password, formData.rol);
 
-      alert(
-        `Utilizator creat cu succes!\n\nEmail: ${email}\nParolă: ${password}`
-      );
+    setCreatedUserInfo({
+  email,
+  password,
+});
 
       setShowForm(false);
 
@@ -110,6 +112,7 @@ const [selectedUser, setSelectedUser] = useState(null);
       alert("Eroare la crearea utilizatorului.");
     }
   };
+
 
 const handleEditUser = (user) => {
   setSelectedUser(user);
@@ -129,7 +132,6 @@ const handleSaveEditUser = async () => {
 
   try {
     await updateUser(selectedUser.id, formData.rol);
-    alert("Utilizator actualizat cu succes!");
     setShowEditForm(false);
     setSelectedUser(null);
     await loadUsers();
@@ -339,7 +341,6 @@ const handleToggleActive = async (user) => {
               onChange={(e) => setRoleFilter(e.target.value)}
             >
               <option>Toate</option>
-              <option>Administrator</option>
               <option>Medic</option>
               <option>Pacient</option>
             </select>
@@ -479,7 +480,6 @@ const handleToggleActive = async (user) => {
                       <option value="" disabled>
                         Alege rol
                       </option>
-                      <option value="ADMIN">Administrator</option>
                       <option value="DOCTOR">Medic</option>
                       <option value="PATIENT">Pacient</option>
                     </select>
@@ -614,6 +614,56 @@ const handleToggleActive = async (user) => {
           </button>
         </div>
       </form>
+    </div>
+  </div>
+)}
+{createdUserInfo && (
+  <div className="users-modalOverlay">
+    <div className="users-modal users-successModal">
+      <div className="users-modalHead">
+        <div className="users-modalTitle">
+          <div className="users-modalIcon">✅</div>
+          <div>
+            <h2>Utilizator creat cu succes</h2>
+            <p>Datele de autentificare generate automat.</p>
+          </div>
+        </div>
+
+        <button
+          className="users-closeBtn"
+          onClick={() => setCreatedUserInfo(null)}
+        >
+          ×
+        </button>
+      </div>
+
+      <div className="users-form">
+        <div className="users-formSection">
+          <h3>Credentiale utilizator</h3>
+
+<div className="users-successFields">
+              <div className="users-field">
+              <label>Email</label>
+              <input value={createdUserInfo.email} readOnly />
+            </div>
+
+            <div className="users-field">
+              <label>Parolă</label>
+              <input value={createdUserInfo.password} readOnly />
+            </div>
+          </div>
+        </div>
+
+        <div className="users-formActions">
+          <button
+            type="button"
+            className="users-submitBtn"
+            onClick={() => setCreatedUserInfo(null)}
+          >
+            Am înțeles
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 )}

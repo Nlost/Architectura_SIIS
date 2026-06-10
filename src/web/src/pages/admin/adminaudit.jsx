@@ -96,9 +96,9 @@ function AdminAudit() {
         <div className="audit-profile">
           <div>A</div>
 
-          <span>
+            <span>
             <b>Administrator</b>
-            admin@clinic.ro
+            {localStorage.getItem("sw_email") || "admin@seniorwatch.com"}
           </span>
         </div>
       </aside>
