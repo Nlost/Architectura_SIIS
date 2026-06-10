@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { createUser, getUsers } from "../../api";
+import { createUser, getUsers, updateUser, toggleUserActive } from "../../api";
 import "./adminutilizatori.css";
 
 function AdminUtilizatori() {
@@ -110,6 +110,7 @@ const [selectedUser, setSelectedUser] = useState(null);
       alert("Eroare la crearea utilizatorului.");
     }
   };
+
 const handleEditUser = (user) => {
   setSelectedUser(user);
 
@@ -123,6 +124,31 @@ const handleEditUser = (user) => {
 
   setShowEditForm(true);
 };
+const handleSaveEditUser = async () => {
+  if (!selectedUser) return;
+
+  try {
+    await updateUser(selectedUser.id, formData.rol);
+    alert("Utilizator actualizat cu succes!");
+    setShowEditForm(false);
+    setSelectedUser(null);
+    await loadUsers();
+  } catch (error) {
+    console.log(error);
+    alert("Eroare la actualizarea utilizatorului.");
+  }
+};
+
+const handleToggleActive = async (user) => {
+  try {
+    await toggleUserActive(user.id, !user.active);
+    await loadUsers();
+  } catch (error) {
+    console.log(error);
+    alert("Eroare la modificarea statusului utilizatorului.");
+  }
+};
+
   const formatRole = (role) => {
     if (role === "ADMIN") return "Administrator";
     if (role === "DOCTOR") return "Medic";
@@ -360,11 +386,12 @@ const handleEditUser = (user) => {
     Editare
   </button>
 
-  <button
-    className={user.active ? "disable" : "activate"}
-  >
-    {user.active ? "Dezactivează" : "Activează"}
-  </button>
+<button
+  className={user.active ? "disable" : "activate"}
+  onClick={() => handleToggleActive(user)}
+>
+  {user.active ? "Dezactivează" : "Activează"}
+</button>
 </span>
               </div>
             ))}
@@ -581,10 +608,7 @@ const handleEditUser = (user) => {
           <button
             type="button"
             className="users-submitBtn"
-            onClick={() => {
-              alert("Utilizator actualizat!");
-              setShowEditForm(false);
-            }}
+            onClick={handleSaveEditUser}
           >
             Salvează modificările
           </button>

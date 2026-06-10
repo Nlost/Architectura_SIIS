@@ -7,7 +7,8 @@ import org.springframework.transaction.annotation.Transactional;
 import ro.seniorwatch.dto.*;
 import ro.seniorwatch.entity.User;
 import ro.seniorwatch.repository.UserRepository;
-
+import java.time.OffsetDateTime;
+import java.util.UUID;
 import java.util.List;
 
 @Service
@@ -34,7 +35,27 @@ public class UserService {
                 .build();
         return toResponse(userRepository.save(user));
     }
+@Transactional
+public UserResponse updateUser(UUID id, UpdateUserRequest request) {
+    User user = userRepository.findById(id)
+            .orElseThrow(() -> new IllegalArgumentException("User not found: " + id));
 
+    user.setRole(request.getRole());
+    user.setUpdatedAt(OffsetDateTime.now());
+
+    return toResponse(userRepository.save(user));
+}
+
+@Transactional
+public UserResponse updateUserActive(UUID id, UpdateUserActiveRequest request) {
+    User user = userRepository.findById(id)
+            .orElseThrow(() -> new IllegalArgumentException("User not found: " + id));
+
+    user.setActive(request.getActive());
+    user.setUpdatedAt(OffsetDateTime.now());
+
+    return toResponse(userRepository.save(user));
+}
     private UserResponse toResponse(User u) {
         return UserResponse.builder()
                 .id(u.getId())
