@@ -535,7 +535,6 @@ setErrors({});
                         })
                       }
                     >
-                      <option value="ADMIN">Administrator</option>
                       <option value="DOCTOR">Medic</option>
                       <option value="PATIENT">Pacient</option>
                     </select>

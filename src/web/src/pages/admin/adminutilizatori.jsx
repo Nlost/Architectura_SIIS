@@ -380,19 +380,20 @@ const handleToggleActive = async (user) => {
 </span>
 
 <span className="users-actions">
-  <button
-    className="edit"
-    onClick={() => handleEditUser(user)}
-  >
-    Editare
-  </button>
+  {user.role !== "ADMIN" && (
+    <>
+      <button className="edit" onClick={() => handleEditUser(user)}>
+        Editare
+      </button>
 
-<button
-  className={user.active ? "disable" : "activate"}
-  onClick={() => handleToggleActive(user)}
->
-  {user.active ? "Dezactivează" : "Activează"}
-</button>
+      <button
+        className={user.active ? "disable" : "activate"}
+        onClick={() => handleToggleActive(user)}
+      >
+        {user.active ? "Dezactivează" : "Activează"}
+      </button>
+    </>
+  )}
 </span>
               </div>
             ))}
@@ -588,7 +589,6 @@ const handleToggleActive = async (user) => {
                 value={formData.rol}
                 onChange={handleChange}
               >
-                <option value="ADMIN">Administrator</option>
                 <option value="DOCTOR">Medic</option>
                 <option value="PATIENT">Pacient</option>
               </select>
