@@ -166,4 +166,5 @@ function Medic() {
   );
 }
 
+
 export default Medic;
