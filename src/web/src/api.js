@@ -1,5 +1,5 @@
 const API_BASE =
-  "http://seniorwatch-dev.eba-g2g95ywt.eu-central-1.elasticbeanstalk.com";
+  "";
 
 export async function loginUser(email, password) {
   const response = await fetch(`${API_BASE}/api/auth/login`, {
