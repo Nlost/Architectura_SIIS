@@ -76,6 +76,10 @@ function AdminRoluri() {
             📝 Audit
           </a>
 
+          <a href="#" onClick={(e) => { e.preventDefault(); navigate("/admin/adminhl7"); }}>
+            🔗 HL7 FHIR
+          </a>
+
         </nav>
 
         <div className="roles-profile">

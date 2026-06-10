@@ -91,6 +91,8 @@ function AdminAudit() {
 
           <a href="#" className="active">📝 Audit</a>
 
+          <a href="#" onClick={(e) => { e.preventDefault(); navigate("/admin/adminhl7"); }}>🔗 HL7 FHIR</a>
+
         </nav>
 
         <div className="audit-profile">

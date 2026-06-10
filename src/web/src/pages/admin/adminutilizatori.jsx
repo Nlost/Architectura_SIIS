@@ -255,6 +255,16 @@ const handleToggleActive = async (user) => {
           >
             📝 Audit
           </a>
+
+          <a
+            href="#"
+            onClick={(e) => {
+              e.preventDefault();
+              navigate("/admin/adminhl7");
+            }}
+          >
+            🔗 HL7 FHIR
+          </a>
         </nav>
 
         <div className="users-profile">

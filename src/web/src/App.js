@@ -19,6 +19,7 @@ import AdminUtilizatori from "./pages/admin/adminutilizatori";
 import AdminRoluri from "./pages/admin/adminroluri";
 import AdminAudit from "./pages/admin/adminaudit";
 import AdminStatus from "./pages/admin/adminstatus";
+import AdminHl7 from "./pages/admin/adminhl7";
 function App() {
   return (
     <Routes>
@@ -41,6 +42,7 @@ function App() {
       <Route path="/admin/adminroluri" element={<AdminRoluri />} />
       <Route path="/admin/adminaudit" element={<AdminAudit />} />
       <Route path="/admin/adminstatus" element={<AdminStatus />} />
+      <Route path="/admin/adminhl7" element={<AdminHl7 />} />
     </Routes>
   );
 }

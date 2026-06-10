@@ -66,6 +66,10 @@ function AdminStatus() {
           <a href="#" className="active">
             🟢 Status sistem
           </a>
+
+          <a href="#" onClick={(e) => { e.preventDefault(); navigate("/admin/adminhl7"); }}>
+            🔗 HL7 FHIR
+          </a>
         </nav>
 
         <div className="status-profile">
