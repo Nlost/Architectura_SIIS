@@ -1,140 +1,185 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { createUser, getUsers } from "../../api";
 import "./adminutilizatori.css";
 
 function AdminUtilizatori() {
   const navigate = useNavigate();
 
+  const [users, setUsers] = useState([]);
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("Toate");
   const [statusFilter, setStatusFilter] = useState("Toate");
   const [showForm, setShowForm] = useState(false);
-
+const [showEditForm, setShowEditForm] = useState(false);
+const [selectedUser, setSelectedUser] = useState(null);
   const [formData, setFormData] = useState({
     nume: "",
     prenume: "",
-    email: "",
     rol: "",
-    status: "Activ",
-    telefon: "",
-    departament: "",
-    observatii: "",
   });
 
   const [errors, setErrors] = useState({});
 
-  const users = [
-    {
-      initials: "AP",
-      name: "Dr. Andrei Popescu",
-      email: "andrei@clinic.ro",
-      role: "Medic",
-      status: "Activ",
-      phone: "0712345678",
-    },
-    {
-      initials: "MI",
-      name: "Maria Ionescu",
-      email: "maria@email.ro",
-      role: "Pacient",
-      status: "Activ",
-      phone: "0723456789",
-    },
-    {
-      initials: "ER",
-      name: "Dr. Elena Radu",
-      email: "elena@clinic.ro",
-      role: "Medic",
-      status: "Inactiv",
-      phone: "0734567890",
-    },
-  ];
-
-  const filteredUsers = users.filter((user) => {
-    const matchesSearch =
-      user.name.toLowerCase().includes(search.toLowerCase()) ||
-      user.email.toLowerCase().includes(search.toLowerCase());
-
-    const matchesRole = roleFilter === "Toate" || user.role === roleFilter;
-    const matchesStatus = statusFilter === "Toate" || user.status === statusFilter;
-
-    return matchesSearch && matchesRole && matchesStatus;
-  });
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-
-    if (name === "telefon") {
-      const onlyNumbers = value.replace(/\D/g, "").slice(0, 10);
-      setFormData({ ...formData, telefon: onlyNumbers });
-      return;
+  const loadUsers = async () => {
+    try {
+      const data = await getUsers();
+      setUsers(data);
+    } catch (error) {
+      console.log(error);
+      alert("Nu s-au putut încărca utilizatorii.");
     }
+  };
 
-    setFormData({ ...formData, [name]: value });
+  useEffect(() => {
+    loadUsers();
+  }, []);
+
+  const normalizeText = (text) => {
+    return text
+      .toLowerCase()
+      .trim()
+      .replace(/\s+/g, "")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "");
+  };
+
+  const generateEmail = () => {
+    return `${normalizeText(formData.prenume)}.${normalizeText(
+      formData.nume
+    )}@seniorwatch.com`;
+  };
+
+  const generatePassword = () => {
+    return "Senior123!";
   };
 
   const validateForm = () => {
     const newErrors = {};
 
-    if (!formData.nume.trim()) newErrors.nume = "Numele este obligatoriu";
-    if (!formData.prenume.trim()) newErrors.prenume = "Prenumele este obligatoriu";
-
-    if (!formData.email.trim()) {
-      newErrors.email = "Emailul este obligatoriu";
-    } else if (!formData.email.includes("@")) {
-      newErrors.email = "Emailul trebuie să conțină @";
+    if (!formData.nume.trim()) {
+      newErrors.nume = "Numele este obligatoriu";
     }
 
-    if (!formData.rol) newErrors.rol = "Rolul este obligatoriu";
-    if (!formData.status) newErrors.status = "Statusul este obligatoriu";
-
-    if (!formData.telefon.trim()) {
-      newErrors.telefon = "Telefonul este obligatoriu";
-    } else if (formData.telefon.length !== 10) {
-      newErrors.telefon = "Telefonul trebuie să aibă exact 10 cifre";
+    if (!formData.prenume.trim()) {
+      newErrors.prenume = "Prenumele este obligatoriu";
     }
 
-    if (!formData.departament.trim()) {
-      newErrors.departament = "Departamentul este obligatoriu";
-    }
-
-    if (!formData.observatii.trim()) {
-      newErrors.observatii = "Observațiile sunt obligatorii";
+    if (!formData.rol) {
+      newErrors.rol = "Rolul este obligatoriu";
     }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const formIsValid =
-    formData.nume.trim() &&
-    formData.prenume.trim() &&
-    formData.email.includes("@") &&
-    formData.rol &&
-    formData.status &&
-    formData.telefon.length === 10 &&
-    formData.departament.trim() &&
-    formData.observatii.trim();
-
-  const handleCreateUser = () => {
-    if (!validateForm()) return;
-
-    alert("Utilizator creat cu succes!");
-    setShowForm(false);
+  const handleChange = (e) => {
+    const { name, value } = e.target;
 
     setFormData({
-      nume: "",
-      prenume: "",
-      email: "",
-      rol: "",
-      status: "Activ",
-      telefon: "",
-      departament: "",
-      observatii: "",
+      ...formData,
+      [name]: value,
     });
-
-    setErrors({});
   };
+
+  const handleCreateUser = async () => {
+    if (!validateForm()) return;
+
+    const email = generateEmail();
+    const password = generatePassword();
+
+    try {
+      await createUser(email, password, formData.rol);
+
+      alert(
+        `Utilizator creat cu succes!\n\nEmail: ${email}\nParolă: ${password}`
+      );
+
+      setShowForm(false);
+
+      setFormData({
+        nume: "",
+        prenume: "",
+        rol: "",
+      });
+
+      setErrors({});
+      await loadUsers();
+    } catch (error) {
+      console.log(error);
+      alert("Eroare la crearea utilizatorului.");
+    }
+  };
+const handleEditUser = (user) => {
+  setSelectedUser(user);
+
+  const fullName = getNameFromEmail(user.email).split(" ");
+
+  setFormData({
+    nume: fullName[1] || "",
+    prenume: fullName[0] || "",
+    rol: user.role,
+  });
+
+  setShowEditForm(true);
+};
+  const formatRole = (role) => {
+    if (role === "ADMIN") return "Administrator";
+    if (role === "DOCTOR") return "Medic";
+    if (role === "PATIENT") return "Pacient";
+    return role;
+  };
+
+  const getNameFromEmail = (email) => {
+    const username = email?.split("@")[0] || "utilizator";
+
+    return username
+      .split(".")
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(" ");
+  };
+
+  const getInitials = (email) => {
+    const name = getNameFromEmail(email);
+
+    return name
+      .split(" ")
+      .map((word) => word.charAt(0))
+      .join("")
+      .substring(0, 2)
+      .toUpperCase();
+  };
+
+  const totalUsers = users.length;
+  const activeUsers = users.filter((user) => user.active).length;
+  const inactiveUsers = users.filter((user) => !user.active).length;
+  const doctors = users.filter((user) => user.role === "DOCTOR").length;
+  const patients = users.filter((user) => user.role === "PATIENT").length;
+
+  const filteredUsers = users
+    .filter((user) => {
+      const displayName = getNameFromEmail(user.email).toLowerCase();
+      const email = user.email?.toLowerCase() || "";
+      const role = formatRole(user.role).toLowerCase();
+      const status = user.active ? "Activ" : "Inactiv";
+
+      const matchesSearch =
+        displayName.includes(search.toLowerCase()) ||
+        email.includes(search.toLowerCase()) ||
+        role.includes(search.toLowerCase());
+
+      const matchesRole =
+        roleFilter === "Toate" || formatRole(user.role) === roleFilter;
+
+      const matchesStatus =
+        statusFilter === "Toate" || status === statusFilter;
+
+      return matchesSearch && matchesRole && matchesStatus;
+    })
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+  const formIsValid =
+    formData.nume.trim() && formData.prenume.trim() && formData.rol;
 
   return (
     <div className="users-app">
@@ -149,18 +194,46 @@ function AdminUtilizatori() {
         </div>
 
         <nav>
-          <a href="#" onClick={(e) => { e.preventDefault(); navigate("/admin"); }}>📊 Dashboard</a>
-          <a href="#" className="active">👥 Utilizatori</a>
-          <a href="#" onClick={(e) => { e.preventDefault(); navigate("/admin/adminroluri"); }}>🛡️ Roluri</a>
-          <a href="#" onClick={(e) => { e.preventDefault(); navigate("/admin/adminaudit"); }}>📝 Audit</a>
-          <a href="#" onClick={(e) => { e.preventDefault(); navigate("/admin/adminstatus"); }}>🟢 Status sistem</a>
+          <a
+            href="#"
+            onClick={(e) => {
+              e.preventDefault();
+              navigate("/admin");
+            }}
+          >
+            📊 Dashboard
+          </a>
+
+          <a href="#" className="active">
+            👥 Utilizatori
+          </a>
+
+          <a
+            href="#"
+            onClick={(e) => {
+              e.preventDefault();
+              navigate("/admin/adminroluri");
+            }}
+          >
+            🛡️ Roluri
+          </a>
+
+          <a
+            href="#"
+            onClick={(e) => {
+              e.preventDefault();
+              navigate("/admin/adminaudit");
+            }}
+          >
+            📝 Audit
+          </a>
         </nav>
 
         <div className="users-profile">
           <div>A</div>
           <span>
             <b>Administrator</b>
-            admin@clinic.ro
+            {localStorage.getItem("sw_email") || "admin@clinic.ro"}
           </span>
         </div>
       </aside>
@@ -182,7 +255,7 @@ function AdminUtilizatori() {
             <div className="users-statIcon purple">👥</div>
             <div>
               <p>Total utilizatori</p>
-              <h2>128</h2>
+              <h2>{totalUsers}</h2>
             </div>
           </div>
 
@@ -190,7 +263,7 @@ function AdminUtilizatori() {
             <div className="users-statIcon green">✅</div>
             <div>
               <p>Conturi active</p>
-              <h2>121</h2>
+              <h2>{activeUsers}</h2>
             </div>
           </div>
 
@@ -198,7 +271,15 @@ function AdminUtilizatori() {
             <div className="users-statIcon violet">🩺</div>
             <div>
               <p>Medici</p>
-              <h2>12</h2>
+              <h2>{doctors}</h2>
+            </div>
+          </div>
+
+          <div className="users-stat">
+            <div className="users-statIcon green">📱</div>
+            <div>
+              <p>Pacienți</p>
+              <h2>{patients}</h2>
             </div>
           </div>
 
@@ -206,7 +287,7 @@ function AdminUtilizatori() {
             <div className="users-statIcon pink">🚫</div>
             <div>
               <p>Inactive</p>
-              <h2>7</h2>
+              <h2>{inactiveUsers}</h2>
             </div>
           </div>
         </section>
@@ -222,19 +303,25 @@ function AdminUtilizatori() {
           <div className="users-toolbar">
             <input
               type="text"
-              placeholder="Caută după nume / email"
+              placeholder="Caută după utilizator, email sau rol"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
 
-            <select value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)}>
+            <select
+              value={roleFilter}
+              onChange={(e) => setRoleFilter(e.target.value)}
+            >
               <option>Toate</option>
               <option>Administrator</option>
               <option>Medic</option>
               <option>Pacient</option>
             </select>
 
-            <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+            >
               <option>Toate</option>
               <option>Activ</option>
               <option>Inactiv</option>
@@ -246,31 +333,39 @@ function AdminUtilizatori() {
               <span>Utilizator</span>
               <span>Email</span>
               <span>Rol</span>
-              <span>Telefon</span>
               <span>Status</span>
               <span>Acțiuni</span>
             </div>
 
-            {filteredUsers.map((user, index) => (
-              <div className="users-row" key={index}>
+            {filteredUsers.map((user) => (
+              <div className="users-row" key={user.id}>
                 <span className="users-name">
-                  <b>{user.initials}</b>
-                  {user.name}
+                  <b>{getInitials(user.email)}</b>
+                  {getNameFromEmail(user.email)}
                 </span>
 
                 <span>{user.email}</span>
-                <span>{user.role}</span>
-                <span>{user.phone}</span>
 
-                <span className={`users-badge ${user.status}`}>
-                  {user.status}
-                </span>
+                <span>{formatRole(user.role)}</span>
 
-                <span className="users-actions">
-                  <button className="edit">Editare</button>
-                  <button className="disable">Dezactivează</button>
-                  <button className="delete">Șterge</button>
-                </span>
+<span className={`users-badge ${user.active ? "Activ" : "Inactiv"}`}>
+  {user.active ? "Activ" : "Inactiv"}
+</span>
+
+<span className="users-actions">
+  <button
+    className="edit"
+    onClick={() => handleEditUser(user)}
+  >
+    Editare
+  </button>
+
+  <button
+    className={user.active ? "disable" : "activate"}
+  >
+    {user.active ? "Dezactivează" : "Activează"}
+  </button>
+</span>
               </div>
             ))}
           </div>
@@ -286,11 +381,17 @@ function AdminUtilizatori() {
 
                 <div>
                   <h2>Utilizator nou</h2>
-                  <p>Completează datele contului nou.</p>
+                  <p>
+                    Completează numele, prenumele și rolul. Emailul și parola
+                    se generează automat.
+                  </p>
                 </div>
               </div>
 
-              <button className="users-closeBtn" onClick={() => setShowForm(false)}>
+              <button
+                className="users-closeBtn"
+                onClick={() => setShowForm(false)}
+              >
                 ×
               </button>
             </div>
@@ -309,7 +410,9 @@ function AdminUtilizatori() {
                       value={formData.nume}
                       onChange={handleChange}
                     />
-                    {errors.nume && <span className="users-error">{errors.nume}</span>}
+                    {errors.nume && (
+                      <span className="users-error">{errors.nume}</span>
+                    )}
                   </div>
 
                   <div className="users-field">
@@ -321,88 +424,51 @@ function AdminUtilizatori() {
                       value={formData.prenume}
                       onChange={handleChange}
                     />
-                    {errors.prenume && <span className="users-error">{errors.prenume}</span>}
+                    {errors.prenume && (
+                      <span className="users-error">{errors.prenume}</span>
+                    )}
                   </div>
 
                   <div className="users-field">
-                    <label>Email *</label>
+                    <label>Email generat</label>
                     <input
-                      name="email"
-                      type="email"
-                      placeholder="exemplu@email.ro"
-                      value={formData.email}
-                      onChange={handleChange}
+                      type="text"
+                      value={
+                        formData.nume.trim() && formData.prenume.trim()
+                          ? generateEmail()
+                          : "Se generează automat"
+                      }
+                      readOnly
                     />
-                    {errors.email && <span className="users-error">{errors.email}</span>}
                   </div>
 
                   <div className="users-field">
                     <label>Rol *</label>
-                    <select name="rol" value={formData.rol} onChange={handleChange}>
+                    <select
+                      name="rol"
+                      value={formData.rol}
+                      onChange={handleChange}
+                    >
                       <option value="" disabled>
                         Alege rol
                       </option>
-                      <option value="Administrator">Administrator</option>
-                      <option value="Medic">Medic</option>
-                      <option value="Pacient">Pacient</option>
+                      <option value="ADMIN">Administrator</option>
+                      <option value="DOCTOR">Medic</option>
+                      <option value="PATIENT">Pacient</option>
                     </select>
-                    {errors.rol && <span className="users-error">{errors.rol}</span>}
+                    {errors.rol && (
+                      <span className="users-error">{errors.rol}</span>
+                    )}
                   </div>
 
                   <div className="users-field">
-                    <label>Status *</label>
-                    <select name="status" value={formData.status} onChange={handleChange}>
-                      <option value="Activ">Activ</option>
-                      <option value="Inactiv">Inactiv</option>
-                    </select>
-                    {errors.status && <span className="users-error">{errors.status}</span>}
+                    <label>Status</label>
+                    <input type="text" value="Activ implicit" readOnly />
                   </div>
 
                   <div className="users-field">
                     <label>Parolă</label>
                     <input type="text" value="Generată automat" readOnly />
-                  </div>
-                </div>
-              </div>
-
-              <div className="users-formSection">
-                <h3>Detalii cont</h3>
-
-                <div className="users-formGrid">
-                  <div className="users-field">
-                    <label>Telefon *</label>
-                    <input
-                      name="telefon"
-                      type="text"
-                      placeholder="ex: 0712345678"
-                      value={formData.telefon}
-                      onChange={handleChange}
-                    />
-                    {errors.telefon && <span className="users-error">{errors.telefon}</span>}
-                  </div>
-
-                  <div className="users-field">
-                    <label>Departament *</label>
-                    <input
-                      name="departament"
-                      type="text"
-                      placeholder="ex: Cardiologie"
-                      value={formData.departament}
-                      onChange={handleChange}
-                    />
-                    {errors.departament && <span className="users-error">{errors.departament}</span>}
-                  </div>
-
-                  <div className="users-field">
-                    <label>Observații *</label>
-                    <input
-                      name="observatii"
-                      type="text"
-                      placeholder="Detalii suplimentare..."
-                      value={formData.observatii}
-                      onChange={handleChange}
-                    />
-                    {errors.observatii && <span className="users-error">{errors.observatii}</span>}
                   </div>
                 </div>
               </div>
@@ -429,6 +495,104 @@ function AdminUtilizatori() {
           </div>
         </div>
       )}
+      {showEditForm && (
+  <div className="users-modalOverlay">
+    <div className="users-modal">
+      <div className="users-modalHead">
+        <div className="users-modalTitle">
+          <div className="users-modalIcon">✏️</div>
+
+          <div>
+            <h2>Editare utilizator</h2>
+            <p>Modifică informațiile utilizatorului.</p>
+          </div>
+        </div>
+
+        <button
+          className="users-closeBtn"
+          onClick={() => setShowEditForm(false)}
+        >
+          ×
+        </button>
+      </div>
+
+      <form className="users-form">
+        <div className="users-formSection">
+          <h3>Date utilizator</h3>
+
+          <div className="users-formGrid">
+            <div className="users-field">
+              <label>Nume</label>
+
+              <input
+                type="text"
+                name="nume"
+                value={formData.nume}
+                onChange={handleChange}
+              />
+            </div>
+
+            <div className="users-field">
+              <label>Prenume</label>
+
+              <input
+                type="text"
+                name="prenume"
+                value={formData.prenume}
+                onChange={handleChange}
+              />
+            </div>
+
+            <div className="users-field">
+              <label>Email</label>
+
+              <input
+                type="text"
+                value={selectedUser?.email || ""}
+                readOnly
+              />
+            </div>
+
+            <div className="users-field">
+              <label>Rol</label>
+
+              <select
+                name="rol"
+                value={formData.rol}
+                onChange={handleChange}
+              >
+                <option value="ADMIN">Administrator</option>
+                <option value="DOCTOR">Medic</option>
+                <option value="PATIENT">Pacient</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div className="users-formActions">
+          <button
+            type="button"
+            className="users-cancelBtn"
+            onClick={() => setShowEditForm(false)}
+          >
+            Renunță
+          </button>
+
+          <button
+            type="button"
+            className="users-submitBtn"
+            onClick={() => {
+              alert("Utilizator actualizat!");
+              setShowEditForm(false);
+            }}
+          >
+            Salvează modificările
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+)}
     </div>
   );
 }

@@ -70,6 +70,7 @@ body {
   color: white;
   font-weight: 800;
   cursor: pointer;
+  text-decoration: none;
 }
 
 .roles-sidebar nav a.active,

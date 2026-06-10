@@ -1,4 +1,5 @@
-const API_BASE = "";
+const API_BASE =
+  "http://seniorwatch-dev.eba-g2g95ywt.eu-central-1.elasticbeanstalk.com";
 
 export async function loginUser(email, password) {
   const response = await fetch(`${API_BASE}/api/auth/login`, {
@@ -6,10 +7,7 @@ export async function loginUser(email, password) {
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({
-      email,
-      password,
-    }),
+    body: JSON.stringify({ email, password }),
   });
 
   const text = await response.text();
@@ -18,6 +16,29 @@ export async function loginUser(email, password) {
     console.log("Login status:", response.status);
     console.log("Login backend response:", text);
     throw new Error(text || "Login eșuat");
+  }
+
+  return text ? JSON.parse(text) : {};
+}
+
+export async function createUser(email, password, role) {
+  const token = localStorage.getItem("sw_token");
+
+  const response = await fetch(`${API_BASE}/api/users`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ email, password, role }),
+  });
+
+  const text = await response.text();
+
+  if (!response.ok) {
+    console.log("Create user status:", response.status);
+    console.log("Create user backend response:", text);
+    throw new Error(text || "Nu s-a putut crea utilizatorul");
   }
 
   return text ? JSON.parse(text) : {};
@@ -44,28 +65,43 @@ export async function getUsers() {
   return text ? JSON.parse(text) : [];
 }
 
-export async function createUser(email, password, role) {
+export async function updateUser(id, role) {
   const token = localStorage.getItem("sw_token");
 
-  const response = await fetch(`${API_BASE}/api/users`, {
-    method: "POST",
+  const response = await fetch(`${API_BASE}/api/users/${id}`, {
+    method: "PUT",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
     },
-    body: JSON.stringify({
-      email,
-      password,
-      role,
-    }),
+    body: JSON.stringify({ role }),
   });
 
   const text = await response.text();
 
   if (!response.ok) {
-    console.log("Create user status:", response.status);
-    console.log("Create user backend response:", text);
-    throw new Error(text || "Nu s-a putut crea utilizatorul");
+    throw new Error(text || "Nu s-a putut actualiza utilizatorul");
+  }
+
+  return text ? JSON.parse(text) : {};
+}
+
+export async function toggleUserActive(id, active) {
+  const token = localStorage.getItem("sw_token");
+
+  const response = await fetch(`${API_BASE}/api/users/${id}/active`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ active }),
+  });
+
+  const text = await response.text();
+
+  if (!response.ok) {
+    throw new Error(text || "Nu s-a putut schimba statusul utilizatorului");
   }
 
   return text ? JSON.parse(text) : {};

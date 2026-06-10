@@ -1,8 +1,7 @@
-import { useState } from "react";
 import "./admin.css";
 import { useNavigate } from "react-router-dom";
-import { createUser } from "../../api";
-
+import { useEffect, useState } from "react";
+import { createUser, getUsers } from "../../api";
 function AdminDashboard() {
   const navigate = useNavigate();
   const [showCreateUser, setShowCreateUser] = useState(false);
@@ -14,7 +13,7 @@ function AdminDashboard() {
   });
 
   const [errors, setErrors] = useState({});
-
+const [searchTerm, setSearchTerm] = useState("");
   const normalizeText = (text) => {
     return text
       .toLowerCase()
@@ -74,7 +73,7 @@ function AdminDashboard() {
   role: formData.rol,
 });
       await createUser(email, password, formData.rol);
-
+await loadDashboardData();
       alert(
         `Utilizator creat cu succes!\n\nEmail: ${email}\nParolă: ${password}`
       );
@@ -96,7 +95,51 @@ function AdminDashboard() {
 
   const formIsValid =
     formData.nume.trim() && formData.prenume.trim() && formData.rol;
+const [users, setUsers] = useState([]);
 
+const [stats, setStats] = useState({
+  totalUsers: 0,
+  doctors: 0,
+  patients: 0,
+});
+const filteredUsers = users.filter((user) => {
+  const username = user.email?.split("@")[0] || "";
+  const role =
+    user.role === "DOCTOR"
+      ? "medic"
+      : user.role === "PATIENT"
+      ? "pacient"
+      : user.role === "ADMIN"
+      ? "administrator"
+      : user.role?.toLowerCase() || "";
+
+  const search = searchTerm.toLowerCase();
+
+  return (
+    username.toLowerCase().includes(search) ||
+    user.email?.toLowerCase().includes(search) ||
+    role.includes(search)
+  );
+});
+const loadDashboardData = async () => {
+  try {
+    const usersData = await getUsers();
+
+    setUsers(usersData);
+
+    setStats({
+      totalUsers: usersData.length,
+      doctors: usersData.filter((u) => u.role === "DOCTOR").length,
+      patients: usersData.filter((u) => u.role === "PATIENT").length,
+    });
+  } catch (error) {
+    console.log(error);
+  }
+};
+
+useEffect(() => {
+  loadDashboardData();
+}, []);
   return (
     <div className="admin-app">
       <aside className="admin-sidebar">
@@ -120,9 +163,6 @@ function AdminDashboard() {
 
           <a href="#" onClick={(e) => { e.preventDefault(); navigate("/admin/adminaudit"); }}>📝 Audit</a>
 
-          <a href="#" onClick={(e) => { e.preventDefault(); navigate("/admin/adminstatus"); }}>
-            🟢 Status sistem
-          </a>
         </nav>
 
         <div className="admin-profile">
@@ -138,8 +178,11 @@ function AdminDashboard() {
       <main className="admin-main">
         <section className="admin-hero">
           <div className="admin-heroSearch">
-            <input placeholder="Caută utilizator, rol sau activitate..." />
-            <button>⌕</button>
+<input
+  placeholder="Caută utilizator sau rol..."
+  value={searchTerm}
+  onChange={(e) => setSearchTerm(e.target.value)}
+/>            <button>⌕</button>
           </div>
         </section>
 
@@ -148,8 +191,8 @@ function AdminDashboard() {
             <div className="admin-icon purple">👥</div>
             <div>
               <p>Utilizatori</p>
-              <h2>128</h2>
-              <span>total conturi platformă</span>
+<h2>{stats.totalUsers}</h2>         
+     <span>total conturi platformă</span>
             </div>
           </div>
 
@@ -157,8 +200,7 @@ function AdminDashboard() {
             <div className="admin-icon violet">🩺</div>
             <div>
               <p>Medici</p>
-              <h2>12</h2>
-              <span>conturi medicale active</span>
+<h2>{stats.doctors}</h2>              <span>conturi medicale active</span>
             </div>
           </div>
 
@@ -166,8 +208,7 @@ function AdminDashboard() {
             <div className="admin-icon green">📱</div>
             <div>
               <p>Pacienți</p>
-              <h2>104</h2>
-              <span>monitorizați în sistem</span>
+<h2>{stats.patients}</h2>              <span>monitorizați în sistem</span>
             </div>
           </div>
 
@@ -175,7 +216,7 @@ function AdminDashboard() {
             <div className="admin-icon pink">⚠</div>
             <div>
               <p>Probleme</p>
-              <h2>3</h2>
+              <h2>0</h2>
               <span>dispozitive inactive</span>
             </div>
           </div>
@@ -206,38 +247,46 @@ function AdminDashboard() {
                 <span>Acțiune</span>
               </div>
 
-              <div className="admin-tableRow">
-                <span className="admin-userName">
-                  <b>AP</b>
-                  Dr. Andrei Popescu
-                </span>
-                <span>andrei@clinic.ro</span>
-                <span>Medic</span>
-                <span className="admin-badge Activ">Activ</span>
-                <span className="admin-action">Editare</span>
-              </div>
+{[...filteredUsers]  .reverse()
+  .slice(0, 5)
+  .map((user) => {
+    const username = user.email?.split("@")[0] || "utilizator";
 
-              <div className="admin-tableRow">
-                <span className="admin-userName">
-                  <b>MI</b>
-                  Maria Ionescu
-                </span>
-                <span>maria@email.ro</span>
-                <span>Pacient</span>
-                <span className="admin-badge Activ">Activ</span>
-                <span className="admin-action">Editare</span>
-              </div>
+    const displayName = username
+      .split(".")
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(" ");
 
-              <div className="admin-tableRow">
-                <span className="admin-userName">
-                  <b>ER</b>
-                  Dr. Elena Radu
-                </span>
-                <span>elena@clinic.ro</span>
-                <span>Medic</span>
-                <span className="admin-badge Inactiv">Inactiv</span>
-                <span className="admin-action">Editare</span>
-              </div>
+  return (
+    <div className="admin-tableRow" key={user.id || user.email}>
+      <span className="admin-userName">
+<b>
+  {displayName
+    .split(" ")
+    .map((word) => word.charAt(0))
+    .join("")
+    .substring(0, 2)
+    .toUpperCase()}
+</b><span>{displayName}</span>      </span>
+
+      <span>{user.email}</span>
+
+      <span>
+        {user.role === "DOCTOR"
+          ? "Medic"
+          : user.role === "PATIENT"
+          ? "Pacient"
+          : user.role === "ADMIN"
+          ? "Administrator"
+          : user.role}
+      </span>
+
+      <span className="admin-badge Activ">Activ</span>
+
+      <span className="admin-action">Editare</span>
+    </div>
+  );
+})}
             </div>
           </div>
 
@@ -252,13 +301,12 @@ function AdminDashboard() {
 
               <div className="admin-role">
                 <strong>Medic</strong>
-                <span>12 conturi</span>
-              </div>
+<span>{stats.doctors} conturi
+  </span>              </div>
 
               <div className="admin-role">
                 <strong>Pacient</strong>
-                <span>104 conturi</span>
-              </div>
+<span>{stats.patients} conturi</span>              </div>
             </div>
           </div>
         </section>
