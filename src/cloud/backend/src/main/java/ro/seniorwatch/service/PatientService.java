@@ -2,6 +2,7 @@ package ro.seniorwatch.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ro.seniorwatch.dto.*;
@@ -20,6 +21,7 @@ public class PatientService {
     private final PatientRepository patientRepository;
     private final UserRepository userRepository;
     private final DemographicsRepository demographicsRepository;
+    private final PasswordEncoder passwordEncoder;
 
     @Transactional(readOnly = true)
     public List<PatientResponse> listPatients(Authentication auth) {
@@ -46,6 +48,7 @@ public class PatientService {
     @Transactional
     public PatientResponse createPatient(PatientRequest request, Authentication auth) {
         String email = (String) auth.getPrincipal();
+
         User caller = userRepository.findByEmail(email)
                 .orElseThrow(() -> new NoSuchElementException("User not found"));
 
@@ -56,12 +59,36 @@ public class PatientService {
         User doctor = userRepository.findById(doctorId)
                 .orElseThrow(() -> new NoSuchElementException("Doctor not found: " + doctorId));
 
+        DemographicsDto dto = request.getDemographics();
+
+        if (dto.getEmail() == null || dto.getEmail().isBlank()) {
+            throw new IllegalArgumentException("Emailul pacientului este obligatoriu");
+        }
+
+        if (userRepository.existsByEmail(dto.getEmail())) {
+            throw new IllegalArgumentException("Există deja un utilizator cu acest email");
+        }
+
+        String rawPassword =
+                request.getPassword() != null && !request.getPassword().isBlank()
+                        ? request.getPassword()
+                        : "Senior123!";
+
+        User patientUser = User.builder()
+                .email(dto.getEmail())
+                .passwordHash(passwordEncoder.encode(rawPassword))
+                .role(UserRole.PATIENT)
+                .active(true)
+                .build();
+
+        userRepository.save(patientUser);
+
         Patient patient = Patient.builder()
                 .doctor(doctor)
                 .build();
+
         patient = patientRepository.save(patient);
 
-        DemographicsDto dto = request.getDemographics();
         Demographics demo = Demographics.builder()
                 .patient(patient)
                 .nume(dto.getNume())
@@ -79,6 +106,7 @@ public class PatientService {
                 .profesie(dto.getProfesie())
                 .locDeMunca(dto.getLocDeMunca())
                 .build();
+
         demographicsRepository.save(demo);
         patient.setDemographics(demo);
 
@@ -87,8 +115,10 @@ public class PatientService {
 
     private PatientResponse toResponse(Patient p) {
         DemographicsDto demoDto = null;
+
         if (p.getDemographics() != null) {
             Demographics d = p.getDemographics();
+
             demoDto = DemographicsDto.builder()
                     .nume(d.getNume())
                     .prenume(d.getPrenume())
@@ -106,6 +136,7 @@ public class PatientService {
                     .locDeMunca(d.getLocDeMunca())
                     .build();
         }
+
         return PatientResponse.builder()
                 .id(p.getId())
                 .doctorId(p.getDoctor() != null ? p.getDoctor().getId() : null)

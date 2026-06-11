@@ -95,7 +95,10 @@ export async function createPatient(demographics) {
       "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
     },
-    body: JSON.stringify({ demographics }),
+    body: JSON.stringify({
+      demographics,
+      password: "Senior123!",
+    }),
   });
 
   const text = await response.text();

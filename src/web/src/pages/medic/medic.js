@@ -15,7 +15,7 @@ function Medic() {
     <div className="app">
       <aside className="sidebar">
         <div className="brand">
-          <div className="logo">+</div>
+          <div className="logo">SW</div>
           <div>
             <h2>SenorWatch</h2>
             <p>Medical dashboard</p>
