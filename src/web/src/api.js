@@ -197,3 +197,47 @@ export async function getConsultations() {
 
   return text ? JSON.parse(text) : [];
 }
+
+export async function createRecommendation(payload) {
+  const token = localStorage.getItem("sw_token");
+
+  const response = await fetch(`${API_BASE}/api/recommendations`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(payload),
+  });
+
+  const text = await response.text();
+
+  if (!response.ok) {
+    console.log("Create recommendation status:", response.status);
+    console.log("Create recommendation backend response:", text);
+    throw new Error(text || "Nu s-a putut salva recomandarea");
+  }
+
+  return text ? JSON.parse(text) : {};
+}
+
+export async function getRecommendationsByPatient(patientId) {
+  const token = localStorage.getItem("sw_token");
+
+  const response = await fetch(`${API_BASE}/api/recommendations/patient/${patientId}`, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  const text = await response.text();
+
+  if (!response.ok) {
+    console.log("Get recommendations status:", response.status);
+    console.log("Get recommendations backend response:", text);
+    throw new Error(text || "Nu s-au putut încărca recomandările");
+  }
+
+  return text ? JSON.parse(text) : [];
+}

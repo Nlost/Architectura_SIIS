@@ -1,6 +1,6 @@
 import "./consultatii.css";
 import { useEffect, useState } from "react";
-import { getPatients, getConsultations, createConsultation } from "../../api";
+import { getPatients, getConsultations, createConsultation, createRecommendation } from "../../api";
 
 const initialConsultation = {
   patient_id: "",
@@ -187,6 +187,22 @@ visitedAt: new Date(newConsultation.visited_at).toISOString(),
   console.log(finalPayload);
   console.log(JSON.stringify(finalPayload, null, 2));
       await createConsultation(finalPayload);
+        const hasRecommendation =
+    newConsultation.recommendation_title ||
+    newConsultation.recommendation_duration ||
+    newConsultation.recommendation_notes;
+
+  if (hasRecommendation) {
+    await createRecommendation({
+      patientId: newConsultation.patient_id,
+      tipActivitate: newConsultation.recommendation_title,
+      durataZilnicaMinute: newConsultation.recommendation_duration
+        ? Number(newConsultation.recommendation_duration)
+        : null,
+      alteIndicatii: newConsultation.recommendation_notes,
+    });
+  }
+
       await loadConsultations();
 
       closeAddModal();
