@@ -16,13 +16,16 @@ function FisaPacient() {
   const [consultations, setConsultations] = useState([]);
   const [recommendations, setRecommendations] = useState([]);
 
+useEffect(() => {
   const loadData = async () => {
     try {
       const patientData = await getPatient(id);
       setPatient(patientData);
 
       const allConsultations = await getConsultations();
-      setConsultations(allConsultations.filter((c) => c.patientId === id));
+      setConsultations(
+        allConsultations.filter((c) => c.patientId === id)
+      );
 
       const recData = await getRecommendationsByPatient(id);
       setRecommendations(recData);
@@ -31,6 +34,9 @@ function FisaPacient() {
       alert("Eroare la încărcarea fișei pacientului.");
     }
   };
+
+  loadData();
+}, [id]);
 
   useEffect(() => {
     loadData();
