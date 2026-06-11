@@ -10,11 +10,11 @@ import ro.seniorwatch.entity.ClinicalVisit;
 import ro.seniorwatch.entity.Demographics;
 import ro.seniorwatch.entity.Patient;
 import ro.seniorwatch.entity.User;
+import ro.seniorwatch.entity.enums.HealthItemStatus;
 import ro.seniorwatch.entity.enums.UserRole;
 import ro.seniorwatch.repository.ClinicalVisitRepository;
 import ro.seniorwatch.repository.PatientRepository;
 import ro.seniorwatch.repository.UserRepository;
-import ro.seniorwatch.entity.enums.HealthItemStatus;
 
 import java.time.LocalDate;
 import java.time.Period;
@@ -43,18 +43,24 @@ public class ClinicalVisitService {
     }
 
     @Transactional
-    public ClinicalVisitResponse createClinicalVisit(ClinicalVisitRequest request, Authentication auth) {
+    public ClinicalVisitResponse createClinicalVisit(
+            ClinicalVisitRequest request,
+            Authentication auth
+    ) {
         String email = (String) auth.getPrincipal();
 
         User caller = userRepository.findByEmail(email)
                 .orElseThrow(() -> new NoSuchElementException("User not found"));
 
-        Patient patient = patientRepository.findByIdWithDemographics(request.getPatientId())
+        Patient patient = patientRepository
+                .findByIdWithDemographics(request.getPatientId())
                 .orElseThrow(() -> new NoSuchElementException("Patient not found"));
 
         if (caller.getRole() != UserRole.ADMIN &&
                 !patient.getDoctor().getId().equals(caller.getId())) {
-            throw new IllegalArgumentException("Pacientul nu aparține medicului autentificat");
+            throw new IllegalArgumentException(
+                    "Pacientul nu aparține medicului autentificat"
+            );
         }
 
         ClinicalVisit visit = ClinicalVisit.builder()
@@ -68,7 +74,7 @@ public class ClinicalVisitService {
                 .retete(request.getRetete())
                 .recordedByUser(caller)
                 .responsiblePerson(patient.getDoctor())
-     .status(visit.getStatus())
+                .status(HealthItemStatus.ACTIVE)
                 .build();
 
         visit = clinicalVisitRepository.save(visit);
@@ -90,12 +96,16 @@ public class ClinicalVisitService {
 
             fullName = (nume + " " + prenume).trim();
 
-            initials = ((nume.isBlank() ? "" : nume.substring(0, 1)) +
-                    (prenume.isBlank() ? "" : prenume.substring(0, 1)))
-                    .toUpperCase();
+            initials = (
+                    (nume.isBlank() ? "" : nume.substring(0, 1)) +
+                    (prenume.isBlank() ? "" : prenume.substring(0, 1))
+            ).toUpperCase();
 
             if (d.getDataNasterii() != null) {
-                age = Period.between(d.getDataNasterii(), LocalDate.now()).getYears();
+                age = Period.between(
+                        d.getDataNasterii(),
+                        LocalDate.now()
+                ).getYears();
             }
         }
 
@@ -112,7 +122,11 @@ public class ClinicalVisitService {
                 .diagnosticIcd10Display(visit.getDiagnosticIcd10Display())
                 .trimiteri(visit.getTrimiteri())
                 .retete(visit.getRetete())
-                .status(visit.getStatus())
+                .status(
+                        visit.getStatus() != null
+                                ? visit.getStatus().name()
+                                : null
+                )
                 .build();
     }
 }
