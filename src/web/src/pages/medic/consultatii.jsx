@@ -1,6 +1,11 @@
 import "./consultatii.css";
 import { useEffect, useState } from "react";
-import { getPatients, getConsultations, createConsultation, createRecommendation } from "../../api";
+import {
+  getPatients,
+  getConsultations,
+  createConsultation,
+  createRecommendation,
+} from "../../api";
 
 const initialConsultation = {
   patient_id: "",
@@ -12,7 +17,6 @@ const initialConsultation = {
   diagnostic_icd10_display: "",
   trimiteri: "",
   retete: "",
-
   recommendation_title: "",
   recommendation_duration: "",
   recommendation_notes: "",
@@ -75,12 +79,63 @@ const formatDate = (dateValue) => {
   });
 };
 
+const validateConsultationDate = (value, consultations) => {
+  if (!value) return "Alege data și ora consultației.";
+
+  const selectedDate = new Date(value);
+  const now = new Date();
+
+  if (Number.isNaN(selectedDate.getTime())) {
+    return "Data aleasă nu este validă.";
+  }
+
+  if (selectedDate < now) {
+    return "Consultația nu poate fi programată în trecut.";
+  }
+
+  const day = selectedDate.getDay();
+  const hour = selectedDate.getHours();
+  const minutes = selectedDate.getMinutes();
+
+let errors = [];
+
+if (day === 0 || day === 6) {
+  errors.push("Nu se pot face programări în weekend.");
+}
+
+if (hour < 8 || hour > 17 || (hour === 17 && minutes > 40)) {
+  errors.push("Programul este 08:00 - 18:00.");
+}
+
+if (![0, 20, 40].includes(minutes)) {
+  errors.push("Programările se fac din 20 în 20 de minute (00, 20, 40).");
+}
+
+if (errors.length) {
+  return errors.join(" ");
+}
+
+  const selectedTime = selectedDate.getTime();
+
+  const alreadyBooked = consultations.some((c) => {
+    const visitTime = new Date(c.visitedAt).getTime();
+    return visitTime === selectedTime;
+  });
+
+  if (alreadyBooked) {
+    return "Există deja o consultație programată la această oră.";
+  }
+
+  return "";
+};
+
 function ConsultatiiMedic() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showAppointmentsModal, setShowAppointmentsModal] = useState(false);
 
   const [newConsultation, setNewConsultation] = useState(initialConsultation);
   const [searchTerm, setSearchTerm] = useState("");
+  const [dateError, setDateError] = useState("");
 
   const [patientsList, setPatientsList] = useState([]);
   const [consultations, setConsultations] = useState([]);
@@ -134,7 +189,8 @@ function ConsultatiiMedic() {
   const isFormValid =
     newConsultation.patient_id &&
     newConsultation.visited_at &&
-    newConsultation.motiv_prezentare;
+    newConsultation.motiv_prezentare &&
+    !dateError;
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -153,6 +209,18 @@ function ConsultatiiMedic() {
       return;
     }
 
+    if (name === "visited_at") {
+      const error = validateConsultationDate(value, consultations);
+      setDateError(error);
+
+      setNewConsultation({
+        ...newConsultation,
+        visited_at: value,
+      });
+
+      return;
+    }
+
     setNewConsultation({
       ...newConsultation,
       [name]: value,
@@ -162,6 +230,7 @@ function ConsultatiiMedic() {
   const closeAddModal = () => {
     setShowAddModal(false);
     setNewConsultation(initialConsultation);
+    setDateError("");
   };
 
   const handleAddConsultation = async (e) => {
@@ -171,7 +240,7 @@ function ConsultatiiMedic() {
 
     const finalPayload = {
       patientId: newConsultation.patient_id,
-visitedAt: new Date(newConsultation.visited_at).toISOString(),
+      visitedAt: new Date(newConsultation.visited_at).toISOString(),
       motivPrezentare: newConsultation.motiv_prezentare,
       simptome: newConsultation.simptome,
       diagnosticIcd10Code: newConsultation.diagnostic_icd10_code,
@@ -183,25 +252,27 @@ visitedAt: new Date(newConsultation.visited_at).toISOString(),
     setSaving(true);
 
     try {
-        console.log("=== CONSULTATION PAYLOAD ===");
-  console.log(finalPayload);
-  console.log(JSON.stringify(finalPayload, null, 2));
-      await createConsultation(finalPayload);
-        const hasRecommendation =
-    newConsultation.recommendation_title ||
-    newConsultation.recommendation_duration ||
-    newConsultation.recommendation_notes;
+      console.log("=== CONSULTATION PAYLOAD ===");
+      console.log(finalPayload);
+      console.log(JSON.stringify(finalPayload, null, 2));
 
-  if (hasRecommendation) {
-    await createRecommendation({
-      patientId: newConsultation.patient_id,
-      tipActivitate: newConsultation.recommendation_title,
-      durataZilnicaMinute: newConsultation.recommendation_duration
-        ? Number(newConsultation.recommendation_duration)
-        : null,
-      alteIndicatii: newConsultation.recommendation_notes,
-    });
-  }
+      await createConsultation(finalPayload);
+
+      const hasRecommendation =
+        newConsultation.recommendation_title ||
+        newConsultation.recommendation_duration ||
+        newConsultation.recommendation_notes;
+
+      if (hasRecommendation) {
+        await createRecommendation({
+          patientId: newConsultation.patient_id,
+          tipActivitate: newConsultation.recommendation_title,
+          durataZilnicaMinute: newConsultation.recommendation_duration
+            ? Number(newConsultation.recommendation_duration)
+            : null,
+          alteIndicatii: newConsultation.recommendation_notes,
+        });
+      }
 
       await loadConsultations();
 
@@ -426,10 +497,14 @@ visitedAt: new Date(newConsultation.visited_at).toISOString(),
                       <input
                         name="visited_at"
                         type="datetime-local"
+                          step="1200"
                         value={newConsultation.visited_at}
                         onChange={handleChange}
                         required
                       />
+                      {dateError && (
+                        <small className="fieldError">{dateError}</small>
+                      )}
                     </label>
 
                     <label className="fullField">
