@@ -169,16 +169,16 @@ function ConsultatiiMedic() {
 
     if (!isFormValid || saving) return;
 
-    const finalPayload = {
-      patientId: newConsultation.patient_id,
-      visitedAt: newConsultation.visited_at,
-      motivPrezentare: newConsultation.motiv_prezentare,
-      simptome: newConsultation.simptome,
-      diagnosticIcd10Code: newConsultation.diagnostic_icd10_code,
-      diagnosticIcd10Display: newConsultation.diagnostic_icd10_display,
-      trimiteri: newConsultation.trimiteri,
-      retete: newConsultation.retete,
-    };
+const finalPayload = {
+  patientId: newConsultation.patient_id,
+  visitedAt: new Date(newConsultation.visited_at).toISOString(),
+  motivPrezentare: newConsultation.motiv_prezentare,
+  simptome: newConsultation.simptome,
+  diagnosticIcd10Code: newConsultation.diagnostic_icd10_code,
+  diagnosticIcd10Display: newConsultation.diagnostic_icd10_display,
+  trimiteri: newConsultation.trimiteri,
+  retete: newConsultation.retete,
+};
 
     setSaving(true);
 
