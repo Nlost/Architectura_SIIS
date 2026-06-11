@@ -8,22 +8,22 @@ function Hl7Export() {
   const navigate = useNavigate();
 
   const [patients, setPatients] = useState([]);
+  const [selectedId, setSelectedId] = useState("all");
   const [xml, setXml] = useState("");
   const [generatedAt, setGeneratedAt] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
 
-  const loadAndBuild = useCallback(async () => {
+  const loadPatients = useCallback(async () => {
     setLoading(true);
     setError("");
-    setCopied(false);
     try {
       const data = await getPatients();
-      const builder = new FhirXmlBuilder(data);
       setPatients(data);
-      setXml(builder.toXmlString());
-      setGeneratedAt(new Date());
+      setSelectedId((prev) =>
+        prev === "all" || data.some((p) => p.id === prev) ? prev : "all"
+      );
     } catch (err) {
       setError(err.message || "Nu s-au putut încărca pacienții de pe server.");
       setPatients([]);
@@ -34,15 +34,41 @@ function Hl7Export() {
   }, []);
 
   useEffect(() => {
-    loadAndBuild();
-  }, [loadAndBuild]);
+    loadPatients();
+  }, [loadPatients]);
+
+  const selectedPatients =
+    selectedId === "all" ? patients : patients.filter((p) => p.id === selectedId);
+
+  useEffect(() => {
+    if (loading || error) return;
+    const builder = new FhirXmlBuilder(
+      selectedId === "all" ? patients : patients.filter((p) => p.id === selectedId)
+    );
+    setXml(builder.toXmlString());
+    setGeneratedAt(new Date());
+    setCopied(false);
+  }, [loading, error, patients, selectedId]);
+
+  const patientLabel = (p) => {
+    const d = p.demographics || {};
+    const name = [d.nume, d.prenume].filter(Boolean).join(" ") || p.id;
+    return d.cnp ? `${name} — ${d.cnp}` : name;
+  };
 
   const handleDownload = () => {
     const blob = new Blob([xml], { type: "application/fhir+xml" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = `pacienti-fhir-r4-${new Date().toISOString().slice(0, 10)}.xml`;
+    const single = selectedId !== "all" && selectedPatients[0];
+    const slug = single
+      ? [single.demographics?.nume, single.demographics?.prenume]
+          .filter(Boolean)
+          .join("-")
+          .toLowerCase() || single.id
+      : "pacienti";
+    link.download = `${slug}-fhir-r4-${new Date().toISOString().slice(0, 10)}.xml`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -103,7 +129,7 @@ function Hl7Export() {
             <div className="icon green">👥</div>
             <div>
               <p>Pacienți exportați</p>
-              <h2>{loading ? "…" : patients.length}</h2>
+              <h2>{loading ? "…" : selectedPatients.length}</h2>
               <span>resurse Patient în Bundle</span>
             </div>
           </div>
@@ -124,10 +150,23 @@ function Hl7Export() {
                 <h1>Export pacienți — HL7 FHIR R4</h1>
               </div>
               <div className="hl7-tools">
+                <select
+                  className="hl7-select"
+                  value={selectedId}
+                  onChange={(e) => setSelectedId(e.target.value)}
+                  disabled={loading || patients.length === 0}
+                >
+                  <option value="all">Toți pacienții ({patients.length})</option>
+                  {patients.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {patientLabel(p)}
+                    </option>
+                  ))}
+                </select>
                 <button
                   className="hl7-btn regen"
                   type="button"
-                  onClick={loadAndBuild}
+                  onClick={loadPatients}
                   disabled={loading}
                 >
                   ↻ Regenerează

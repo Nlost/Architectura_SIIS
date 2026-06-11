@@ -158,6 +158,25 @@ body {
   gap: 12px;
 }
 
+.ahl7-select {
+  height: 50px;
+  max-width: 320px;
+  padding: 0 14px;
+  border-radius: 16px;
+  border: 1px solid #cdb8ff;
+  background: #ede9fe;
+  color: #6d28d9;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+  outline: none;
+}
+
+.ahl7-select:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
 .ahl7-btn {
   height: 50px;
   padding: 0 22px;

@@ -16,6 +16,24 @@
   gap: 12px;
 }
 
+.hl7-select {
+  height: 48px;
+  max-width: 320px;
+  padding: 0 14px;
+  border-radius: 14px;
+  border: 1px solid #cdb8ff;
+  background: #f8f3ff;
+  color: #5b21b6;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+  outline: none;
+}
+.hl7-select:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
 .hl7-btn {
   height: 48px;
   padding: 0 20px;
