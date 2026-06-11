@@ -16,22 +16,75 @@
   gap: 12px;
 }
 
-.hl7-select {
-  height: 48px;
-  max-width: 320px;
-  padding: 0 14px;
-  border-radius: 14px;
-  border: 1px solid #cdb8ff;
-  background: #f8f3ff;
-  color: #5b21b6;
-  font-size: 14px;
-  font-weight: 800;
-  cursor: pointer;
-  outline: none;
+.hl7-row {
+  grid-template-columns: 1.7fr 1.3fr 0.8fr 1.1fr 1.8fr;
+  width: 100%;
+  min-height: 74px;
+  background: #ffffff;
+  color: #1a093d;
+  font-weight: 900;
+  border: 1px solid #e5d8ff;
+  box-shadow: 0 10px 28px rgba(83, 47, 147, 0.06);
+  transition: 0.2s ease;
 }
-.hl7-select:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
+.hl7-row:hover {
+  background: #f5efff;
+  border-color: #c4b5fd;
+  transform: translateY(-1px);
+}
+.hl7-row .patientName {
+  color: #13072f;
+  font-weight: 900;
+}
+.hl7-row .patientName b {
+  background: linear-gradient(135deg, #7c3aed, #5b21b6);
+}
+.hl7-row .cnpText {
+  color: #7c6aa7;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.2px;
+}
+
+.hl7-rowActions {
+  display: flex;
+  gap: 8px;
+}
+.hl7-rowBtn {
+  border: none;
+  padding: 10px 14px;
+  border-radius: 13px;
+  font-weight: 1000;
+  cursor: pointer;
+  transition: 0.2s ease;
+  color: white;
+}
+.hl7-rowBtn:hover {
+  transform: translateY(-2px);
+  filter: brightness(0.96);
+}
+.hl7-rowBtn.view {
+  background: #6d28d9;
+  box-shadow: 0 10px 22px rgba(109, 40, 217, 0.22);
+}
+.hl7-rowBtn.export {
+  background: #10b981;
+  box-shadow: 0 10px 22px rgba(16, 185, 129, 0.2);
+}
+
+.hl7-previewBlock {
+  margin-top: 24px;
+}
+.hl7-previewHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.hl7-previewHead h2 {
+  margin: 0;
+  color: #1a093d;
 }
 
 .hl7-btn {
