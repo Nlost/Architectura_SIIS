@@ -76,7 +76,7 @@ function PacientiMedic() {
   const [patients, setPatients] = useState([]);
   const [saving, setSaving] = useState(false);
   const [createdPatientInfo, setCreatedPatientInfo] = useState(null);
-
+const [searchTerm, setSearchTerm] = useState("");
   const loadPatients = async () => {
     try {
       const data = await getPatients();
@@ -116,7 +116,7 @@ function PacientiMedic() {
   const generatePatientEmail = (nume, prenume) => {
     if (!nume || !prenume) return "";
 
-    return `${normalizeText(prenume)}.${normalizeText(nume)}@seniorwatch.com`;
+    return `${normalizeText(prenume)}.${normalizeText(nume)}@seniorwatchc.com`;
   };
 
   const extractFromCNP = (cnp) => {
@@ -248,7 +248,17 @@ function PacientiMedic() {
       setSaving(false);
     }
   };
+const filteredPatients = patients.filter((p) => {
+  const d = p.demographics || {};
 
+  const search = searchTerm.toLowerCase();
+
+  return (
+    d.nume?.toLowerCase().includes(search) ||
+    d.prenume?.toLowerCase().includes(search) ||
+    d.cnp?.includes(search)
+  );
+});
   const closeModal = () => {
     setShowAddModal(false);
     setNewPatient(initialNewPatient);
@@ -389,8 +399,12 @@ function PacientiMedic() {
               <div className="patients-tools">
                 <div className="patients-search">
                   <span>⌕</span>
-                  <input placeholder="Caută după nume / CNP" />
-                  <button>Caută</button>
+<input
+  type="text"
+  placeholder="Caută după nume, prenume sau CNP..."
+  value={searchTerm}
+  onChange={(e) => setSearchTerm(e.target.value)}
+/>                  <button>Caută</button>
                 </div>
 
                 <button
@@ -421,7 +435,7 @@ function PacientiMedic() {
                 </div>
               )}
 
-              {patients.map((p) => {
+              {filteredPatients.map((p) => {
                 const d = p.demographics || {};
                 const sample = p.latestSample || null;
                 const fullName = [d.nume, d.prenume].filter(Boolean).join(" ");
