@@ -241,3 +241,21 @@ export async function getRecommendationsByPatient(patientId) {
 
   return text ? JSON.parse(text) : [];
 }
+export async function getPatient(id) {
+  const token = localStorage.getItem("sw_token");
+
+  const response = await fetch(`${API_BASE}/api/patients/${id}`, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  const text = await response.text();
+
+  if (!response.ok) {
+    throw new Error(text || "Nu s-a putut încărca pacientul");
+  }
+
+  return text ? JSON.parse(text) : {};
+}
