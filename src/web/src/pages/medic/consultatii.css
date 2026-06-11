@@ -95,22 +95,21 @@
   }
 
 .add-consultatie-btn {
-  height: 56px;
   border: none;
-  border-radius: 18px;
-  padding: 0 22px;
-  background: linear-gradient(135deg, #8b5cf6, #6d28d9) !important;
+  background: #7c3aed !important;
   color: #ffffff !important;
-  font-weight: 900;
+  padding: 12px 20px;
+  border-radius: 14px;
   font-size: 15px;
+  font-weight: 700;
   cursor: pointer;
-  box-shadow: 0 14px 30px rgba(109, 40, 217, 0.22);
-  transition: all 0.2s ease;
+  min-width: 180px;
+  height: 50px;
+  transition: 0.2s;
 }
 
 .add-consultatie-btn:hover {
-  transform: translateY(-2px);
-  filter: brightness(1.04);
+  background: #6d28d9;
 }
 
   .consultatie-badge {
@@ -175,25 +174,6 @@
     filter: brightness(0.96);
   }
 
-  @media (max-width: 1200px) {
-    .consultatii-row {
-      grid-template-columns: 1fr;
-      gap: 10px;
-    }
-
-    .consultatii-tools {
-      flex-direction: column;
-      align-items: stretch;
-    }
-
-    .consultatii-search {
-      width: 100%;
-    }
-
-    .consultatieActions {
-      flex-wrap: wrap;
-    }
-  }
   .consultatieModalOverlay {
   position: fixed;
   inset: 0;
@@ -426,14 +406,76 @@
   animation: fadeSection 0.25s ease;
 }
 
-@keyframes fadeSection {
-  from {
-    opacity: 0;
-    transform: translateY(6px);
-  }
+.emptySearchMessage {
+  padding: 22px;
+  text-align: center;
+  color: #7c6aa8;
+  font-weight: 700;
+}
+.programari-azi-btn {
+  border: none;
+  background: #efe7ff;
+  color: #6d28d9;
+  padding: 14px 20px;
+  border-radius: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
 
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+.programariModal {
+  width: 720px;
+  max-width: 92vw;
+  background: white;
+  border-radius: 26px;
+  overflow: hidden;
+}
+
+.programariList {
+  padding: 24px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.programareCard {
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  gap: 18px;
+  padding: 18px;
+  border: 1px solid #e8dcff;
+  border-radius: 18px;
+  background: #fbf8ff;
+}
+
+.programareCard strong {
+  display: block;
+  font-size: 22px;
+  color: #240046;
+}
+
+.programareCard span {
+  display: inline-block;
+  margin-top: 8px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: #e9ddff;
+  color: #6d28d9;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.programareCard h3 {
+  margin: 0 0 6px;
+  color: #16002f;
+}
+
+.programareCard p {
+  margin: 0 0 8px;
+  color: #4b3b6b;
+  font-weight: 700;
+}
+
+.programareCard small {
+  color: #7c6aa8;
+  font-weight: 700;
 }

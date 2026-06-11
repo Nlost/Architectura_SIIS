@@ -153,3 +153,47 @@ export async function toggleUserActive(id, active) {
 
   return text ? JSON.parse(text) : {};
 }
+
+export async function createConsultation(payload) {
+  const token = localStorage.getItem("sw_token");
+
+  const response = await fetch(`${API_BASE}/api/clinical-visits`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(payload),
+  });
+
+  const text = await response.text();
+
+  if (!response.ok) {
+    console.log("Create consultation status:", response.status);
+    console.log("Create consultation backend response:", text);
+    throw new Error(text || "Nu s-a putut salva consultația");
+  }
+
+  return text ? JSON.parse(text) : {};
+}
+
+export async function getConsultations() {
+  const token = localStorage.getItem("sw_token");
+
+  const response = await fetch(`${API_BASE}/api/clinical-visits`, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  const text = await response.text();
+
+  if (!response.ok) {
+    console.log("Get consultations status:", response.status);
+    console.log("Get consultations backend response:", text);
+    throw new Error(text || "Nu s-au putut încărca consultațiile");
+  }
+
+  return text ? JSON.parse(text) : [];
+}
