@@ -6,6 +6,8 @@ import lombok.*;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 import ro.seniorwatch.entity.enums.HealthItemStatus;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 @Entity
 @Table(name = "clinical_visits")
@@ -64,10 +66,11 @@ public class ClinicalVisit {
     @JoinColumn(name = "responsible_person_id")
     private User responsiblePerson;
     
-@Enumerated(EnumType.STRING)
-@Column(name = "status", nullable = false, columnDefinition = "health_item_status")
-@Builder.Default
-private HealthItemStatus status = HealthItemStatus.ACTIVE;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false)
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
+    @Builder.Default
+    private HealthItemStatus status = HealthItemStatus.ACTIVE;
 
     @Column(name = "previous_version_id")
     private UUID previousVersionId;
