@@ -14,6 +14,7 @@ import ro.seniorwatch.entity.enums.UserRole;
 import ro.seniorwatch.repository.ClinicalVisitRepository;
 import ro.seniorwatch.repository.PatientRepository;
 import ro.seniorwatch.repository.UserRepository;
+import ro.seniorwatch.entity.enums.HealthItemStatus;
 
 import java.time.LocalDate;
 import java.time.Period;
@@ -67,7 +68,7 @@ public class ClinicalVisitService {
                 .retete(request.getRetete())
                 .recordedByUser(caller)
                 .responsiblePerson(patient.getDoctor())
-                .status("ACTIVE")
+     .status(visit.getStatus())
                 .build();
 
         visit = clinicalVisitRepository.save(visit);

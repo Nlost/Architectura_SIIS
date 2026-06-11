@@ -169,20 +169,23 @@ function ConsultatiiMedic() {
 
     if (!isFormValid || saving) return;
 
-const finalPayload = {
-  patientId: newConsultation.patient_id,
-  visitedAt: new Date(newConsultation.visited_at).toISOString(),
-  motivPrezentare: newConsultation.motiv_prezentare,
-  simptome: newConsultation.simptome,
-  diagnosticIcd10Code: newConsultation.diagnostic_icd10_code,
-  diagnosticIcd10Display: newConsultation.diagnostic_icd10_display,
-  trimiteri: newConsultation.trimiteri,
-  retete: newConsultation.retete,
-};
+    const finalPayload = {
+      patientId: newConsultation.patient_id,
+visitedAt: new Date(newConsultation.visited_at).toISOString(),
+      motivPrezentare: newConsultation.motiv_prezentare,
+      simptome: newConsultation.simptome,
+      diagnosticIcd10Code: newConsultation.diagnostic_icd10_code,
+      diagnosticIcd10Display: newConsultation.diagnostic_icd10_display,
+      trimiteri: newConsultation.trimiteri,
+      retete: newConsultation.retete,
+    };
 
     setSaving(true);
 
     try {
+        console.log("=== CONSULTATION PAYLOAD ===");
+  console.log(finalPayload);
+  console.log(JSON.stringify(finalPayload, null, 2));
       await createConsultation(finalPayload);
       await loadConsultations();
 

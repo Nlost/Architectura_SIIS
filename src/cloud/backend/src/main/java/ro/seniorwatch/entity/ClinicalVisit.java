@@ -5,6 +5,7 @@ import lombok.*;
 
 import java.time.OffsetDateTime;
 import java.util.UUID;
+import ro.seniorwatch.entity.enums.HealthItemStatus;
 
 @Entity
 @Table(name = "clinical_visits")
@@ -62,10 +63,11 @@ public class ClinicalVisit {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "responsible_person_id")
     private User responsiblePerson;
-
-    @Column(name = "status", nullable = false)
-    @Builder.Default
-    private String status = "ACTIVE";
+    
+@Enumerated(EnumType.STRING)
+@Column(name = "status", nullable = false, columnDefinition = "health_item_status")
+@Builder.Default
+private HealthItemStatus status = HealthItemStatus.ACTIVE;
 
     @Column(name = "previous_version_id")
     private UUID previousVersionId;
