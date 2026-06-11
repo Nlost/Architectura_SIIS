@@ -73,6 +73,7 @@ nav a {
   color: white;
   font-weight: 800;
   cursor: pointer;
+  text-decoration: none;
 }
 
 nav a.active,
@@ -302,8 +303,13 @@ nav a:hover {
 
 .tableRow {
   display: grid;
-  grid-template-columns: 2fr 0.8fr 0.9fr 1fr 0.9fr;
-  align-items: center;
+  grid-template-columns:
+    2fr      /* pacient */
+    0.8fr    /* vârstă */
+    0.8fr    /* puls */
+    0.9fr    /* temperatură */
+    0.9fr    /* umiditate */
+    1fr;     /* status */  align-items: center;
   padding: 16px 18px;
   border-radius: 18px;
   background: #fbf9ff;

@@ -1,15 +1,103 @@
 import "../../App.css";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-const patients = [
-  ["IP", "Ion Popescu", "67 ani", "78 bpm", "36.7°C", "Stabil"],
-  ["MI", "Maria Ionescu", "71 ani", "112 bpm", "37.9°C", "Alertă"],
-  ["EM", "Elena Matei", "64 ani", "84 bpm", "36.5°C", "Observație"],
-  ["VR", "Victor Radu", "59 ani", "91 bpm", "37.1°C", "Stabil"],
-  ["AP", "Ana Pop", "53 ani", "68 bpm", "36.4°C", "Stabil"],
-];
+import { getPatients } from "../../api";
 
 function Medic() {
-    const navigate = useNavigate();
+  const navigate = useNavigate();
+
+  const formatDoctorName = (email) => {
+    if (!email || email === "medic") return "Medic";
+
+    const username = email.split("@")[0];
+
+    const nameParts = username
+      .split(".")
+      .filter(Boolean)
+      .map(
+        (part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase()
+      );
+
+    if (nameParts.length >= 2) {
+      return `Dr. ${nameParts.join(" ")}`;
+    }
+
+    return `Dr. ${nameParts[0] || "Medic"}`;
+  };
+
+  const email = localStorage.getItem("sw_email") || "medic";
+  const doctorName = formatDoctorName(email);
+
+  const doctorInitials = doctorName
+    .replace("Dr. ", "")
+    .split(" ")
+    .map((p) => p[0])
+    .join("")
+    .toUpperCase();
+
+  const [patients, setPatients] = useState([]);
+
+  useEffect(() => {
+    const loadDashboard = async () => {
+      try {
+        const data = await getPatients();
+        setPatients(data);
+      } catch (error) {
+        console.log("Eroare dashboard medic:", error);
+      }
+    };
+
+    loadDashboard();
+  }, []);
+
+  const calcAge = (birthDate) => {
+    if (!birthDate) return "—";
+
+    const today = new Date();
+    const birth = new Date(birthDate);
+
+    let age = today.getFullYear() - birth.getFullYear();
+    const m = today.getMonth() - birth.getMonth();
+
+    if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
+      age--;
+    }
+
+    return `${age} ani`;
+  };
+
+  const getInitials = (nume, prenume) => {
+    return (
+      `${(nume || "")[0] || ""}${(prenume || "")[0] || ""}`.toUpperCase() ||
+      "?"
+    );
+  };
+
+  const getStatus = (sample) => {
+    if (!sample) return "Stabil";
+
+    if (
+      sample.puls > 110 ||
+      sample.temperatura > 38 ||
+      sample.spo2 < 92 ||
+      sample.umiditate > 80
+    ) {
+      return "Alertă";
+    }
+
+    if (
+      sample.puls > 95 ||
+      sample.temperatura > 37.5 ||
+      sample.spo2 < 95 ||
+      sample.umiditate > 70
+    ) {
+      return "Observație";
+    }
+
+    return "Stabil";
+  };
+
+  const recentPatients = patients.slice(0, 5);
 
   return (
     <div className="app">
@@ -17,25 +105,81 @@ function Medic() {
         <div className="brand">
           <div className="logo">SW</div>
           <div>
-            <h2>SenorWatch</h2>
+            <h2>SeniorWatch</h2>
             <p>Medical dashboard</p>
           </div>
         </div>
 
         <nav>
-          <a className="active">📊 Dashboard</a>
-<a onClick={() => navigate("/medic/pacienti")}>👥 Pacienți</a>
-<a onClick={() => navigate("/medic/consultatii")}>🩺 Consultații</a>
-          <a onClick={() => navigate("/medic/monitorizare")}>📈 Monitorizare</a>
-                    <a onClick={() => navigate("/medic/alerte")}>🔔 Alerte</a>
-          <a onClick={() => navigate("/medic/rapoarte")}>📋 Rapoarte</a>
-          <a onClick={() => navigate("/medic/hl7")}>🔗 HL7 FHIR</a>
+          <a href="#" className="active" onClick={(e) => e.preventDefault()}>
+            📊 Dashboard
+          </a>
+
+          <a
+            href="#"
+            onClick={(e) => {
+              e.preventDefault();
+              navigate("/medic/pacienti");
+            }}
+          >
+            👥 Pacienți
+          </a>
+
+          <a
+            href="#"
+            onClick={(e) => {
+              e.preventDefault();
+              navigate("/medic/consultatii");
+            }}
+          >
+            🩺 Consultații
+          </a>
+
+          <a
+            href="#"
+            onClick={(e) => {
+              e.preventDefault();
+              navigate("/medic/monitorizare");
+            }}
+          >
+            📈 Monitorizare
+          </a>
+
+          <a
+            href="#"
+            onClick={(e) => {
+              e.preventDefault();
+              navigate("/medic/alerte");
+            }}
+          >
+            🔔 Alerte
+          </a>
+
+          <a
+            href="#"
+            onClick={(e) => {
+              e.preventDefault();
+              navigate("/medic/rapoarte");
+            }}
+          >
+            📋 Rapoarte
+          </a>
+
+          <a
+            href="#"
+            onClick={(e) => {
+              e.preventDefault();
+              navigate("/medic/hl7");
+            }}
+          >
+            🔗 HL7 FHIR
+          </a>
         </nav>
 
         <div className="profile">
-          <div>AP</div>
+          <div>{doctorInitials || "?"}</div>
           <span>
-            <b>Dr. Andrei Popescu</b>
+            <b>{doctorName}</b>
             Medic specialist
           </span>
         </div>
@@ -45,7 +189,7 @@ function Medic() {
         <section className="hero">
           <div className="heroText">
             <p>Bun venit,</p>
-            <h1>Dr. Andrei Popescu 👋</h1>
+            <h1>{doctorName} 👋</h1>
           </div>
 
           <div className="heroSearch">
@@ -62,8 +206,8 @@ function Medic() {
             <div className="icon purple">👥</div>
             <div>
               <p>Pacienți activi</p>
-              <h2>128</h2>
-              <span>↑ 12 față de săptămâna trecută</span>
+              <h2>{patients.length}</h2>
+              <span>pacienți asociați medicului</span>
             </div>
           </div>
 
@@ -71,8 +215,8 @@ function Medic() {
             <div className="icon pink">🔔</div>
             <div>
               <p>Alerte active</p>
-              <h2>12</h2>
-              <span>3 necesită verificare urgentă</span>
+              <h2>0</h2>
+              <span>urmează legare cu tabela de alerte</span>
             </div>
           </div>
 
@@ -80,8 +224,8 @@ function Medic() {
             <div className="icon green">💚</div>
             <div>
               <p>Recomandări active</p>
-              <h2>36</h2>
-              <span>8 actualizate astăzi</span>
+              <h2>0</h2>
+              <span>urmează legare cu recomandări</span>
             </div>
           </div>
 
@@ -89,8 +233,8 @@ function Medic() {
             <div className="icon violet">📅</div>
             <div>
               <p>Consultații azi</p>
-              <h2>14</h2>
-              <span>Program aproape complet</span>
+              <h2>0</h2>
+              <span>urmează legare cu consultații</span>
             </div>
           </div>
         </section>
@@ -102,7 +246,10 @@ function Medic() {
                 <p>MONITORIZARE</p>
                 <h2>Pacienți urmăriți recent</h2>
               </div>
-              <button>Vezi toți ›</button>
+
+              <button onClick={() => navigate("/medic/pacienti")}>
+                Vezi toți ›
+              </button>
             </div>
 
             <div className="table">
@@ -111,21 +258,66 @@ function Medic() {
                 <span>Vârstă</span>
                 <span>Puls</span>
                 <span>Temperatură</span>
+                <span>Umiditate</span>
                 <span>Status</span>
               </div>
 
-              {patients.map((p, index) => (
-                <div className="tableRow" key={index}>
-                  <span className="patientName">
-                    <b>{p[0]}</b>
-                    {p[1]}
-                  </span>
-                  <span>{p[2]}</span>
-                  <span className={p[3] === "112 bpm" ? "dangerText" : ""}>{p[3]}</span>
-                  <span>{p[4]}</span>
-                  <span className={`badge ${p[5]}`}>{p[5]}</span>
+              {recentPatients.length === 0 ? (
+                <div className="tableRow">
+                  <span>Nu există pacienți recenți.</span>
+                  <span>-</span>
+                  <span>-</span>
+                  <span>-</span>
+                  <span>-</span>
+                  <span>-</span>               
                 </div>
-              ))}
+              ) : (
+                recentPatients.map((p) => {
+                  const d = p.demographics || {};
+                  const sample = p.latestSample || p.lastSample || p.sensorSample || null;
+
+                  const fullName = [d.nume, d.prenume]
+                    .filter(Boolean)
+                    .join(" ");
+
+                  const status = getStatus(sample);
+
+                  return (
+                    <div
+                      className="tableRow"
+                      key={p.id}
+                      onClick={() => navigate(`/medic/pacient/${p.id}`)}
+                    >
+                      <span className="patientName">
+                        <b>{getInitials(d.nume, d.prenume)}</b>
+                        {fullName || "—"}
+                      </span>
+
+                      <span>{calcAge(d.dataNasterii)}</span>
+
+                      <span className={sample?.puls > 110 ? "dangerText" : ""}>
+                        {sample?.puls ? `${sample.puls} bpm` : "-"}
+                      </span>
+
+                      <span
+                        className={
+                          sample?.temperatura > 38 ? "dangerText" : ""
+                        }
+                      >
+                        {sample?.temperatura
+                          ? `${sample.temperatura}°C`
+                          : "-"}
+                      </span>
+
+                      <span>
+                        {sample?.umiditate ? `${sample.umiditate}%` : "-"}
+                      </span>
+
+                      <span className={`badge ${status}`}>{status}</span>
+                    </div>
+                  );
+                })
+              )}
             </div>
           </div>
 
@@ -136,35 +328,23 @@ function Medic() {
                   <p>EVENIMENTE</p>
                   <h2>Alerte recente</h2>
                 </div>
-                <button>Vezi toate</button>
-              </div>
 
-              <div className="alert critical">
-                <b>Maria Ionescu</b>
-                <span>Puls peste limita normală</span>
-                <small>Acum 3 minute</small>
-              </div>
-
-              <div className="alert warning">
-                <b>Victor Radu</b>
-                <span>Temperatură crescută</span>
-                <small>Acum 12 minute</small>
+                <button onClick={() => navigate("/medic/alerte")}>
+                  Vezi toate
+                </button>
               </div>
 
               <div className="alert info">
-                <b>Ana Pop</b>
-                <span>Sincronizare întârziată cu senzorul</span>
-                <small>Acum 21 minute</small>
+                <b>Nu există alerte recente</b>
+                <span>-</span>
+                <small>-</small>
               </div>
             </div>
-
-          
           </div>
         </section>
       </main>
     </div>
   );
 }
-
 
 export default Medic;

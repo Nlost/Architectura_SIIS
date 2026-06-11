@@ -75,6 +75,7 @@ function PacientiMedic() {
   const [newPatient, setNewPatient] = useState(initialNewPatient);
   const [patients, setPatients] = useState([]);
   const [saving, setSaving] = useState(false);
+  const [createdPatientInfo, setCreatedPatientInfo] = useState(null);
 
   const loadPatients = async () => {
     try {
@@ -115,7 +116,7 @@ function PacientiMedic() {
   const generatePatientEmail = (nume, prenume) => {
     if (!nume || !prenume) return "";
 
-    return `${normalizeText(prenume)}.${normalizeText(nume)}@seniorwatch.ro`;
+    return `${normalizeText(prenume)}.${normalizeText(nume)}@seniorwatch.com`;
   };
 
   const extractFromCNP = (cnp) => {
@@ -236,9 +237,10 @@ function PacientiMedic() {
       await createPatient(demographics);
       await loadPatients();
       closeModal();
-      alert(
-        `Pacient adăugat cu succes.\n\nEmail: ${newPatient.email}\nParolă: Senior123!`
-      );
+      setCreatedPatientInfo({
+      email: newPatient.email,
+      password: "Senior123!",
+});
     } catch (error) {
       console.log(error);
       alert("Eroare la salvarea pacientului.");
@@ -408,6 +410,7 @@ function PacientiMedic() {
                 <span>Vârstă</span>
                 <span>Puls</span>
                 <span>Temperatură</span>
+                <span>Umiditate</span>
                 <span>Status</span>
                 <span>Acțiuni</span>
               </div>
@@ -420,6 +423,7 @@ function PacientiMedic() {
 
               {patients.map((p) => {
                 const d = p.demographics || {};
+                const sample = p.latestSample || null;
                 const fullName = [d.nume, d.prenume].filter(Boolean).join(" ");
 
                 const initials =
@@ -439,9 +443,10 @@ function PacientiMedic() {
 
                     <span className="cnpText">{d.cnp || "—"}</span>
                     <span>{age}</span>
-                    <span>—</span>
-                    <span>—</span>
-                    <span className="badge Stabil">Stabil</span>
+<span>{sample?.puls ? `${sample.puls} bpm` : "—"}</span>
+<span>{sample?.temperatura ? `${sample.temperatura}°C` : "—"}</span>
+<span>{sample?.umiditate ? `${sample.umiditate}%` : "—"}</span>
+<span className="badge Stabil">Stabil</span>
 
                     <span className="patientActions">
                       <button onClick={() => navigate(`/medic/pacient/${p.id}`)}>
@@ -665,6 +670,57 @@ function PacientiMedic() {
             </div>
           </div>
         )}
+        {createdPatientInfo && (
+  <div className="users-modalOverlay">
+    <div className="users-modal users-successModal">
+      <div className="users-modalHead">
+        <div className="users-modalTitle">
+          <div className="users-modalIcon">✅</div>
+
+          <div>
+            <h2>Pacient adăugat cu succes</h2>
+            <p>Datele de autentificare generate automat.</p>
+          </div>
+        </div>
+
+        <button
+          className="users-closeBtn"
+          onClick={() => setCreatedPatientInfo(null)}
+        >
+          ×
+        </button>
+      </div>
+
+      <div className="users-form">
+        <div className="users-formSection">
+          <h3>Credentiale pacient</h3>
+
+          <div className="users-successFields">
+            <div className="users-field">
+              <label>Email</label>
+              <input value={createdPatientInfo.email} readOnly />
+            </div>
+
+            <div className="users-field">
+              <label>Parolă</label>
+              <input value={createdPatientInfo.password} readOnly />
+            </div>
+          </div>
+        </div>
+
+        <div className="users-formActions">
+          <button
+            type="button"
+            className="users-submitBtn"
+            onClick={() => setCreatedPatientInfo(null)}
+          >
+            Am înțeles
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+)}
       </main>
     </div>
   );

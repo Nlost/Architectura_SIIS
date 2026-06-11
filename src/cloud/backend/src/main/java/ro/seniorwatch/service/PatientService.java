@@ -22,6 +22,7 @@ public class PatientService {
     private final UserRepository userRepository;
     private final DemographicsRepository demographicsRepository;
     private final PasswordEncoder passwordEncoder;
+    private final SensorSampleRepository sensorSampleRepository;
 
     @Transactional(readOnly = true)
     public List<PatientResponse> listPatients(Authentication auth) {
@@ -137,12 +138,30 @@ public class PatientService {
                     .build();
         }
 
-        return PatientResponse.builder()
-                .id(p.getId())
-                .doctorId(p.getDoctor() != null ? p.getDoctor().getId() : null)
-                .active(p.isActive())
-                .createdAt(p.getCreatedAt())
-                .demographics(demoDto)
-                .build();
+
+        SensorSampleDto latestSampleDto = null;
+
+SensorSample latestSample = sensorSampleRepository
+        .findFirstByBatchPatientIdOrderByTsDesc(p.getId())
+        .orElse(null);
+
+if (latestSample != null) {
+    latestSampleDto = SensorSampleDto.builder()
+            .ts(latestSample.getTs())
+            .puls(latestSample.getPuls())
+            .spo2(latestSample.getSpo2())
+            .temperatura(latestSample.getTemperatura())
+            .umiditate(latestSample.getUmiditate())
+            .build();
+}
+
+return PatientResponse.builder()
+        .id(p.getId())
+        .doctorId(p.getDoctor() != null ? p.getDoctor().getId() : null)
+        .active(p.isActive())
+        .createdAt(p.getCreatedAt())
+        .demographics(demoDto)
+        .latestSample(latestSampleDto)
+        .build();
     }
 }
