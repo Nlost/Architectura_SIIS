@@ -192,11 +192,6 @@ function Medic() {
             <h1>{doctorName} 👋</h1>
           </div>
 
-          <div className="heroSearch">
-            <input placeholder="Caută pacient, alertă, consultație..." />
-            <button>⌕</button>
-          </div>
-
           <div className="wave"></div>
           <div className="dots"></div>
         </section>
@@ -269,7 +264,8 @@ function Medic() {
                   <span>-</span>
                   <span>-</span>
                   <span>-</span>
-                  <span>-</span>               
+                  <span>-</span>
+                  <span>-</span>
                 </div>
               ) : (
                 recentPatients.map((p) => {
