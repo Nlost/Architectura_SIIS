@@ -113,62 +113,6 @@ public class PatientService {
 
         return toResponse(patient);
     }
-        @Transactional
-public PatientResponse updatePatient(UUID id, PatientRequest request, Authentication auth) {
-    String email = (String) auth.getPrincipal();
-
-    User caller = userRepository.findByEmail(email)
-            .orElseThrow(() -> new NoSuchElementException("User not found"));
-
-    Patient patient = patientRepository.findByIdWithDemographics(id)
-            .orElseThrow(() -> new NoSuchElementException("Patient not found: " + id));
-
-    if (caller.getRole() != UserRole.ADMIN &&
-            (patient.getDoctor() == null || !patient.getDoctor().getId().equals(caller.getId()))) {
-        throw new IllegalArgumentException("Nu ai dreptul să modifici acest pacient");
-    }
-
-    DemographicsDto dto = request.getDemographics();
-
-    Demographics demo = patient.getDemographics();
-
-    String oldEmail = demo.getEmail();
-    String newEmail = dto.getEmail();
-
-    if (newEmail == null || newEmail.isBlank()) {
-        throw new IllegalArgumentException("Emailul pacientului este obligatoriu");
-    }
-
-    if (!newEmail.equals(oldEmail) && userRepository.existsByEmail(newEmail)) {
-        throw new IllegalArgumentException("Există deja un utilizator cu acest email");
-    }
-
-    demo.setNume(dto.getNume());
-    demo.setPrenume(dto.getPrenume());
-    demo.setStrada(dto.getStrada());
-    demo.setLocalitate(dto.getLocalitate());
-    demo.setCodPostal(dto.getCodPostal());
-    demo.setTelefon(dto.getTelefon());
-    demo.setEmail(newEmail);
-    demo.setProfesie(dto.getProfesie());
-    demo.setLocDeMunca(dto.getLocDeMunca());
-
-    demographicsRepository.save(demo);
-
-    if (oldEmail != null && !oldEmail.equals(newEmail)) {
-        User patientUser = userRepository.findByEmail(oldEmail)
-                .orElse(null);
-
-        if (patientUser != null && patientUser.getRole() == UserRole.PATIENT) {
-            patientUser.setEmail(newEmail);
-            userRepository.save(patientUser);
-        }
-    }
-
-    patient.setDemographics(demo);
-
-    return toResponse(patient);
-}
 
     private PatientResponse toResponse(Patient p) {
         DemographicsDto demoDto = null;
