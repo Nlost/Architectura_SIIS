@@ -129,4 +129,27 @@ public class ClinicalVisitService {
                 )
                 .build();
     }
+@Transactional
+public ClinicalVisitResponse finalizeClinicalVisit(UUID id, Authentication auth) {
+    String email = (String) auth.getPrincipal();
+
+    User caller = userRepository.findByEmail(email)
+            .orElseThrow(() -> new NoSuchElementException("User not found"));
+
+    ClinicalVisit visit = clinicalVisitRepository.findById(id)
+            .orElseThrow(() -> new NoSuchElementException("Clinical visit not found"));
+
+    Patient patient = visit.getPatient();
+
+    if (caller.getRole() != UserRole.ADMIN &&
+            !patient.getDoctor().getId().equals(caller.getId())) {
+        throw new IllegalArgumentException("Nu ai acces la această consultație");
+    }
+
+    visit.setStatus(HealthItemStatus.ARCHIVED);
+
+    visit = clinicalVisitRepository.save(visit);
+
+    return toResponse(visit);
+}
 }

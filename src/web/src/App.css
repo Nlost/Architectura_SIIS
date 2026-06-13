@@ -124,11 +124,11 @@ nav a:hover {
 }
 
 .hero {
-  min-height: 210px;
+  min-height: auto;
   position: relative;
   overflow: hidden;
   border-radius: 34px;
-  padding: 38px;
+  padding: 40px 32px;
   background: rgba(255, 255, 255, 0.72);
   backdrop-filter: blur(18px);
   box-shadow: 0 24px 70px rgba(83, 47, 147, 0.12);
@@ -140,7 +140,7 @@ nav a:hover {
 }
 
 .heroText p {
-  margin: 0 0 12px;
+  margin: 0 0 8px;
   color: #7c3aed;
   font-weight: 900;
 }
@@ -156,7 +156,7 @@ nav a:hover {
   margin-top: 14px;
   color: #5d4d82;
   font-size: 16px;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .heroSearch {

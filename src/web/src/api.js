@@ -259,3 +259,24 @@ export async function getPatient(id) {
 
   return text ? JSON.parse(text) : {};
 }
+
+export async function finalizeConsultation(id) {
+  const token = localStorage.getItem("sw_token");
+
+  const response = await fetch(`${API_BASE}/api/clinical-visits/${id}/finalize`, {
+    method: "PATCH",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  const text = await response.text();
+
+  if (!response.ok) {
+    console.log("Finalize consultation status:", response.status);
+    console.log("Finalize consultation backend response:", text);
+    throw new Error(text || "Nu s-a putut finaliza consultația");
+  }
+
+  return text ? JSON.parse(text) : {};
+}

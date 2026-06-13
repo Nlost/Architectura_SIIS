@@ -1,11 +1,6 @@
 import "./consultatii.css";
 import { useEffect, useState } from "react";
-import {
-  getPatients,
-  getConsultations,
-  createConsultation,
-  createRecommendation,
-} from "../../api";
+import { getPatients, getConsultations, createConsultation, createRecommendation, finalizeConsultation } from "../../api";
 
 const initialConsultation = {
   patient_id: "",
@@ -22,29 +17,69 @@ const initialConsultation = {
   recommendation_notes: "",
 };
 
-const todayAppointments = [
-  {
-    ora: "09:00",
-    pacient: "Maria Ionescu",
-    motiv: "Control tensiune",
-    telefon: "0712345678",
-    status: "Confirmată",
-  },
-  {
-    ora: "11:30",
-    pacient: "Ion Popescu",
-    motiv: "Evaluare periodică",
-    telefon: "0723456789",
-    status: "Confirmată",
-  },
-  {
-    ora: "14:00",
-    pacient: "Elena Matei",
-    motiv: "Oboseală la efort",
-    telefon: "0734567890",
-    status: "În așteptare",
-  },
-];
+
+
+const formatTimeOnly = (dateValue) => {
+  if (!dateValue) return "—";
+
+  const date = new Date(dateValue);
+
+  if (Number.isNaN(date.getTime())) return "—";
+
+  return date.toLocaleTimeString("ro-RO", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+};
+const toLocalDateKey = (dateValue) => {
+  const date = new Date(dateValue);
+
+  if (Number.isNaN(date.getTime())) return "";
+
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+};
+const getCalendarDays = (baseDate, consultations) => {
+  const year = baseDate.getFullYear();
+  const month = baseDate.getMonth();
+
+  const firstDay = new Date(year, month, 1);
+  const startMondayOffset = firstDay.getDay() === 0 ? 6 : firstDay.getDay() - 1;
+  const startDate = new Date(year, month, 1 - startMondayOffset);
+
+  const days = [];
+
+  for (let i = 0; i < 42; i++) {
+    const date = new Date(startDate);
+    date.setDate(startDate.getDate() + i);
+
+    const dateKey = toLocalDateKey(date);
+    const dayOfWeek = date.getDay();
+
+    days.push({
+      date,
+      dateKey,
+      dayNumber: date.getDate(),
+      isCurrentMonth: date.getMonth() === month,
+      isWeekend: dayOfWeek === 0 || dayOfWeek === 6,
+      appointments: consultations.filter(
+        (c) => toLocalDateKey(c.visitedAt) === dateKey
+      ),
+    });
+  }
+
+  return days;
+};
+const getMonthLabel = (date) =>
+  date.toLocaleDateString("ro-RO", {
+    month: "long",
+    year: "numeric",
+  });
+
+
 
 const formatDoctorName = (email) => {
   if (!email) return "Medic";
@@ -144,7 +179,20 @@ function ConsultatiiMedic() {
 
   const doctorEmail = localStorage.getItem("sw_email") || "";
   const doctorName = formatDoctorName(doctorEmail);
-
+const [selectedConsultation, setSelectedConsultation] = useState(null);
+const [showDetailsModal, setShowDetailsModal] = useState(false);
+const [editingConsultation, setEditingConsultation] = useState(null);
+const [selectedCalendarDate, setSelectedCalendarDate] = useState(
+  new Date().toISOString().slice(0, 10)
+);
+const [calendarMonthDate, setCalendarMonthDate] = useState(new Date());
+const changeCalendarMonth = (direction) => {
+  setCalendarMonthDate((prev) => {
+    const next = new Date(prev);
+    next.setMonth(prev.getMonth() + direction);
+    return next;
+  });
+};
   const doctorInitials = doctorName
     .replace("Dr. ", "")
     .split(" ")
@@ -179,12 +227,27 @@ function ConsultatiiMedic() {
     c.patientName?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const stats = {
-    consultatiiAzi: 0,
-    finalizate: 0,
-    necesitaAtentie: 0,
-    programate: 0,
-  };
+const isToday = (dateValue) => {
+  const date = new Date(dateValue);
+  const today = new Date();
+
+  return (
+    date.getDate() === today.getDate() &&
+    date.getMonth() === today.getMonth() &&
+    date.getFullYear() === today.getFullYear()
+  );
+};
+
+const stats = {
+  consultatiiAzi: consultations.filter((c) => isToday(c.visitedAt)).length,
+  finalizate: consultations.filter((c) => c.status === "ARCHIVED").length,
+  necesitaAtentie: consultations.filter(
+    (c) => c.simptome && c.simptome.trim() !== ""
+  ).length,
+  programate: consultations.filter(
+    (c) => c.status !== "ARCHIVED" && isToday(c.visitedAt)
+  ).length,
+};
 
   const isFormValid =
     newConsultation.patient_id &&
@@ -226,12 +289,49 @@ function ConsultatiiMedic() {
       [name]: value,
     });
   };
+const handleFinalizeConsultation = async (consultationId) => {
+  try {
+    await finalizeConsultation(consultationId);
 
-  const closeAddModal = () => {
-    setShowAddModal(false);
-    setNewConsultation(initialConsultation);
-    setDateError("");
-  };
+    const updated = await getConsultations();
+    setConsultations(updated);
+
+    alert("Consultația a fost finalizată.");
+  } catch (error) {
+    console.error(error);
+    alert("Nu s-a putut finaliza consultația.");
+  }
+};
+const closeAddModal = () => {
+  setShowAddModal(false);
+  setEditingConsultation(null);
+  setNewConsultation(initialConsultation);
+  setDateError("");
+};
+
+const openCompleteConsultation = (consultation) => {
+  setEditingConsultation(consultation);
+
+  setNewConsultation({
+    patient_id: consultation.patientId || "",
+    pacient: consultation.patientName || "",
+    visited_at: consultation.visitedAt
+      ? new Date(consultation.visitedAt).toISOString().slice(0, 16)
+      : "",
+    motiv_prezentare: consultation.motivPrezentare || "",
+    simptome: consultation.simptome || "",
+    diagnostic_icd10_code: consultation.diagnosticIcd10Code || "",
+    diagnostic_icd10_display: consultation.diagnosticIcd10Display || "",
+    trimiteri: consultation.trimiteri || "",
+    retete: consultation.retete || "",
+    recommendation_title: "",
+    recommendation_duration: "",
+    recommendation_notes: "",
+  });
+
+  setDateError("");
+  setShowAddModal(true);
+};
 
   const handleAddConsultation = async (e) => {
     e.preventDefault();
@@ -255,7 +355,30 @@ function ConsultatiiMedic() {
       console.log("=== CONSULTATION PAYLOAD ===");
       console.log(finalPayload);
       console.log(JSON.stringify(finalPayload, null, 2));
+if (editingConsultation) {
+  console.log("=== UPDATE CONSULTATION PAYLOAD ===");
+  console.log(editingConsultation.id, finalPayload);
 
+  setConsultations((prev) =>
+    prev.map((c) =>
+      c.id === editingConsultation.id
+        ? {
+            ...c,
+            visitedAt: finalPayload.visitedAt,
+            motivPrezentare: finalPayload.motivPrezentare,
+            simptome: finalPayload.simptome,
+            diagnosticIcd10Code: finalPayload.diagnosticIcd10Code,
+            diagnosticIcd10Display: finalPayload.diagnosticIcd10Display,
+            trimiteri: finalPayload.trimiteri,
+            retete: finalPayload.retete,
+          }
+        : c
+    )
+  );
+
+  closeAddModal();
+  return;
+}
       await createConsultation(finalPayload);
 
       const hasRecommendation =
@@ -283,6 +406,7 @@ function ConsultatiiMedic() {
     } finally {
       setSaving(false);
     }
+  
   };
 
   return (
@@ -380,8 +504,8 @@ function ConsultatiiMedic() {
                   type="button"
                   onClick={() => setShowAppointmentsModal(true)}
                 >
-                  Programări azi
-                </button>
+Calendar programări              
+  </button>
 
                 <button
                   className="add-consultatie-btn"
@@ -421,10 +545,31 @@ function ConsultatiiMedic() {
                   </span>
 
                   <span className="consultatieActions">
-                    <button>Detalii</button>
-                    <button>Editează</button>
-                    <button>Închide</button>
-                  </span>
+  <button
+  type="button"
+  onClick={() => {
+    setSelectedConsultation(c);
+    setShowDetailsModal(true);
+  }}
+>
+  Detalii
+</button>
+{c.status !== "ARCHIVED" && (
+  <>
+
+<button type="button" onClick={() => openCompleteConsultation(c)}>
+  Completează
+</button>
+
+<button
+  type="button"
+  onClick={() => handleFinalizeConsultation(c.id)}
+>
+  Finalizează
+</button>         
+  </>
+  )}
+ </span>
                 </div>
               ))}
 
@@ -444,8 +589,7 @@ function ConsultatiiMedic() {
                 <div className="consultatieModalIcon">🩺</div>
 
                 <div>
-                  <h2>Consultație nouă</h2>
-                </div>
+<h2>{editingConsultation ? "Completează consultația" : "Consultație nouă"}</h2>                </div>
 
                 <button
                   className="closeConsultatieModalBtn"
@@ -629,51 +773,262 @@ function ConsultatiiMedic() {
                   form="addConsultationForm"
                   disabled={!isFormValid || saving}
                 >
-                  {saving ? "Se salvează…" : "Salvează consultația"}
-                </button>
+{saving
+  ? "Se salvează…"
+  : editingConsultation
+  ? "Salvează completarea"
+  : "Salvează consultația"}                </button>
               </div>
             </div>
           </div>
         )}
+{showAppointmentsModal && (
+  <div className="consultatieModalOverlay">
+    <div className="calendarBigModal">
+      <div className="consultatieModalHeader">
+        <div className="consultatieModalIcon">📅</div>
 
-        {showAppointmentsModal && (
-          <div className="consultatieModalOverlay">
-            <div className="programariModal">
-              <div className="consultatieModalHeader">
-                <div className="consultatieModalIcon">📅</div>
+        <div>
+<div className="calendarHeaderContent">
+  <div>
+    <h2>Calendar programări</h2>
+  </div>
 
-                <div>
-                  <h2>Programările de azi</h2>
-                </div>
+  <div className="calendarHeaderActions">
+    <button type="button" onClick={() => changeCalendarMonth(-1)}>
+      ‹
+    </button>
 
-                <button
-                  className="closeConsultatieModalBtn"
-                  type="button"
-                  onClick={() => setShowAppointmentsModal(false)}
-                >
-                  ×
-                </button>
-              </div>
+    <strong>{getMonthLabel(calendarMonthDate)}</strong>
 
-              <div className="programariList">
-                {todayAppointments.map((appointment, index) => (
-                  <div className="programareCard" key={index}>
-                    <div>
-                      <strong>{appointment.ora}</strong>
-                      <span>{appointment.status}</span>
-                    </div>
+    <button type="button" onClick={() => changeCalendarMonth(1)}>
+      ›
+    </button>
+  </div>
+</div>
+        </div>
 
-                    <div>
-                      <h3>{appointment.pacient}</h3>
-                      <p>{appointment.motiv}</p>
-                      <small>Telefon: {appointment.telefon}</small>
-                    </div>
+        <button
+          className="closeConsultatieModalBtn"
+          type="button"
+          onClick={() => setShowAppointmentsModal(false)}
+        >
+          ×
+        </button>
+      </div>
+
+      <div className="calendarLayout">
+        <div className="calendarLeft">
+          <div className="calendarWeekHeader">
+            <span>Lun</span>
+            <span>Mar</span>
+            <span>Mie</span>
+            <span>Joi</span>
+            <span>Vin</span>
+            <span>Sâm</span>
+            <span>Dum</span>
+          </div>
+
+          <div className="calendarMonthGrid">
+            {getCalendarDays(calendarMonthDate, consultations).map((day) => (
+              <button
+  type="button"
+  disabled={day.isWeekend}
+  className={[
+    "calendarCell",
+    !day.isCurrentMonth ? "otherMonth" : "",
+    day.isWeekend ? "weekendDay" : "",
+    selectedCalendarDate === day.dateKey ? "selectedDay" : "",
+    day.appointments.length > 0 ? "hasAppointments" : "",
+  ].join(" ")}
+  onClick={() => {
+    if (!day.isWeekend) {
+      setSelectedCalendarDate(day.dateKey);
+    }
+  }}
+>
+                <strong>{day.dayNumber}</strong>
+
+                {day.appointments.length > 0 ? (
+                  <small>{day.appointments.length} programări</small>
+                ) : (
+                  <small>—</small>
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="calendarRight">
+          <div className="selectedDayHeader">
+            <h3>Programările zilei</h3>
+            <span>{selectedCalendarDate}</span>
+          </div>
+
+          {consultations.filter(
+            (c) => toLocalDateKey(c.visitedAt) === selectedCalendarDate
+          ).length === 0 && (
+            <p className="noAppointmentsText">Nu există programări.</p>
+          )}
+
+          <div className="selectedDayList">
+            {consultations
+              .filter((c) => toLocalDateKey(c.visitedAt) === selectedCalendarDate)
+              .map((appointment) => (
+                <div className="selectedAppointmentCard" key={appointment.id}>
+                  <div className="appointmentHour">
+                    {formatTimeOnly(appointment.visitedAt)}
                   </div>
-                ))}
-              </div>
-            </div>
+
+                  <div>
+                    <h4>{appointment.patientName || "Pacient"}</h4>
+                    <p>{appointment.motivPrezentare || "Fără motiv"}</p>
+                    <span>
+                      {appointment.status === "ARCHIVED"
+                        ? "Finalizată"
+                        : "Activă"}
+                    </span>
+                  </div>
+                </div>
+              ))}
           </div>
-        )}
+
+          <button
+            className="addSelectedDayBtn"
+            type="button"
+            onClick={() => {
+              setShowAppointmentsModal(false);
+              setShowAddModal(true);
+              setNewConsultation({
+                ...initialConsultation,
+                visited_at: `${selectedCalendarDate}T08:00`,
+              });
+            }}
+          >
+            + Programare pentru ziua selectată
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+)}
+
+        {showDetailsModal && selectedConsultation && (
+  <div className="consultatieModalOverlay">
+    <div className="programariModal">
+      <div className="consultatieModalHeader">
+        <div className="consultatieModalIcon">🩺</div>
+
+        <div>
+          <h2>Detalii consultație</h2>
+          <p>{selectedConsultation.patientName || "Pacient"}</p>
+        </div>
+
+        <button
+          className="closeConsultatieModalBtn"
+          type="button"
+          onClick={() => {
+            setShowDetailsModal(false);
+            setSelectedConsultation(null);
+          }}
+        >
+          ×
+        </button>
+      </div>
+
+<div className="consultatieDetailsForm">
+  <div className="consultatieSection">
+    <div className="sectionTitle">
+      <h3>Date programare</h3>
+    </div>
+
+    <div className="consultatieFormGrid twoCols">
+      <label>
+        Pacient
+        <input value={selectedConsultation.patientName || "—"} readOnly />
+      </label>
+
+      <label>
+        Data programării
+        <input value={formatDate(selectedConsultation.visitedAt)} readOnly />
+      </label>
+
+      <label>
+        Motiv
+        <input value={selectedConsultation.motivPrezentare || "—"} readOnly />
+      </label>
+
+      <label>
+        Status
+        <input
+          value={
+            selectedConsultation.status === "ACTIVE"
+              ? "Programată / activă"
+              : "Finalizată"
+          }
+          readOnly
+        />
+      </label>
+    </div>
+  </div>
+
+  <div className="consultatieSection">
+    <div className="sectionTitle">
+      <h3>Date medicale</h3>
+    </div>
+
+    <div className="consultatieFormGrid twoCols">
+      <label>
+        Simptome
+        <textarea
+          value={selectedConsultation.simptome || "Nu a fost completat încă."}
+          readOnly
+        />
+      </label>
+
+      <label>
+        Diagnostic
+        <textarea
+          value={
+            selectedConsultation.diagnosticIcd10Display ||
+            "Nu a fost completat încă."
+          }
+          readOnly
+        />
+      </label>
+
+      <label>
+        Cod ICD-10
+        <input
+          value={
+            selectedConsultation.diagnosticIcd10Code ||
+            "Nu a fost completat încă."
+          }
+          readOnly
+        />
+      </label>
+
+      <label>
+        Trimiteri
+        <input
+          value={selectedConsultation.trimiteri || "Nu au fost completate încă."}
+          readOnly
+        />
+      </label>
+
+      <label className="fullField">
+        Rețete
+        <textarea
+          value={selectedConsultation.retete || "Nu au fost completate încă."}
+          readOnly
+        />
+      </label>
+    </div>
+  </div>
+</div>
+    </div>
+  </div>
+)}
       </main>
     </div>
   );

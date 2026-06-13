@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.*;
 import ro.seniorwatch.dto.ClinicalVisitRequest;
 import ro.seniorwatch.dto.ClinicalVisitResponse;
 import ro.seniorwatch.service.ClinicalVisitService;
+import java.util.UUID;
 
 import java.util.List;
 
@@ -34,4 +35,12 @@ public class ClinicalVisitController {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(clinicalVisitService.createClinicalVisit(request, auth));
     }
+    @PatchMapping("/{id}/finalize")
+@PreAuthorize("hasAnyRole('DOCTOR', 'ADMIN')")
+public ResponseEntity<ClinicalVisitResponse> finalizeClinicalVisit(
+        @PathVariable UUID id,
+        Authentication auth
+) {
+    return ResponseEntity.ok(clinicalVisitService.finalizeClinicalVisit(id, auth));
+}
 }
