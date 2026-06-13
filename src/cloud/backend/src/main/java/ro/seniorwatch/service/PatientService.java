@@ -164,4 +164,13 @@ return PatientResponse.builder()
         .latestSample(latestSampleDto)
         .build();
     }
+    @Transactional(readOnly = true)
+public PatientResponse getMyPatient(Authentication auth) {
+    String email = (String) auth.getPrincipal();
+
+    Patient patient = patientRepository.findByDemographicsEmail(email)
+            .orElseThrow(() -> new NoSuchElementException("Patient not found for email: " + email));
+
+    return toResponse(patient);
+}
 }

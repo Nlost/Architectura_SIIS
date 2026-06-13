@@ -1,7 +1,7 @@
 import "./pacienti.css";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { getPatients, createPatient } from "../../api";
+import { getPatients, createPatient, updatePatient } from "../../api";
 
 const initialNewPatient = {
   nume: "",
@@ -76,7 +76,11 @@ function PacientiMedic() {
   const [patients, setPatients] = useState([]);
   const [saving, setSaving] = useState(false);
   const [createdPatientInfo, setCreatedPatientInfo] = useState(null);
-const [searchTerm, setSearchTerm] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [selectedPatient, setSelectedPatient] = useState(null);
+
+  
   const loadPatients = async () => {
     try {
       const data = await getPatients();
@@ -89,7 +93,69 @@ const [searchTerm, setSearchTerm] = useState("");
   useEffect(() => {
     loadPatients();
   }, []);
+const handleEditPatient = (patient) => {
+  const d = patient.demographics || {};
 
+  setSelectedPatient(patient);
+
+  setNewPatient({
+    nume: d.nume || "",
+    prenume: d.prenume || "",
+    cnp: d.cnp || "",
+    sex: d.sex || "",
+    data_nasterii: d.dataNasterii || "",
+    varsta: d.dataNasterii ? `${calcAge(d.dataNasterii)} ani` : "",
+    telefon: d.telefon || "",
+    email: d.email || "",
+    localitate: d.localitate || "",
+    judet: d.judet || "",
+    strada: d.strada || "",
+    cod_postal: d.codPostal || "",
+    tara: d.tara || "Romania",
+    profesie: d.profesie || "",
+    loc_de_munca: d.locDeMunca || "",
+  });
+
+  setShowEditModal(true);
+};
+
+const handleUpdatePatient = async (e) => {
+  e.preventDefault();
+
+  if (!selectedPatient || saving) return;
+
+  const demographics = {
+    nume: newPatient.nume,
+    prenume: newPatient.prenume,
+    sex: newPatient.sex,
+    dataNasterii: newPatient.data_nasterii,
+    cnp: newPatient.cnp,
+    strada: newPatient.strada,
+    localitate: newPatient.localitate,
+    judet: newPatient.judet,
+    codPostal: newPatient.cod_postal,
+    tara: newPatient.tara,
+    telefon: newPatient.telefon,
+    email: newPatient.email,
+    profesie: newPatient.profesie,
+    locDeMunca: newPatient.loc_de_munca,
+  };
+
+  setSaving(true);
+
+  try {
+    await updatePatient(selectedPatient.id, demographics);
+    await loadPatients();
+    setShowEditModal(false);
+    setSelectedPatient(null);
+    setNewPatient(initialNewPatient);
+  } catch (error) {
+    console.log(error);
+    alert("Eroare la actualizarea pacientului.");
+  } finally {
+    setSaving(false);
+  }
+};
   const calcAge = (birthDate) => {
     const today = new Date();
     const birth = new Date(birthDate);
@@ -116,7 +182,7 @@ const [searchTerm, setSearchTerm] = useState("");
   const generatePatientEmail = (nume, prenume) => {
     if (!nume || !prenume) return "";
 
-    return `${normalizeText(prenume)}.${normalizeText(nume)}@seniorwatchc.com`;
+    return `${normalizeText(prenume)}.${normalizeText(nume)}@seniorwatch.com`;
   };
 
   const extractFromCNP = (cnp) => {
@@ -461,15 +527,17 @@ const filteredPatients = patients.filter((p) => {
 <span>{sample?.temperatura ? `${sample.temperatura}°C` : "—"}</span>
 <span>{sample?.umiditate ? `${sample.umiditate}%` : "—"}</span>
 <span className="badge Stabil">Stabil</span>
+<span className="patientActions">
+  <button onClick={() => navigate(`/medic/pacient/${p.id}`)}>
+    Fișă
+  </button>
 
-                    <span className="patientActions">
-                      <button onClick={() => navigate(`/medic/pacient/${p.id}`)}>
-                        Fișă
-                      </button>
-                      <button>Grafice</button>
-                      <button>Editează</button>
-                      <button>Alerte</button>
-                    </span>
+  <button onClick={() => handleEditPatient(p)}>
+    Editează
+  </button>
+
+  <button>Alerte</button>
+</span>
                   </div>
                 );
               })}
@@ -684,6 +752,163 @@ const filteredPatients = patients.filter((p) => {
             </div>
           </div>
         )}
+        {showEditModal && (
+  <div className="modalOverlay">
+    <div className="widePatientModal">
+      <div className="addPatientHeader">
+        <div className="modalIcon">✏️</div>
+        <div>
+          <h2>Editează pacient</h2>
+        </div>
+        <button
+          className="closeModalBtn"
+          type="button"
+          onClick={() => {
+            setShowEditModal(false);
+            setSelectedPatient(null);
+            setNewPatient(initialNewPatient);
+          }}
+        >
+          ×
+        </button>
+      </div>
+
+      <form
+        id="editPatientForm"
+        className="addPatientForm"
+        onSubmit={handleUpdatePatient}
+      >
+        <div className="formSection">
+          <div className="sectionTitle">
+            <h3>Date pacient</h3>
+          </div>
+
+          <div className="formGrid threeCols">
+            <label>
+              Nume *
+              <input
+                name="nume"
+                value={newPatient.nume}
+                onChange={handleChange}
+                required
+              />
+            </label>
+
+            <label>
+              Prenume *
+              <input
+                name="prenume"
+                value={newPatient.prenume}
+                onChange={handleChange}
+                required
+              />
+            </label>
+
+            <label>
+              Email generat automat
+              <input
+                name="email"
+                type="email"
+                value={newPatient.email}
+                readOnly
+              />
+            </label>
+
+            <label>
+              Telefon *
+              <input
+                name="telefon"
+                value={newPatient.telefon}
+                onChange={(e) => {
+                  const onlyDigits = e.target.value
+                    .replace(/\D/g, "")
+                    .slice(0, 10);
+
+                  setNewPatient({
+                    ...newPatient,
+                    telefon: onlyDigits,
+                  });
+                }}
+                maxLength="10"
+                required
+              />
+            </label>
+
+            <label>
+              Localitate *
+              <input
+                name="localitate"
+                value={newPatient.localitate}
+                onChange={handleChange}
+                required
+              />
+            </label>
+
+            <label>
+              Stradă
+              <input
+                name="strada"
+                value={newPatient.strada}
+                onChange={handleChange}
+              />
+            </label>
+
+            <label>
+              Cod poștal
+              <input
+                name="cod_postal"
+                value={newPatient.cod_postal}
+                onChange={handleChange}
+                maxLength="6"
+              />
+            </label>
+
+            <label>
+              Profesie
+              <input
+                name="profesie"
+                value={newPatient.profesie}
+                onChange={handleChange}
+              />
+            </label>
+
+            <label>
+              Loc de muncă
+              <input
+                name="loc_de_munca"
+                value={newPatient.loc_de_munca}
+                onChange={handleChange}
+              />
+            </label>
+          </div>
+        </div>
+      </form>
+
+      <div className="modalFooter">
+        <button
+          type="button"
+          className="btnCancel"
+          onClick={() => {
+            setShowEditModal(false);
+            setSelectedPatient(null);
+            setNewPatient(initialNewPatient);
+          }}
+        >
+          Renunță
+        </button>
+
+        <button
+          type="submit"
+          form="editPatientForm"
+          className="btnSave"
+          disabled={saving}
+        >
+          {saving ? "Se salvează…" : "Salvează modificările"}
+        </button>
+      </div>
+    </div>
+  </div>
+)}
         {createdPatientInfo && (
   <div className="users-modalOverlay">
     <div className="users-modal users-successModal">

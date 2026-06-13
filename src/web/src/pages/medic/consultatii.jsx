@@ -289,19 +289,27 @@ const stats = {
       [name]: value,
     });
   };
+
 const handleFinalizeConsultation = async (consultationId) => {
+  const confirmed = window.confirm(
+    "Sigur vrei să finalizezi această consultație? După finalizare nu va mai putea fi completată."
+  );
+
+  if (!confirmed) return;
+
   try {
     await finalizeConsultation(consultationId);
 
     const updated = await getConsultations();
     setConsultations(updated);
 
-    alert("Consultația a fost finalizată.");
+    alert("Consultația a fost finalizată cu succes.");
   } catch (error) {
     console.error(error);
     alert("Nu s-a putut finaliza consultația.");
   }
 };
+
 const closeAddModal = () => {
   setShowAddModal(false);
   setEditingConsultation(null);
@@ -539,37 +547,52 @@ Calendar programări
                   <span>{formatDate(c.visitedAt)}</span>
                   <span>{c.diagnosticIcd10Code || "—"}</span>
                   <span>{c.motivPrezentare || "—"}</span>
-
-                  <span className="consultatie-badge ACTIVE">
-                    {c.status || "ACTIVE"}
+                  <span
+                          className={`consultatie-badge ${
+                          c.status === "ARCHIVED" ? "finalizata" : "activa"
+                          }`}
+                  >
+                          {c.status === "ARCHIVED" ? "Finalizată" : "Activă"}
                   </span>
 
                   <span className="consultatieActions">
   <button
-  type="button"
-  onClick={() => {
-    setSelectedConsultation(c);
-    setShowDetailsModal(true);
-  }}
->
-  Detalii
-</button>
-{c.status !== "ARCHIVED" && (
-  <>
+    className="detailsBtn"
+    type="button"
+    onClick={() => {
+      setSelectedConsultation(c);
+      setShowDetailsModal(true);
+    }}
+  >
+    Detalii
+  </button>
 
-<button type="button" onClick={() => openCompleteConsultation(c)}>
-  Completează
-</button>
+  {c.status === "ARCHIVED" ? (
+    <>
+      <span className="actionPlaceholder"></span>
 
-<button
-  type="button"
-  onClick={() => handleFinalizeConsultation(c.id)}
->
-  Finalizează
-</button>         
-  </>
+      <span className="finalizedTag">Finalizată</span>
+    </>
+  ) : (
+    <>
+      <button
+        className="completeBtn"
+        type="button"
+        onClick={() => openCompleteConsultation(c)}
+      >
+        Completează
+      </button>
+
+      <button
+        className="finishBtn"
+        type="button"
+        onClick={() => handleFinalizeConsultation(c.id)}
+      >
+        Finalizează
+      </button>
+    </>
   )}
- </span>
+</span>
                 </div>
               ))}
 

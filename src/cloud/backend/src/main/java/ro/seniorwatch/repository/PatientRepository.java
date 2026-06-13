@@ -18,4 +18,7 @@ public interface PatientRepository extends JpaRepository<Patient, UUID> {
 
     @Query("SELECT p FROM Patient p LEFT JOIN FETCH p.demographics WHERE p.active = TRUE")
     List<Patient> findAllActiveWithDemographics();
+
+    @Query("SELECT p FROM Patient p LEFT JOIN FETCH p.demographics d WHERE d.email = :email")
+    Optional<Patient> findByDemographicsEmail(@Param("email") String email);
 }

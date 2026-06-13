@@ -1,8 +1,96 @@
 import "./pacient.css";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { getPatientMe, getRecommendationsByPatient } from "../../api";
+
+const formatDate = (dateValue) => {
+  if (!dateValue) return "-";
+
+  const date = new Date(dateValue);
+
+  if (Number.isNaN(date.getTime())) return "-";
+
+  return date.toLocaleString("ro-RO", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+};
+
+const buildAlerts = (sample) => {
+  if (!sample) return [];
+
+  const alerts = [];
+
+  if (sample.puls && Number(sample.puls) > 100) {
+    alerts.push({
+      title: "Puls ridicat",
+      value: `${sample.puls} bpm`,
+      message: "Valoarea pulsului este peste limita normală.",
+      type: "danger",
+    });
+  }
+
+  if (sample.temperatura && Number(sample.temperatura) >= 37.5) {
+    alerts.push({
+      title: "Temperatură crescută",
+      value: `${sample.temperatura}°C`,
+      message: "Temperatura este peste limita recomandată.",
+      type: "warning",
+    });
+  }
+
+  if (sample.umiditate && Number(sample.umiditate) > 70) {
+    alerts.push({
+      title: "Umiditate crescută",
+      value: `${sample.umiditate}%`,
+      message: "Umiditatea înregistrată este peste limita recomandată.",
+      type: "warning",
+    });
+  }
+
+  return alerts;
+};
 
 function PatientDashboard() {
   const navigate = useNavigate();
+
+  const [patient, setPatient] = useState(null);
+  const [recommendations, setRecommendations] = useState([]);
+
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const patientData = await getPatientMe();
+        console.log(patientData)
+        setPatient(patientData);
+
+        if (patientData?.id) {
+          const recommendationsData = await getRecommendationsByPatient(
+            patientData.id
+          );
+          setRecommendations(recommendationsData);
+        }
+      } catch (error) {
+        console.log("Eroare date pacient:", error);
+      }
+    };
+
+    loadData();
+  }, []);
+
+  const d = patient?.demographics || {};
+  const sample = patient?.latestSample || null;
+  const alerts = buildAlerts(sample);
+
+  const fullName = [d.prenume, d.nume].filter(Boolean).join(" ") || "Pacient";
+  const firstName = d.prenume || "Pacient";
+
+  const initials =
+    `${(d.prenume || "")[0] || ""}${(d.nume || "")[0] || ""}`.toUpperCase() ||
+    "P";
 
   return (
     <div className="app">
@@ -16,17 +104,55 @@ function PatientDashboard() {
         </div>
 
         <nav>
-          <a className="active">  📊 Dashboard</a>
-          <a onClick={() => navigate("/pacient/pacientfisa")}>   📄 Fișa mea</a>
-          <a onClick={() => navigate("/pacient/pacientvalori")}>   📈 Valori senzori</a>
-          <a onClick={() => navigate("/pacient/pacientrecomandari")}>  🩺 Recomandări</a>
-          <a onClick={() => navigate("/pacient/pacientalerte")}>🚨 Alerte</a>
+          <a href="#" className="active" onClick={(e) => e.preventDefault()}>
+            📊 Dashboard
+          </a>
+
+          <a
+            href="#"
+            onClick={(e) => {
+              e.preventDefault();
+              navigate("/pacient/pacientfisa");
+            }}
+          >
+            📄 Fișa mea
+          </a>
+
+          <a
+            href="#"
+            onClick={(e) => {
+              e.preventDefault();
+              navigate("/pacient/pacientvalori");
+            }}
+          >
+            📈 Valori senzori
+          </a>
+
+          <a
+            href="#"
+            onClick={(e) => {
+              e.preventDefault();
+              navigate("/pacient/pacientrecomandari");
+            }}
+          >
+            🩺 Recomandări
+          </a>
+
+          <a
+            href="#"
+            onClick={(e) => {
+              e.preventDefault();
+              navigate("/pacient/pacientalerte");
+            }}
+          >
+            🚨 Alerte
+          </a>
         </nav>
 
         <div className="profile">
-          <div>MI</div>
+          <div>{initials}</div>
           <span>
-            <b>Maria Ionescu</b>
+            <b>{fullName}</b>
             Pacient
           </span>
         </div>
@@ -36,15 +162,11 @@ function PatientDashboard() {
         <section className="hero">
           <div className="heroText">
             <p>MONITORIZARE PERSONALĂ</p>
-            <h1>Bun venit, Maria!</h1>
+            <h1>Bun venit, {firstName}!</h1>
             <span>
-              Aici poți vedea valorile tale medicale, recomandările medicului și istoricul alertelor.
+              Aici poți vedea valorile tale medicale, recomandările medicului și
+              istoricul alertelor.
             </span>
-          </div>
-
-          <div className="heroSearch">
-            <input placeholder="Caută valori, alerte sau recomandări..." />
-            <button>⌕</button>
           </div>
         </section>
 
@@ -53,8 +175,8 @@ function PatientDashboard() {
             <div className="icon purple">HR</div>
             <div>
               <p>Puls</p>
-              <h2>78 bpm</h2>
-              <span>în limite normale</span>
+              <h2>{sample?.puls ? `${sample.puls} bpm` : "-"}</h2>
+              <span>ultima valoare înregistrată</span>
             </div>
           </div>
 
@@ -62,17 +184,17 @@ function PatientDashboard() {
             <div className="icon green">TEMP</div>
             <div>
               <p>Temperatură</p>
-              <h2>36.7°C</h2>
-              <span>valoare normală</span>
+              <h2>{sample?.temperatura ? `${sample.temperatura}°C` : "-"}</h2>
+              <span>ultima valoare înregistrată</span>
             </div>
           </div>
 
           <div className="stat">
-            <div className="icon violet">ECG</div>
+            <div className="icon violet">UM</div>
             <div>
-              <p>ECG</p>
-              <h2>Stabil</h2>
-              <span>fără modificări majore</span>
+              <p>Umiditate</p>
+              <h2>{sample?.umiditate ? `${sample.umiditate}%` : "-"}</h2>
+              <span>ultima valoare înregistrată</span>
             </div>
           </div>
 
@@ -80,8 +202,8 @@ function PatientDashboard() {
             <div className="icon pink">AL</div>
             <div>
               <p>Alerte</p>
-              <h2>2</h2>
-              <span>în ultimele 7 zile</span>
+              <h2>{alerts.length}</h2>
+              <span>generate din valorile senzorilor</span>
             </div>
           </div>
         </section>
@@ -106,38 +228,33 @@ function PatientDashboard() {
                 <span>Data</span>
               </div>
 
-              <div className="recommendationRow">
-                <div>
-                  <b>Plimbare zilnică</b>
-                  <small>
-                    Evitați efortul intens și monitorizați pulsul în timpul activității fizice.
-                  </small>
-                </div>
-                <span>30 minute / zi</span>
-                <span>20 mai 2026</span>
-              </div>
+              {recommendations.length > 0 ? (
+                recommendations.slice(0, 3).map((rec) => (
+                  <div className="recommendationRow" key={rec.id}>
+                    <div>
+                      <b>{rec.tipActivitate || "Recomandare medicală"}</b>
+                      <small>{rec.alteIndicatii || "Fără indicații suplimentare"}</small>
+                    </div>
 
-              <div className="recommendationRow">
-                <div>
-                  <b>Evitare efort intens</b>
-                  <small>
-                    Evitați urcatul scărilor și activitățile fizice solicitante până la următorul control.
-                  </small>
-                </div>
-                <span>Nespecificată</span>
-                <span>18 mai 2026</span>
-              </div>
+                    <span>
+                      {rec.durataZilnicaMinute
+                        ? `${rec.durataZilnicaMinute} min`
+                        : "-"}
+                    </span>
 
-              <div className="recommendationRow">
-                <div>
-                  <b>Control cardiologic</b>
-                  <small>
-                    Revenire la control cardiologic în aproximativ 30 de zile.
-                  </small>
+                    <span>{formatDate(rec.createdAt || rec.recordedAt)}</span>
+                  </div>
+                ))
+              ) : (
+                <div className="recommendationRow">
+                  <div>
+                    <b>Nu există recomandări recente</b>
+                    <small>Recomandările vor apărea aici după consultație.</small>
+                  </div>
+                  <span>-</span>
+                  <span>-</span>
                 </div>
-                <span>Nespecificată</span>
-                <span>15 mai 2026</span>
-              </div>
+              )}
             </div>
           </div>
 
@@ -150,23 +267,21 @@ function PatientDashboard() {
                 </div>
               </div>
 
-              <div className="alert critical">
-                <b>Puls ridicat</b>
-                <span>Ieri, ora 18:40</span>
-                <small>valoare peste limita setată</small>
-              </div>
-
-              <div className="alert info">
-                <b>Dispozitiv conectat</b>
-                <span>Azi, ora 09:15</span>
-                <small>conexiune activă</small>
-              </div>
-
-              <div className="alert warning">
-                <b>Activitate redusă</b>
-                <span>Azi, ora 12:20</span>
-                <small>monitorizare recomandată</small>
-              </div>
+              {alerts.length > 0 ? (
+                alerts.map((alert, index) => (
+                  <div className={`alert ${alert.type}`} key={index}>
+                    <b>{alert.title}</b>
+                    <span>{alert.value}</span>
+                    <small>{alert.message}</small>
+                  </div>
+                ))
+              ) : (
+                <div className="alert info">
+                  <b>Nu există alerte recente</b>
+                  <span>-</span>
+                  <small>Valorile tale sunt în limite normale.</small>
+                </div>
+              )}
             </div>
           </div>
         </section>
