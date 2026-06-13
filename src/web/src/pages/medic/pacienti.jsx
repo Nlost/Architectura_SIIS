@@ -1,7 +1,7 @@
 import "./pacienti.css";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { getPatients, createPatient, updatePatient } from "../../api";
+import { getPatients, createPatient } from "../../api";
 
 const initialNewPatient = {
   nume: "",
