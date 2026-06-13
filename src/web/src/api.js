@@ -280,3 +280,24 @@ export async function finalizeConsultation(id) {
 
   return text ? JSON.parse(text) : {};
 }
+
+export async function getPatientMe() {
+  const token = localStorage.getItem("sw_token");
+
+  const response = await fetch(`${API_BASE}/api/patients/me`, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  const text = await response.text();
+
+  if (!response.ok) {
+    console.log("Get patient me status:", response.status);
+    console.log("Get patient me backend response:", text);
+    throw new Error(text || "Nu s-au putut încărca datele pacientului");
+  }
+
+  return text ? JSON.parse(text) : {};
+}
