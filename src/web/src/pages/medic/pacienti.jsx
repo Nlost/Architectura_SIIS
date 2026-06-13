@@ -78,7 +78,7 @@ function PacientiMedic() {
   const [createdPatientInfo, setCreatedPatientInfo] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [showEditModal, setShowEditModal] = useState(false);
-  const [selectedPatient, setSelectedPatient] = useState(null);
+  const [setSelectedPatient] = useState(null);
 
   
   const loadPatients = async () => {
@@ -119,43 +119,6 @@ const handleEditPatient = (patient) => {
   setShowEditModal(true);
 };
 
-const handleUpdatePatient = async (e) => {
-  e.preventDefault();
-
-  if (!selectedPatient || saving) return;
-
-  const demographics = {
-    nume: newPatient.nume,
-    prenume: newPatient.prenume,
-    sex: newPatient.sex,
-    dataNasterii: newPatient.data_nasterii,
-    cnp: newPatient.cnp,
-    strada: newPatient.strada,
-    localitate: newPatient.localitate,
-    judet: newPatient.judet,
-    codPostal: newPatient.cod_postal,
-    tara: newPatient.tara,
-    telefon: newPatient.telefon,
-    email: newPatient.email,
-    profesie: newPatient.profesie,
-    locDeMunca: newPatient.loc_de_munca,
-  };
-
-  setSaving(true);
-
-  try {
-    await updatePatient(selectedPatient.id, demographics);
-    await loadPatients();
-    setShowEditModal(false);
-    setSelectedPatient(null);
-    setNewPatient(initialNewPatient);
-  } catch (error) {
-    console.log(error);
-    alert("Eroare la actualizarea pacientului.");
-  } finally {
-    setSaving(false);
-  }
-};
   const calcAge = (birthDate) => {
     const today = new Date();
     const birth = new Date(birthDate);
@@ -774,9 +737,7 @@ const filteredPatients = patients.filter((p) => {
       </div>
 
       <form
-        id="editPatientForm"
-        className="addPatientForm"
-        onSubmit={handleUpdatePatient}
+
       >
         <div className="formSection">
           <div className="sectionTitle">
