@@ -43,4 +43,10 @@ public ResponseEntity<ClinicalVisitResponse> finalizeClinicalVisit(
 ) {
     return ResponseEntity.ok(clinicalVisitService.finalizeClinicalVisit(id, auth));
 }
+
+@GetMapping("/patient/me")
+@PreAuthorize("hasRole('PATIENT')")
+public ResponseEntity<List<ClinicalVisitResponse>> listMyClinicalVisits(Authentication auth) {
+    return ResponseEntity.ok(clinicalVisitService.listMyClinicalVisits(auth));
+}
 }

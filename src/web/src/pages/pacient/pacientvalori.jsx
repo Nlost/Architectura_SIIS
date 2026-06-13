@@ -1,8 +1,80 @@
 import "./pacientvalori.css";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { getPatientMe } from "../../api";
+
+const formatDateTime = (dateValue) => {
+  if (!dateValue) return "-";
+
+  const date = new Date(dateValue);
+  if (Number.isNaN(date.getTime())) return "-";
+
+  return date.toLocaleString("ro-RO", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+};
+
+const getPulseInterpretation = (puls) => {
+  if (!puls) return "-";
+  const value = Number(puls);
+
+  if (value > 100) return "Puls peste limita normală";
+  if (value < 60) return "Puls sub limita normală";
+  return "În limite normale";
+};
+
+const getTempInterpretation = (temperatura) => {
+  if (!temperatura) return "-";
+  const value = Number(temperatura);
+
+  if (value >= 37.5) return "Temperatură crescută";
+  if (value < 35.5) return "Temperatură scăzută";
+  return "Valoare normală";
+};
+
+const getHumidityInterpretation = (umiditate) => {
+  if (!umiditate) return "-";
+  const value = Number(umiditate);
+
+  if (value > 70) return "Umiditate crescută";
+  if (value < 30) return "Umiditate scăzută";
+  return "Valoare normală";
+};
 
 function PacientValori() {
   const navigate = useNavigate();
+
+  const [patient, setPatient] = useState(null);
+
+  useEffect(() => {
+    const loadPatient = async () => {
+      try {
+        const data = await getPatientMe();
+        setPatient(data);
+      } catch (error) {
+        console.log("Eroare valori pacient:", error);
+      }
+    };
+
+    loadPatient();
+  }, []);
+
+  const d = patient?.demographics || {};
+  const sample = patient?.latestSample || {};
+
+  const fullName = [d.prenume, d.nume].filter(Boolean).join(" ") || "Pacient";
+
+  const initials =
+    `${(d.prenume || "")[0] || ""}${(d.nume || "")[0] || ""}`.toUpperCase() ||
+    "P";
+
+  const puls = sample?.puls;
+  const temperatura = sample?.temperatura;
+  const umiditate = sample?.umiditate;
 
   return (
     <div className="app">
@@ -16,21 +88,19 @@ function PacientValori() {
         </div>
 
         <nav>
-          <a onClick={() => navigate("/pacient")}>📊 Dashboard</a>
-          <a onClick={() => navigate("/pacient/pacientfisa")}>📄 Fișa mea</a>
-          <a className="active">📈 Valori senzori</a>
-<a onClick={() => navigate("/pacient/pacientrecomandari")}>
-  🩺 Recomandări
-</a>          
-<a onClick={() => navigate("/pacient/pacientalerte")}>
-  🚨 Alerte
-</a>
+          <a href="/pacient">📊 Dashboard</a>
+          <a href="/pacient/pacientfisa">
+            📄 Fișa mea
+          </a>
+          <a href="/pacient/pacientvalori"  className="active">📈 Valori senzori</a>
+          <a href="/pacient/pacientrecomandari">🩺 Recomandări</a>
+          <a href="/pacient/pacientalerte">🚨 Alerte</a>
         </nav>
 
         <div className="profile">
-          <div>MI</div>
+          <div>{initials}</div>
           <span>
-            <b>Maria Ionescu</b>
+            <b>{fullName}</b>
             Pacient
           </span>
         </div>
@@ -41,40 +111,40 @@ function PacientValori() {
           <div>
             <p>MONITORIZARE SENZORI</p>
             <h1>Valori medicale</h1>
-            <span>Valorile tale curente preluate din fișa pacientului.</span>
+            <span>Valorile tale curente preluate din baza de date.</span>
           </div>
 
           <div className="valori-sync-card">
             <b>Ultima sincronizare</b>
-            <span>acum 5 minute</span>
+            <span>{formatDateTime(sample?.ts)}</span>
           </div>
         </section>
 
         <section className="valori-grid">
           <div className="valori-card">
-            <div className="valori-icon purple">❤</div>
+            <div className="valori-icon purple">HR</div>
             <div>
               <p>Puls</p>
-              <h2>78 bpm</h2>
-              <span>în limite normale</span>
+              <h2>{puls ? `${puls} bpm` : "-"}</h2>
+              <span>{getPulseInterpretation(puls)}</span>
             </div>
           </div>
 
           <div className="valori-card">
-            <div className="valori-icon green">🌡</div>
+            <div className="valori-icon green">TEMP</div>
             <div>
               <p>Temperatură</p>
-              <h2>36.7°C</h2>
-              <span>valoare normală</span>
+              <h2>{temperatura ? `${temperatura}°C` : "-"}</h2>
+              <span>{getTempInterpretation(temperatura)}</span>
             </div>
           </div>
 
           <div className="valori-card">
-            <div className="valori-icon violet">〰</div>
+            <div className="valori-icon violet">UM</div>
             <div>
-              <p>ECG</p>
-              <h2>ECG normal</h2>
-              <span>fără modificări majore</span>
+              <p>Umiditate</p>
+              <h2>{umiditate ? `${umiditate}%` : "-"}</h2>
+              <span>{getHumidityInterpretation(umiditate)}</span>
             </div>
           </div>
         </section>
@@ -95,21 +165,27 @@ function PacientValori() {
             </div>
 
             <div className="valori-row">
-              <span>❤ Puls</span>
-              <span>78 bpm</span>
-              <span>În limite normale</span>
+              <span>HR Puls</span>
+              <span>{puls ? `${puls} bpm` : "-"}</span>
+              <span>{getPulseInterpretation(puls)}</span>
             </div>
 
             <div className="valori-row">
-              <span>🌡 Temperatură</span>
-              <span>36.7°C</span>
-              <span>Valoare normală</span>
+              <span>TEMP Temperatură</span>
+              <span>{temperatura ? `${temperatura}°C` : "-"}</span>
+              <span>{getTempInterpretation(temperatura)}</span>
             </div>
 
             <div className="valori-row">
-              <span>〰 ECG</span>
-              <span>ECG normal</span>
-              <span>Fără modificări majore</span>
+              <span>UM Umiditate</span>
+              <span>{umiditate ? `${umiditate}%` : "-"}</span>
+              <span>{getHumidityInterpretation(umiditate)}</span>
+            </div>
+
+            <div className="valori-row">
+              <span>Ultima măsurătoare</span>
+              <span>{formatDateTime(sample?.ts)}</span>
+              <span>Sincronizare din backend</span>
             </div>
           </div>
         </section>

@@ -153,4 +153,16 @@ public ClinicalVisitResponse finalizeClinicalVisit(UUID id, Authentication auth)
 
     return toResponse(visit);
 }
+@Transactional(readOnly = true)
+public List<ClinicalVisitResponse> listMyClinicalVisits(Authentication auth) {
+    String email = (String) auth.getPrincipal();
+
+    Patient patient = patientRepository.findByDemographicsEmail(email)
+            .orElseThrow(() -> new NoSuchElementException("Patient not found for email: " + email));
+
+    return clinicalVisitRepository.findByPatientIdOrderByVisitedAtDesc(patient.getId())
+            .stream()
+            .map(this::toResponse)
+            .toList();
+}
 }

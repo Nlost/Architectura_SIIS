@@ -17,4 +17,5 @@ public interface ClinicalVisitRepository extends JpaRepository<ClinicalVisit, UU
            ORDER BY cv.visitedAt DESC
            """)
     List<ClinicalVisit> findByDoctorId(UUID doctorId);
+    List<ClinicalVisit> findByPatientIdOrderByVisitedAtDesc(UUID patientId);
 }

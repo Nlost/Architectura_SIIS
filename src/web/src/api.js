@@ -301,3 +301,24 @@ export async function getPatientMe() {
 
   return text ? JSON.parse(text) : {};
 }
+
+export async function getMyConsultations() {
+  const token = localStorage.getItem("sw_token");
+
+  const response = await fetch(`${API_BASE}/api/clinical-visits/patient/me`, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  const text = await response.text();
+
+  if (!response.ok) {
+    console.log("Get my consultations status:", response.status);
+    console.log("Get my consultations backend response:", text);
+    throw new Error(text || "Nu s-au putut încărca consultațiile pacientului");
+  }
+
+  return text ? JSON.parse(text) : [];
+}
