@@ -1,6 +1,5 @@
 import "./pacientalerte.css";
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { getPatientMe } from "../../api";
 
 const formatDateTime = (dateValue) => {
@@ -72,7 +71,6 @@ const buildPatientAlerts = (sample) => {
 };
 
 function PacientAlerte() {
-  const navigate = useNavigate();
 
   const [patient, setPatient] = useState(null);
 

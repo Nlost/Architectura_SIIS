@@ -1,6 +1,5 @@
 import "./pacientvalori.css";
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { getPatientMe } from "../../api";
 
 const formatDateTime = (dateValue) => {
@@ -46,7 +45,6 @@ const getHumidityInterpretation = (umiditate) => {
 };
 
 function PacientValori() {
-  const navigate = useNavigate();
 
   const [patient, setPatient] = useState(null);
 

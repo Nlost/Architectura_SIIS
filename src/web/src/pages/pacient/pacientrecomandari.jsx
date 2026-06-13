@@ -1,6 +1,5 @@
 import "./pacientrecomandari.css";
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { getPatientMe, getRecommendationsByPatient } from "../../api";
 
 const formatDate = (dateValue) => {
@@ -17,7 +16,6 @@ const formatDate = (dateValue) => {
 };
 
 function PacientRecomandari() {
-  const navigate = useNavigate();
 
   const [patient, setPatient] = useState(null);
   const [recommendations, setRecommendations] = useState([]);
