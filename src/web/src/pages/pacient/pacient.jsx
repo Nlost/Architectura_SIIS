@@ -1,6 +1,6 @@
 import "./pacientfisa.css";
 import { useEffect, useState } from "react";
-import { getPatientMe, getRecommendationsByPatient } from "../../api";
+import { getPatientMe, getRecommendationsByPatient, getMyConsultations } from "../../api";
 
 const formatDate = (dateValue) => {
   if (!dateValue) return "-";
@@ -82,8 +82,8 @@ function PacientFisa() {
         </div>
 
         <nav>
-          <a href="/pacient">📊 Dashboard</a>
-          <a href="/pacient/pacientfisa" className="active">
+          <a href="/pacient" className="active">📊 Dashboard</a>
+          <a href="/pacient/pacientfisa">
             📄 Fișa mea
           </a>
           <a href="/pacient/pacientvalori">📈 Valori senzori</a>

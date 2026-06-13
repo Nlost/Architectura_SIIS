@@ -1,6 +1,10 @@
 import "./pacientfisa.css";
 import { useEffect, useState } from "react";
-import { getPatientMe, getRecommendationsByPatient } from "../../api";
+import {
+  getPatientMe,
+  getRecommendationsByPatient,
+  getMyConsultations,
+} from "../../api";
 
 const formatDate = (dateValue) => {
   if (!dateValue) return "-";
@@ -35,6 +39,7 @@ const calculateAge = (birthDate) => {
 function PacientFisa() {
   const [patient, setPatient] = useState(null);
   const [recommendations, setRecommendations] = useState([]);
+  const [consultations, setConsultations] = useState([]);
   const [activeTab, setActiveTab] = useState("fisa");
 
   useEffect(() => {
@@ -47,6 +52,9 @@ function PacientFisa() {
           const recs = await getRecommendationsByPatient(patientData.id);
           setRecommendations(recs);
         }
+
+        const visits = await getMyConsultations();
+        setConsultations(visits);
       } catch (error) {
         console.log("Eroare fișă pacient:", error);
       }
@@ -256,7 +264,10 @@ function PacientFisa() {
 
                 {recommendations.length > 0 ? (
                   recommendations.map((rec) => (
-                    <div className="pacient-fisa-grid recomandare-grid" key={rec.id}>
+                    <div
+                      className="pacient-fisa-grid recomandare-grid"
+                      key={rec.id}
+                    >
                       <label>
                         Tip recomandare
                         <input
@@ -316,13 +327,38 @@ function PacientFisa() {
               <div className="pacient-fisa-section">
                 <h2>Istoric consultații</h2>
 
-                <div className="istoric-empty">
-                  <h3>Istoricul consultațiilor nu este disponibil momentan</h3>
-                  <p>
-                    Pentru afișarea consultațiilor pacientului este nevoie de un
-                    endpoint separat în backend pentru rolul PATIENT.
-                  </p>
-                </div>
+                {consultations.length > 0 ? (
+                  consultations.map((c) => (
+                    <div className="istoric-empty" key={c.id}>
+                      <h3>Consultație - {formatDate(c.visitedAt)}</h3>
+                      <p>
+                        <b>Motiv:</b> {c.motivPrezentare || "-"}
+                      </p>
+                      <p>
+                        <b>Diagnostic:</b> {c.diagnosticIcd10Display || "-"}
+                      </p>
+                      <p>
+                        <b>Cod ICD-10:</b> {c.diagnosticIcd10Code || "-"}
+                      </p>
+                      <p>
+                        <b>Simptome:</b> {c.simptome || "-"}
+                      </p>
+                      <p>
+                        <b>Trimiteri:</b> {c.trimiteri || "-"}
+                      </p>
+                      <p>
+                        <b>Rețete:</b> {c.retete || "-"}
+                      </p>
+                    </div>
+                  ))
+                ) : (
+                  <div className="istoric-empty">
+                    <h3>Nu există consultații înregistrate</h3>
+                    <p>
+                      Consultațiile vor apărea aici după ce medicul le salvează.
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           )}
