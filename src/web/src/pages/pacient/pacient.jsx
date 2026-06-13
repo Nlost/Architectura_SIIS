@@ -1,6 +1,6 @@
 import "./pacientfisa.css";
 import { useEffect, useState } from "react";
-import { getPatientMe, getRecommendationsByPatient, getMyConsultations } from "../../api";
+import { getPatientMe, getRecommendationsByPatient } from "../../api";
 
 const formatDate = (dateValue) => {
   if (!dateValue) return "-";
