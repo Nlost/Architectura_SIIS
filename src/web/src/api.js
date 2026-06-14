@@ -436,3 +436,24 @@ export async function archiveAllergy(allergyId) {
 
   return text ? JSON.parse(text) : {};
 }
+
+export async function getAuditEvents() {
+  const token = localStorage.getItem("sw_token");
+
+  const response = await fetch(`${API_BASE}/api/audit`, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  const text = await response.text();
+
+  if (!response.ok) {
+    console.log("Get audit status:", response.status);
+    console.log("Get audit backend response:", text);
+    throw new Error(text || "Nu s-a putut încărca auditul.");
+  }
+
+  return text ? JSON.parse(text) : [];
+}

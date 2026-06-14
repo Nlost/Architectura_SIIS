@@ -1,25 +1,24 @@
 package ro.seniorwatch.controller;
 
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-import ro.seniorwatch.dto.LoginRequest;
-import ro.seniorwatch.dto.LoginResponse;
-import ro.seniorwatch.service.AuthService;
+import ro.seniorwatch.dto.AuditResponse;
+import ro.seniorwatch.service.AuditService;
+
+import java.util.List;
 
 @RestController
-@RequestMapping("/auth")
+@RequestMapping("/audit")
 @RequiredArgsConstructor
-public class AuthController {
+public class AuditController {
 
-    private final AuthService authService;
+    private final AuditService auditService;
 
-    @PostMapping("/login")
-    public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request,
-                                               HttpServletRequest httpRequest) {
-        String clientIp = httpRequest.getRemoteAddr();
-        return ResponseEntity.ok(authService.login(request, clientIp));
+    @GetMapping
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<List<AuditResponse>> listAuditEvents() {
+        return ResponseEntity.ok(auditService.listLatest());
     }
 }

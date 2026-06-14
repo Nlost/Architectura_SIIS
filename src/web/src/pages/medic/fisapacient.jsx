@@ -1,9 +1,13 @@
 import "./fisapacient.css";
 import { useNavigate, useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { getPatient, getConsultations, getRecommendationsByPatient, } from "../../api";
-
-
+import {
+  getPatient,
+  getConsultations,
+  getRecommendationsByPatient,
+  getAllergiesByPatient,
+  createAllergy,
+} from "../../api";
 
 function FisaPacient() {
   const navigate = useNavigate();
@@ -13,28 +17,61 @@ function FisaPacient() {
   const [patient, setPatient] = useState(null);
   const [consultations, setConsultations] = useState([]);
   const [recommendations, setRecommendations] = useState([]);
+  const [allergies, setAllergies] = useState([]);
 
- useEffect(() => {
+  const [showAllergyModal, setShowAllergyModal] = useState(false);
+  const [newAllergy, setNewAllergy] = useState({
+    substanceDisplay: "",
+    reaction: "",
+    severity: "MILD",
+  });
+
   const loadData = async () => {
     try {
       const patientData = await getPatient(id);
       setPatient(patientData);
 
       const allConsultations = await getConsultations();
-      setConsultations(
-        allConsultations.filter((c) => c.patientId === id)
-      );
+      setConsultations(allConsultations.filter((c) => c.patientId === id));
 
       const recData = await getRecommendationsByPatient(id);
       setRecommendations(recData);
+
+      const allergyData = await getAllergiesByPatient(id);
+      setAllergies(allergyData);
     } catch (error) {
       console.log(error);
       alert("Eroare la încărcarea fișei pacientului.");
     }
   };
 
-  loadData();
-}, [id]);
+  useEffect(() => {
+    loadData();
+  }, [id]);
+
+  const saveAllergy = async () => {
+    if (!newAllergy.substanceDisplay.trim()) {
+      alert("Completează substanța alergiei.");
+      return;
+    }
+
+    try {
+      await createAllergy(id, newAllergy);
+
+      setNewAllergy({
+        substanceDisplay: "",
+        reaction: "",
+        severity: "MILD",
+      });
+
+      setShowAllergyModal(false);
+      await loadData();
+    } catch (error) {
+      console.log(error);
+      alert("Nu s-a putut salva alergia.");
+    }
+  };
+
   const formatDoctorName = (email) => {
     if (!email) return "Medic";
 
@@ -45,7 +82,9 @@ function FisaPacient() {
       .filter(Boolean)
       .map((p) => p.charAt(0).toUpperCase() + p.slice(1).toLowerCase());
 
-    return parts.length >= 2 ? `Dr. ${parts.join(" ")}` : `Dr. ${parts[0] || "Medic"}`;
+    return parts.length >= 2
+      ? `Dr. ${parts.join(" ")}`
+      : `Dr. ${parts[0] || "Medic"}`;
   };
 
   const doctorEmail = localStorage.getItem("sw_email") || "";
@@ -96,6 +135,7 @@ function FisaPacient() {
   const sample = patient.latestSample || {};
 
   const fullName = [d.nume, d.prenume].filter(Boolean).join(" ") || "Pacient";
+
   const initials =
     `${(d.nume || "")[0] || ""}${(d.prenume || "")[0] || ""}`.toUpperCase() ||
     "?";
@@ -116,15 +156,15 @@ function FisaPacient() {
         </div>
 
         <nav>
-          <a onClick={() => navigate("/medic")}>📊 Dashboard</a>
-          <a className="active" onClick={() => navigate("/medic/pacienti")}>
+          <a href="/medic">📊 Dashboard</a>
+          <a className="active" href="/medic/pacienti">
             👥 Pacienți
           </a>
-          <a onClick={() => navigate("/medic/consultatii")}>🩺 Consultații</a>
-          <a onClick={() => navigate("/medic/monitorizare")}>📈 Monitorizare</a>
-          <a onClick={() => navigate("/medic/alerte")}>🔔 Alerte</a>
-          <a onClick={() => navigate("/medic/rapoarte")}>📋 Rapoarte</a>
-          <a onClick={() => navigate("/medic/hl7")}>🔗 HL7 FHIR</a>
+          <a href="/medic/consultatii">🩺 Consultații</a>
+          <a href="/medic/monitorizare">📈 Monitorizare</a>
+          <a href="/medic/alerte">🔔 Alerte</a>
+          <a href="/medic/rapoarte">📋 Rapoarte</a>
+          <a href="/medic/hl7">🔗 HL7 FHIR</a>
         </nav>
 
         <div className="profile">
@@ -271,6 +311,48 @@ function FisaPacient() {
               </div>
 
               <div className="fisa-section">
+                <div className="section-header">
+                  <h2>Alergii</h2>
+
+                  <button
+                    className="add-allergy-btn"
+                    type="button"
+                    onClick={() => setShowAllergyModal(true)}
+                  >
+                    + Adaugă alergie
+                  </button>
+                </div>
+
+                <div className="fisa-form-grid">
+                  {allergies.length > 0 ? (
+                    allergies.map((a) => (
+                      <div className="allergy-box" key={a.id}>
+                        <label>
+                          Substanță
+                          <input value={a.substanceDisplay || "—"} readOnly />
+                        </label>
+
+                        <label>
+                          Severitate
+                          <input value={a.severity || "—"} readOnly />
+                        </label>
+
+                        <label className="wide">
+                          Reacție
+                          <textarea value={a.reaction || "—"} readOnly />
+                        </label>
+                      </div>
+                    ))
+                  ) : (
+                    <label className="wide">
+                      Alergii
+                      <input value="Nu există alergii înregistrate." readOnly />
+                    </label>
+                  )}
+                </div>
+              </div>
+
+              <div className="fisa-section">
                 <h2>Recomandări medicale</h2>
 
                 {recommendations.length === 0 && (
@@ -325,9 +407,7 @@ function FisaPacient() {
                       </small>
                     </div>
 
-                    <span className="mini-badge orange">
-                      {c.status || "ACTIVE"}
-                    </span>
+                    <span className="mini-badge orange">{c.status || "ACTIVE"}</span>
                   </div>
                 ))}
               </div>
@@ -357,6 +437,80 @@ function FisaPacient() {
             </div>
           )}
         </section>
+
+        {showAllergyModal && (
+          <div className="allergy-modal-overlay">
+            <div className="allergy-modal">
+              <div className="allergy-modal-header">
+                <div>
+                  <p>ALERGIE PACIENT</p>
+                  <h2>Adaugă alergie</h2>
+                </div>
+
+                <button type="button" onClick={() => setShowAllergyModal(false)}>
+                  ×
+                </button>
+              </div>
+
+              <div className="allergy-modal-body">
+                <label>
+                  Substanță
+                  <input
+                    value={newAllergy.substanceDisplay}
+                    onChange={(e) =>
+                      setNewAllergy({
+                        ...newAllergy,
+                        substanceDisplay: e.target.value,
+                      })
+                    }
+                    placeholder="Ex: Penicilină"
+                  />
+                </label>
+
+                <label>
+                  Severitate
+                  <select
+                    value={newAllergy.severity}
+                    onChange={(e) =>
+                      setNewAllergy({
+                        ...newAllergy,
+                        severity: e.target.value,
+                      })
+                    }
+                  >
+                    <option value="MILD">MILD</option>
+                    <option value="MODERATE">MODERATE</option>
+                    <option value="SEVERE">SEVERE</option>
+                  </select>
+                </label>
+
+                <label className="wide">
+                  Reacție
+                  <textarea
+                    value={newAllergy.reaction}
+                    onChange={(e) =>
+                      setNewAllergy({
+                        ...newAllergy,
+                        reaction: e.target.value,
+                      })
+                    }
+                    placeholder="Ex: Erupție cutanată, dificultăți respiratorii"
+                  />
+                </label>
+              </div>
+
+              <div className="allergy-modal-actions">
+                <button type="button" onClick={() => setShowAllergyModal(false)}>
+                  Anulează
+                </button>
+
+                <button type="button" onClick={saveAllergy}>
+                  Salvează
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );
