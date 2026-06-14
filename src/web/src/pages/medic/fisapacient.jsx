@@ -17,7 +17,7 @@ function FisaPacient() {
   const [consultations, setConsultations] = useState([]);
   const [recommendations, setRecommendations] = useState([]);
   const [allergies, setAllergies] = useState([]);
-  const [selectedPatient, setSelectedPatient] = useState(null);
+
   const [showAllergyModal, setShowAllergyModal] = useState(false);
   const [newAllergy, setNewAllergy] = useState({
     substanceDisplay: "",

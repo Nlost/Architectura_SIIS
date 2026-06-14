@@ -85,7 +85,7 @@ function PacientiMedic() {
   const [createdPatientInfo, setCreatedPatientInfo] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [showEditModal, setShowEditModal] = useState(false);
-const [selectedPatient, setSelectedPatient] = useState(null);
+  const [selectedPatient, setSelectedPatient] = useState(null);
   
   const loadPatients = async () => {
     try {
