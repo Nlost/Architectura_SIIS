@@ -44,4 +44,13 @@ public class PatientController {
     public ResponseEntity<PatientResponse> getMyPatient(Authentication auth) {
             return ResponseEntity.ok(patientService.getMyPatient(auth));
 }
+@PutMapping("/{id}")
+@PreAuthorize("hasAnyRole('DOCTOR', 'ADMIN')")
+public ResponseEntity<PatientResponse> updatePatient(
+        @PathVariable UUID id,
+        @Valid @RequestBody PatientRequest request,
+        Authentication auth
+) {
+    return ResponseEntity.ok(patientService.updatePatient(id, request, auth));
+}
 }

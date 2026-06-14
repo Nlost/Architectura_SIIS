@@ -1,7 +1,7 @@
 import "./pacienti.css";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { getPatients, createPatient } from "../../api";
+import { getPatients, createPatient, updatePatient } from "../../api";
 import { logoutUser } from "../../api";
 
 
@@ -85,8 +85,7 @@ function PacientiMedic() {
   const [createdPatientInfo, setCreatedPatientInfo] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [showEditModal, setShowEditModal] = useState(false);
-  const [setSelectedPatient] = useState(null);
-
+const [selectedPatient, setSelectedPatient] = useState(null);
   
   const loadPatients = async () => {
     try {
@@ -284,6 +283,51 @@ const handleEditPatient = (patient) => {
       setSaving(false);
     }
   };
+
+const handleUpdatePatient = async (e) => {
+  e.preventDefault();
+
+  if (!selectedPatient) return;
+
+  const demographics = {
+    nume: newPatient.nume,
+    prenume: newPatient.prenume,
+    sex: newPatient.sex,
+    dataNasterii: newPatient.data_nasterii,
+    cnp: newPatient.cnp,
+    strada: newPatient.strada,
+    localitate: newPatient.localitate,
+    judet: newPatient.judet,
+    codPostal: newPatient.cod_postal,
+    tara: newPatient.tara,
+    telefon: newPatient.telefon,
+    email: newPatient.email,
+    profesie: newPatient.profesie,
+    locDeMunca: newPatient.loc_de_munca,
+  };
+
+  try {
+    setSaving(true);
+
+    await updatePatient(
+      selectedPatient.id,
+      demographics
+    );
+
+    await loadPatients();
+
+    setShowEditModal(false);
+    setSelectedPatient(null);
+    setNewPatient(initialNewPatient);
+
+  } catch (error) {
+    console.log(error);
+    alert("Nu s-a putut actualiza pacientul.");
+  } finally {
+    setSaving(false);
+  }
+};
+
 const filteredPatients = patients.filter((p) => {
   const d = p.demographics || {};
 
@@ -745,9 +789,10 @@ const filteredPatients = patients.filter((p) => {
         </button>
       </div>
 
-      <form
-
-      >
+<form
+  id="editPatientForm"
+  onSubmit={handleUpdatePatient}
+>
         <div className="formSection">
           <div className="sectionTitle">
             <h3>Date pacient</h3>

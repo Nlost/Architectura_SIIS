@@ -127,6 +127,82 @@ public class PatientService {
         return toResponse(patient);
     }
 
+@Transactional
+public PatientResponse updatePatient(UUID id, PatientRequest request, Authentication auth) {
+    String email = (String) auth.getPrincipal();
+
+    User caller = userRepository.findByEmail(email)
+            .orElseThrow(() -> new NoSuchElementException("User not found"));
+
+    Patient patient = patientRepository.findByIdWithDemographics(id)
+            .orElseThrow(() -> new NoSuchElementException("Patient not found: " + id));
+
+    if (caller.getRole() != UserRole.ADMIN &&
+            !patient.getDoctor().getId().equals(caller.getId())) {
+        throw new IllegalArgumentException("Pacientul nu aparține medicului autentificat");
+    }
+
+    DemographicsDto dto = request.getDemographics();
+
+    if (dto == null) {
+        throw new IllegalArgumentException("Datele pacientului sunt obligatorii");
+    }
+
+    Demographics demo = patient.getDemographics();
+
+    if (demo == null) {
+        demo = Demographics.builder()
+                .patient(patient)
+                .build();
+    }
+
+    String oldEmail = demo.getEmail();
+    String newEmail = dto.getEmail();
+
+    if (newEmail == null || newEmail.isBlank()) {
+        throw new IllegalArgumentException("Emailul pacientului este obligatoriu");
+    }
+
+    if (oldEmail != null && !oldEmail.equalsIgnoreCase(newEmail)) {
+        if (userRepository.existsByEmail(newEmail)) {
+            throw new IllegalArgumentException("Există deja un utilizator cu acest email");
+        }
+
+        User patientUser = userRepository.findByEmail(oldEmail)
+                .orElseThrow(() -> new NoSuchElementException("User pacient not found for email: " + oldEmail));
+
+        patientUser.setEmail(newEmail);
+        userRepository.save(patientUser);
+    }
+
+    demo.setNume(dto.getNume());
+    demo.setPrenume(dto.getPrenume());
+    demo.setEmail(newEmail);
+    demo.setTelefon(dto.getTelefon());
+    demo.setLocalitate(dto.getLocalitate());
+    demo.setStrada(dto.getStrada());
+    demo.setProfesie(dto.getProfesie());
+    demo.setLocDeMunca(dto.getLocDeMunca());
+
+    demographicsRepository.save(demo);
+    patient.setDemographics(demo);
+
+    try {
+        auditService.log(
+                caller.getId(),
+                "UPDATE",
+                "patients",
+                patient.getId(),
+                null,
+                "SUCCESS"
+        );
+    } catch (Exception e) {
+        System.out.println("Audit log failed: " + e.getMessage());
+    }
+
+    return toResponse(patient);
+}
+
     private PatientResponse toResponse(Patient p) {
         DemographicsDto demoDto = null;
 

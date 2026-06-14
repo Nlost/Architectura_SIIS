@@ -475,3 +475,28 @@ export async function logReportExport() {
     console.log("Export audit response:", text);
   }
 }
+
+export async function updatePatient(id, demographics) {
+  const token = localStorage.getItem("sw_token");
+
+  const response = await fetch(`${API_BASE}/api/patients/${id}`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({
+      demographics,
+    }),
+  });
+
+  const text = await response.text();
+
+  if (!response.ok) {
+    console.log("Update patient status:", response.status);
+    console.log("Update patient backend response:", text);
+    throw new Error(text || "Nu s-a putut actualiza pacientul");
+  }
+
+  return text ? JSON.parse(text) : {};
+}
