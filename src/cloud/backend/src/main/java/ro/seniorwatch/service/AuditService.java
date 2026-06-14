@@ -36,19 +36,6 @@ public class AuditService {
     }
 
     private AuditResponse toResponse(AuditEvent e) {
-        return AuditResponse.builder()
-                .id(e.getId())
-                .occurredAt(e.getOccurredAt())
-                .userId(e.getUserId())
-                .eventType(e.getEventType())
-                .resource(e.getResource())
-                .resourceId(e.getResourceId())
-                .clientIp(e.getClientIp())
-                .outcome(e.getOutcome())
-                .build();
-    }
-
-    private AuditResponse toResponse(AuditEvent e) {
     String userEmail = e.getUserId() != null
             ? userRepository.findById(e.getUserId())
                 .map(User::getEmail)
