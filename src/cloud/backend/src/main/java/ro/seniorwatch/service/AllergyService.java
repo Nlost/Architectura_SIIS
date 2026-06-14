@@ -87,7 +87,7 @@ public class AllergyService {
      try {
     auditService.log(
             caller.getId(),
-            "CREATE_ALLERGY",
+            "CREATE",
             "allergies",
             allergy.getId(),
             null,
