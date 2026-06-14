@@ -17,4 +17,5 @@ public class AuditResponse {
     private UUID resourceId;
     private String clientIp;
     private String outcome;
+    private String userEmail;
 }

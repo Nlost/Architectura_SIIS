@@ -27,6 +27,7 @@ public class AllergyService {
     private final AllergyRepository allergyRepository;
     private final PatientRepository patientRepository;
     private final UserRepository userRepository;
+    private final AuditService auditService;
 
     @Transactional(readOnly = true)
     public List<AllergyResponse> listByPatient(UUID patientId, Authentication auth) {
@@ -83,6 +84,14 @@ public class AllergyService {
                 .build();
 
         allergy = allergyRepository.save(allergy);
+        auditService.log(
+        caller.getId(),
+        "CREATE_ALLERGY",
+        "allergies",
+        allergy.getId(),
+        null,
+        "SUCCESS"
+);
 
         return toResponse(allergy);
     }

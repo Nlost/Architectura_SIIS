@@ -28,8 +28,7 @@ function AdminAudit() {
   const [resourceFilter, setResourceFilter] = useState("Toate resursele");
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
-  const [logs, setLogs] = useState("");
-
+const [logs, setLogs] = useState([]);
 const filteredLogs = logs.filter((log) => {
   return (
     resourceFilter === "Toate resursele" ||
@@ -211,7 +210,7 @@ useEffect(() => {
 
             {filteredLogs.map((log) => (
              <div className="audit-row" key={log.id}>
-  <span>{log.userId || "-"}</span>
+  <span>{log.userEmail || "-"}</span>
 
   <span>
     <div className={`audit-type ${log.eventType}`}>
