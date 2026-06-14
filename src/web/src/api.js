@@ -500,3 +500,23 @@ export async function updatePatient(id, demographics) {
 
   return text ? JSON.parse(text) : {};
 }
+
+export async function resetPassword(email, newPassword) {
+  const response = await fetch(`${API_BASE}/api/auth/reset-password`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ email, newPassword }),
+  });
+
+  const text = await response.text();
+
+  if (!response.ok) {
+    console.log("Reset password status:", response.status);
+    console.log("Reset password backend response:", text);
+    throw new Error(text || "Nu s-a putut reseta parola");
+  }
+
+  return true;
+}
