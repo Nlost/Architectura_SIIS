@@ -1,7 +1,14 @@
 import "./pacientalerte.css";
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { getPatientMe } from "../../api";
+import { logoutUser } from "../../api";
 
+
+const handleLogout = () => {
+  logoutUser();
+  window.location.href = "/login";
+};
 const formatDateTime = (dateValue) => {
   if (!dateValue) return "-";
 
@@ -71,6 +78,7 @@ const buildPatientAlerts = (sample) => {
 };
 
 function PacientAlerte() {
+  const navigate = useNavigate();
 
   const [patient, setPatient] = useState(null);
 
@@ -110,15 +118,25 @@ function PacientAlerte() {
         </div>
 
         <nav>
-          <a href="/pacient">📊 Dashboard</a>
-          <a href="/pacient/pacientfisa">
+          <a onClick={() => navigate("/pacient")}>📊 Dashboard</a>
+
+          <a onClick={() => navigate("/pacient/pacientfisa")}>
             📄 Fișa mea
           </a>
-          <a href="/pacient/pacientvalori">📈 Valori senzori</a>
-          <a href="/pacient/pacientrecomandari">🩺 Recomandări</a>
-          <a href="/pacient/pacientalerte" className="active">🚨 Alerte</a>
-        </nav>
 
+          <a onClick={() => navigate("/pacient/pacientvalori")}>
+            📈 Valori senzori
+          </a>
+
+          <a onClick={() => navigate("/pacient/pacientrecomandari")}>
+            🩺 Recomandări
+          </a>
+
+          <a className="active">🚨 Alerte</a>
+        </nav>
+        <button className="logoutBtn" onClick={handleLogout}>
+  Logout
+</button>
         <div className="profile">
           <div>{initials}</div>
 

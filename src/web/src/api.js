@@ -328,3 +328,111 @@ export function logoutUser() {
   localStorage.removeItem("sw_role");
   localStorage.removeItem("sw_email");
 }
+export async function getAllergiesByPatient(patientId) {
+  const token = localStorage.getItem("sw_token");
+
+  const response = await fetch(`${API_BASE}/api/allergies/patient/${patientId}`, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  const text = await response.text();
+
+  if (!response.ok) {
+    console.log("Get allergies status:", response.status);
+    console.log("Get allergies backend response:", text);
+    throw new Error(text || "Nu s-au putut încărca alergiile");
+  }
+
+  return text ? JSON.parse(text) : [];
+}
+
+export async function getMyAllergies() {
+  const token = localStorage.getItem("sw_token");
+
+  const response = await fetch(`${API_BASE}/api/allergies/me`, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  const text = await response.text();
+
+  if (!response.ok) {
+    console.log("Get my allergies status:", response.status);
+    console.log("Get my allergies backend response:", text);
+    throw new Error(text || "Nu s-au putut încărca alergiile pacientului");
+  }
+
+  return text ? JSON.parse(text) : [];
+}
+
+export async function createAllergy(patientId, payload) {
+  const token = localStorage.getItem("sw_token");
+
+  const response = await fetch(`${API_BASE}/api/allergies/patient/${patientId}`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(payload),
+  });
+
+  const text = await response.text();
+
+  if (!response.ok) {
+    console.log("Create allergy status:", response.status);
+    console.log("Create allergy backend response:", text);
+    throw new Error(text || "Nu s-a putut salva alergia");
+  }
+
+  return text ? JSON.parse(text) : {};
+}
+
+export async function updateAllergy(allergyId, payload) {
+  const token = localStorage.getItem("sw_token");
+
+  const response = await fetch(`${API_BASE}/api/allergies/${allergyId}`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(payload),
+  });
+
+  const text = await response.text();
+
+  if (!response.ok) {
+    console.log("Update allergy status:", response.status);
+    console.log("Update allergy backend response:", text);
+    throw new Error(text || "Nu s-a putut actualiza alergia");
+  }
+
+  return text ? JSON.parse(text) : {};
+}
+
+export async function archiveAllergy(allergyId) {
+  const token = localStorage.getItem("sw_token");
+
+  const response = await fetch(`${API_BASE}/api/allergies/${allergyId}/archive`, {
+    method: "PUT",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  const text = await response.text();
+
+  if (!response.ok) {
+    console.log("Archive allergy status:", response.status);
+    console.log("Archive allergy backend response:", text);
+    throw new Error(text || "Nu s-a putut arhiva alergia");
+  }
+
+  return text ? JSON.parse(text) : {};
+}

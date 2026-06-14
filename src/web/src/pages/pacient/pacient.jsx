@@ -1,13 +1,17 @@
 import "./pacient.css";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { getPatientMe, getRecommendationsByPatient } from "../../api";
+import { getPatientMe, getRecommendationsByPatient, logoutUser } from "../../api";
+
+const handleLogout = () => {
+  logoutUser();
+  window.location.href = "/login";
+};
 
 const formatDate = (dateValue) => {
   if (!dateValue) return "-";
 
   const date = new Date(dateValue);
-
   if (Number.isNaN(date.getTime())) return "-";
 
   return date.toLocaleString("ro-RO", {
@@ -64,13 +68,10 @@ function PatientDashboard() {
     const loadData = async () => {
       try {
         const patientData = await getPatientMe();
-        console.log(patientData)
         setPatient(patientData);
 
         if (patientData?.id) {
-          const recommendationsData = await getRecommendationsByPatient(
-            patientData.id
-          );
+          const recommendationsData = await getRecommendationsByPatient(patientData.id);
           setRecommendations(recommendationsData);
         }
       } catch (error) {
@@ -93,10 +94,11 @@ function PatientDashboard() {
     "P";
 
   return (
-    <div className="app">
-      <aside className="sidebar">
-        <div className="brand">
-          <div className="logo">SW</div>
+    <div className="patient-app">
+      <aside className="patient-sidebar">
+        <div className="patient-brand">
+          <div className="patient-logo">SW</div>
+
           <div>
             <h2>SeniorWatch</h2>
             <p>Pacient Panel</p>
@@ -104,53 +106,23 @@ function PatientDashboard() {
         </div>
 
         <nav>
-          <a href="#" className="active" onClick={(e) => e.preventDefault()}>
+          <a href="/pacient" className="active">
             📊 Dashboard
           </a>
 
-          <a
-            href="#"
-            onClick={(e) => {
-              e.preventDefault();
-              navigate("/pacient/pacientfisa");
-            }}
-          >
-            📄 Fișa mea
-          </a>
-
-          <a
-            href="#"
-            onClick={(e) => {
-              e.preventDefault();
-              navigate("/pacient/pacientvalori");
-            }}
-          >
-            📈 Valori senzori
-          </a>
-
-          <a
-            href="#"
-            onClick={(e) => {
-              e.preventDefault();
-              navigate("/pacient/pacientrecomandari");
-            }}
-          >
-            🩺 Recomandări
-          </a>
-
-          <a
-            href="#"
-            onClick={(e) => {
-              e.preventDefault();
-              navigate("/pacient/pacientalerte");
-            }}
-          >
-            🚨 Alerte
-          </a>
+          <a href="/pacient/pacientfisa">📄 Fișa mea</a>
+          <a href="/pacient/pacientvalori">📈 Valori senzori</a>
+          <a href="/pacient/pacientrecomandari">🩺 Recomandări</a>
+          <a href="/pacient/pacientalerte">🚨 Alerte</a>
         </nav>
 
-        <div className="profile">
+        <button className="logoutBtn" onClick={handleLogout}>
+          Logout
+        </button>
+
+        <div className="patient-profile">
           <div>{initials}</div>
+
           <span>
             <b>{fullName}</b>
             Pacient
@@ -158,11 +130,13 @@ function PatientDashboard() {
         </div>
       </aside>
 
-      <main className="main">
-        <section className="hero">
-          <div className="heroText">
+      <main className="patient-main">
+        <section className="patient-hero">
+          <div className="patient-heroText">
             <p>MONITORIZARE PERSONALĂ</p>
+
             <h1>Bun venit, {firstName}!</h1>
+
             <span>
               Aici poți vedea valorile tale medicale, recomandările medicului și
               istoricul alertelor.
@@ -170,9 +144,10 @@ function PatientDashboard() {
           </div>
         </section>
 
-        <section className="stats">
-          <div className="stat">
-            <div className="icon purple">HR</div>
+        <section className="patient-stats">
+          <div className="patient-stat">
+            <div className="patient-icon purple">HR</div>
+
             <div>
               <p>Puls</p>
               <h2>{sample?.puls ? `${sample.puls} bpm` : "-"}</h2>
@@ -180,8 +155,9 @@ function PatientDashboard() {
             </div>
           </div>
 
-          <div className="stat">
-            <div className="icon green">TEMP</div>
+          <div className="patient-stat">
+            <div className="patient-icon green">TEMP</div>
+
             <div>
               <p>Temperatură</p>
               <h2>{sample?.temperatura ? `${sample.temperatura}°C` : "-"}</h2>
@@ -189,8 +165,9 @@ function PatientDashboard() {
             </div>
           </div>
 
-          <div className="stat">
-            <div className="icon violet">UM</div>
+          <div className="patient-stat">
+            <div className="patient-icon violet">UM</div>
+
             <div>
               <p>Umiditate</p>
               <h2>{sample?.umiditate ? `${sample.umiditate}%` : "-"}</h2>
@@ -198,8 +175,9 @@ function PatientDashboard() {
             </div>
           </div>
 
-          <div className="stat">
-            <div className="icon pink">AL</div>
+          <div className="patient-stat">
+            <div className="patient-icon pink">AL</div>
+
             <div>
               <p>Alerte</p>
               <h2>{alerts.length}</h2>
@@ -208,9 +186,9 @@ function PatientDashboard() {
           </div>
         </section>
 
-        <section className="content">
-          <div className="panel">
-            <div className="panelHead">
+        <section className="patient-content">
+          <div className="patient-panel">
+            <div className="patient-panelHead">
               <div>
                 <p>RECOMANDĂRI MEDICALE</p>
                 <h2>Indicații de la medic</h2>
@@ -233,7 +211,9 @@ function PatientDashboard() {
                   <div className="recommendationRow" key={rec.id}>
                     <div>
                       <b>{rec.tipActivitate || "Recomandare medicală"}</b>
-                      <small>{rec.alteIndicatii || "Fără indicații suplimentare"}</small>
+                      <small>
+                        {rec.alteIndicatii || "Fără indicații suplimentare"}
+                      </small>
                     </div>
 
                     <span>
@@ -249,8 +229,11 @@ function PatientDashboard() {
                 <div className="recommendationRow">
                   <div>
                     <b>Nu există recomandări recente</b>
-                    <small>Recomandările vor apărea aici după consultație.</small>
+                    <small>
+                      Recomandările vor apărea aici după consultație.
+                    </small>
                   </div>
+
                   <span>-</span>
                   <span>-</span>
                 </div>
@@ -258,9 +241,9 @@ function PatientDashboard() {
             </div>
           </div>
 
-          <div className="right">
-            <div className="panel">
-              <div className="panelHead">
+          <div className="patient-right">
+            <div className="patient-panel">
+              <div className="patient-panelHead">
                 <div>
                   <p>ALERTE</p>
                   <h2>Istoric recent</h2>
@@ -269,14 +252,14 @@ function PatientDashboard() {
 
               {alerts.length > 0 ? (
                 alerts.map((alert, index) => (
-                  <div className={`alert ${alert.type}`} key={index}>
+                  <div className={`patient-alert ${alert.type}`} key={index}>
                     <b>{alert.title}</b>
                     <span>{alert.value}</span>
                     <small>{alert.message}</small>
                   </div>
                 ))
               ) : (
-                <div className="alert info">
+                <div className="patient-alert info">
                   <b>Nu există alerte recente</b>
                   <span>-</span>
                   <small>Valorile tale sunt în limite normale.</small>

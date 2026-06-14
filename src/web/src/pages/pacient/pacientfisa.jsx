@@ -5,7 +5,13 @@ import {
   getRecommendationsByPatient,
   getMyConsultations,
 } from "../../api";
+import { logoutUser } from "../../api";
 
+
+const handleLogout = () => {
+  logoutUser();
+  window.location.href = "/login";
+};
 const formatDate = (dateValue) => {
   if (!dateValue) return "-";
 
@@ -98,7 +104,9 @@ function PacientFisa() {
           <a href="/pacient/pacientrecomandari">🩺 Recomandări</a>
           <a href="/pacient/pacientalerte">🚨 Alerte</a>
         </nav>
-
+        <button className="logoutBtn" onClick={handleLogout}>
+  Logout
+</button>
         <div className="profile">
           <div>{initials}</div>
           <span>

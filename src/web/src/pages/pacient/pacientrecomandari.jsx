@@ -1,7 +1,14 @@
 import "./pacientrecomandari.css";
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { getPatientMe, getRecommendationsByPatient } from "../../api";
+import { logoutUser } from "../../api";
 
+
+const handleLogout = () => {
+  logoutUser();
+  window.location.href = "/login";
+};
 const formatDate = (dateValue) => {
   if (!dateValue) return "-";
 
@@ -16,6 +23,7 @@ const formatDate = (dateValue) => {
 };
 
 function PacientRecomandari() {
+  const navigate = useNavigate();
 
   const [patient, setPatient] = useState(null);
   const [recommendations, setRecommendations] = useState([]);
@@ -67,15 +75,23 @@ function PacientRecomandari() {
         </div>
 
         <nav>
-          <a href="/pacient">📊 Dashboard</a>
-          <a href="/pacient/pacientfisa">
+          <a onClick={() => navigate("/pacient")}>📊 Dashboard</a>
+
+          <a onClick={() => navigate("/pacient/pacientfisa")}>
             📄 Fișa mea
           </a>
-          <a href="/pacient/pacientvalori">📈 Valori senzori</a>
-          <a href="/pacient/pacientrecomandari" className="active">🩺 Recomandări</a>
-          <a href="/pacient/pacientalerte">🚨 Alerte</a>
-        </nav>
 
+          <a onClick={() => navigate("/pacient/pacientvalori")}>
+            📈 Valori senzori
+          </a>
+
+          <a className="active">🩺 Recomandări</a>
+
+          <a onClick={() => navigate("/pacient/pacientalerte")}>🚨 Alerte</a>
+        </nav>
+        <button className="logoutBtn" onClick={handleLogout}>
+  Logout
+</button>
         <div className="profile">
           <div>{initials}</div>
 
