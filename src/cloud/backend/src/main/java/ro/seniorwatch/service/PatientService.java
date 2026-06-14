@@ -23,6 +23,7 @@ public class PatientService {
     private final DemographicsRepository demographicsRepository;
     private final PasswordEncoder passwordEncoder;
     private final SensorSampleRepository sensorSampleRepository;
+    private final AuditService auditService;
 
     @Transactional(readOnly = true)
     public List<PatientResponse> listPatients(Authentication auth) {
@@ -110,6 +111,18 @@ public class PatientService {
 
         demographicsRepository.save(demo);
         patient.setDemographics(demo);
+        try {
+    auditService.log(
+            caller.getId(),
+            "CREATE",
+            "patients",
+            patient.getId(),
+            null,
+            "SUCCESS"
+    );
+} catch (Exception e) {
+    System.out.println("Audit log failed: " + e.getMessage());
+}
 
         return toResponse(patient);
     }

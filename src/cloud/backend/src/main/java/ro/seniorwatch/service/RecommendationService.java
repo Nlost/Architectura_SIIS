@@ -27,6 +27,7 @@ public class RecommendationService {
     private final RecommendationRepository recommendationRepository;
     private final PatientRepository patientRepository;
     private final UserRepository userRepository;
+    private final AuditService auditService;
 
     @Transactional
     public RecommendationResponse createRecommendation(
@@ -57,6 +58,18 @@ public class RecommendationService {
                 .build();
 
         recommendation = recommendationRepository.save(recommendation);
+        try {
+    auditService.log(
+            caller.getId(),
+            "CREATE",
+            "recommendations",
+            recommendation.getId(),
+            null,
+            "SUCCESS"
+    );
+} catch (Exception e) {
+    System.out.println("Audit log failed: " + e.getMessage());
+}
 
         return toResponse(recommendation);
     }

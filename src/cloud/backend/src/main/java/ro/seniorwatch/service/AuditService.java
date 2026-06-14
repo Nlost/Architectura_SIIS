@@ -9,13 +9,14 @@ import ro.seniorwatch.entity.User;
 import ro.seniorwatch.repository.UserRepository;
 import java.util.List;
 import java.util.UUID;
-
+import org.springframework.security.core.Authentication;
 @Service
 @RequiredArgsConstructor
 public class AuditService {
 
     private final AuditEventRepository auditEventRepository;
     private final UserRepository userRepository;
+    
 
     public void log(UUID userId, String eventType, String resource, UUID resourceId, String clientIp, String outcome) {
         auditEventRepository.save(AuditEvent.builder()
@@ -53,5 +54,24 @@ public class AuditService {
             .clientIp(e.getClientIp())
             .outcome(e.getOutcome())
             .build();
+}
+public void logExportReport(Authentication auth) {
+    try {
+        String email = (String) auth.getPrincipal();
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+        log(
+                user.getId(),
+                "EXPORT",
+                "reports",
+                null,
+                null,
+                "SUCCESS"
+        );
+    } catch (Exception e) {
+        System.out.println("Audit export log failed: " + e.getMessage());
+    }
 }
 }

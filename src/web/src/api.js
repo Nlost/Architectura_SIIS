@@ -457,3 +457,21 @@ export async function getAuditEvents() {
 
   return text ? JSON.parse(text) : [];
 }
+
+export async function logReportExport() {
+  const token = localStorage.getItem("sw_token");
+
+  const response = await fetch(`${API_BASE}/api/audit/export-report`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  const text = await response.text();
+
+  if (!response.ok) {
+    console.log("Export audit status:", response.status);
+    console.log("Export audit response:", text);
+  }
+}

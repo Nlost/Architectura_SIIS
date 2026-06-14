@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { getPatients, getConsultations } from "../../api";
 import jsPDF from "jspdf";
 import { logoutUser } from "../../api";
-
+import { logReportExport } from "../../api";
 
 const handleLogout = () => {
   logoutUser();
@@ -321,6 +321,7 @@ const patientReports =
   doc.text("SeniorWatch - document generat automat", 15, 287);
 
   doc.save(`raport_${cleanText(report.patient).replaceAll(" ", "_")}.pdf`);
+  logReportExport();
 };
   return (
     <div className="app">

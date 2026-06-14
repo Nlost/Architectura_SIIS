@@ -21,4 +21,11 @@ public class AuditController {
     public ResponseEntity<List<AuditResponse>> listAuditEvents() {
         return ResponseEntity.ok(auditService.listLatest());
     }
+    
+    @PostMapping("/export-report")
+@PreAuthorize("hasAnyRole('ADMIN', 'DOCTOR')")
+public ResponseEntity<Void> logExportReport(Authentication auth) {
+    auditService.logExportReport(auth);
+    return ResponseEntity.ok().build();
+}
 }

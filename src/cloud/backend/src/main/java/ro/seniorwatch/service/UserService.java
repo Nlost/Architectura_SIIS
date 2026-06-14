@@ -7,9 +7,10 @@ import org.springframework.transaction.annotation.Transactional;
 import ro.seniorwatch.dto.*;
 import ro.seniorwatch.entity.User;
 import ro.seniorwatch.repository.UserRepository;
+
 import java.time.OffsetDateTime;
-import java.util.UUID;
 import java.util.List;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -17,6 +18,7 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final AuditService auditService;
 
     @Transactional(readOnly = true)
     public List<UserResponse> listUsers() {
@@ -28,34 +30,53 @@ public class UserService {
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new IllegalArgumentException("Email already in use: " + request.getEmail());
         }
+
         User user = User.builder()
                 .email(request.getEmail())
                 .passwordHash(passwordEncoder.encode(request.getPassword()))
                 .role(request.getRole())
                 .build();
+
+        user = userRepository.save(user);
+
+        try {
+            auditService.log(
+                    user.getId(),
+                    "CREATE",
+                    "users",
+                    user.getId(),
+                    null,
+                    "SUCCESS"
+            );
+        } catch (Exception e) {
+            System.out.println("Audit log failed: " + e.getMessage());
+        }
+
+        return toResponse(user);
+    }
+
+    @Transactional
+    public UserResponse updateUser(UUID id, UpdateUserRequest request) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("User not found: " + id));
+
+        user.setRole(request.getRole());
+        user.setUpdatedAt(OffsetDateTime.now());
+
         return toResponse(userRepository.save(user));
     }
-@Transactional
-public UserResponse updateUser(UUID id, UpdateUserRequest request) {
-    User user = userRepository.findById(id)
-            .orElseThrow(() -> new IllegalArgumentException("User not found: " + id));
 
-    user.setRole(request.getRole());
-    user.setUpdatedAt(OffsetDateTime.now());
+    @Transactional
+    public UserResponse updateUserActive(UUID id, UpdateUserActiveRequest request) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("User not found: " + id));
 
-    return toResponse(userRepository.save(user));
-}
+        user.setActive(request.getActive());
+        user.setUpdatedAt(OffsetDateTime.now());
 
-@Transactional
-public UserResponse updateUserActive(UUID id, UpdateUserActiveRequest request) {
-    User user = userRepository.findById(id)
-            .orElseThrow(() -> new IllegalArgumentException("User not found: " + id));
+        return toResponse(userRepository.save(user));
+    }
 
-    user.setActive(request.getActive());
-    user.setUpdatedAt(OffsetDateTime.now());
-
-    return toResponse(userRepository.save(user));
-}
     private UserResponse toResponse(User u) {
         return UserResponse.builder()
                 .id(u.getId())

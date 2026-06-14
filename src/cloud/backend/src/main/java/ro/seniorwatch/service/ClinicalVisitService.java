@@ -29,6 +29,7 @@ public class ClinicalVisitService {
     private final ClinicalVisitRepository clinicalVisitRepository;
     private final PatientRepository patientRepository;
     private final UserRepository userRepository;
+    private final AuditService auditService;
 
     @Transactional(readOnly = true)
     public List<ClinicalVisitResponse> listClinicalVisits(Authentication auth) {
@@ -79,6 +80,18 @@ public class ClinicalVisitService {
                 .build();
 
         visit = clinicalVisitRepository.save(visit);
+        try {
+    auditService.log(
+            caller.getId(),
+            "CREATE",
+            "clinical_visits",
+            visit.getId(),
+            null,
+            "SUCCESS"
+    );
+} catch (Exception e) {
+    System.out.println("Audit log failed: " + e.getMessage());
+}
 
         return toResponse(visit);
     }
