@@ -1,7 +1,6 @@
 import "./fisapacient.css";
 import { useNavigate, useParams } from "react-router-dom";
-import { useEffect, useState } from "react";
-import {
+import { useEffect, useState, useCallback } from "react";import {
   getPatient,
   getConsultations,
   getRecommendationsByPatient,
@@ -26,28 +25,29 @@ function FisaPacient() {
     severity: "MILD",
   });
 
-  const loadData = async () => {
-    try {
-      const patientData = await getPatient(id);
-      setPatient(patientData);
+const loadData = useCallback(async () => {
+  try {
+    const patientData = await getPatient(id);
+    setPatient(patientData);
 
-      const allConsultations = await getConsultations();
-      setConsultations(allConsultations.filter((c) => c.patientId === id));
+    const allConsultations = await getConsultations();
+    setConsultations(allConsultations.filter((c) => c.patientId === id));
 
-      const recData = await getRecommendationsByPatient(id);
-      setRecommendations(recData);
+    const recData = await getRecommendationsByPatient(id);
+    setRecommendations(recData);
 
-      const allergyData = await getAllergiesByPatient(id);
-      setAllergies(allergyData);
-    } catch (error) {
-      console.log(error);
-      alert("Eroare la încărcarea fișei pacientului.");
-    }
-  };
+    const allergyData = await getAllergiesByPatient(id);
+    setAllergies(allergyData);
+  } catch (error) {
+    console.log(error);
+    alert("Eroare la încărcarea fișei pacientului.");
+  }
+}, [id]);
 
-  useEffect(() => {
-    loadData();
-  }, [id]);
+// eslint-disable-next-line react-hooks/exhaustive-deps
+useEffect(() => {
+  loadData();
+}, [loadData]);
 
   const saveAllergy = async () => {
     if (!newAllergy.substanceDisplay.trim()) {
