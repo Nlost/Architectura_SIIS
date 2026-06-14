@@ -135,13 +135,22 @@ const handleEditUser = (user) => {
 
   setShowEditForm(true);
 };
+
 const handleSaveEditUser = async () => {
   if (!selectedUser) return;
 
   try {
-    await updateUser(selectedUser.id, formData.rol);
+    const email =
+      `${normalizeText(formData.prenume)}.${normalizeText(formData.nume)}@seniorwatch.com`;
+
+    await updateUser(selectedUser.id, {
+      email,
+      role: formData.rol,
+    });
+
     setShowEditForm(false);
     setSelectedUser(null);
+
     await loadUsers();
   } catch (error) {
     console.log(error);
@@ -594,11 +603,15 @@ const handleToggleActive = async (user) => {
             <div className="users-field">
               <label>Email</label>
 
-              <input
-                type="text"
-                value={selectedUser?.email || ""}
-                readOnly
-              />
+<input
+  type="text"
+  value={
+    formData.nume && formData.prenume
+      ? `${normalizeText(formData.prenume)}.${normalizeText(formData.nume)}@seniorwatch.com`
+      : ""
+  }
+  readOnly
+/>
             </div>
 
             <div className="users-field">

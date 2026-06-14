@@ -60,10 +60,37 @@ public class UserService {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("User not found: " + id));
 
+        String newEmail = request.getEmail();
+
+        if (newEmail == null || newEmail.isBlank()) {
+            throw new IllegalArgumentException("Emailul este obligatoriu");
+        }
+
+        if (!user.getEmail().equalsIgnoreCase(newEmail)
+                && userRepository.existsByEmail(newEmail)) {
+            throw new IllegalArgumentException("Există deja un utilizator cu acest email");
+        }
+
+        user.setEmail(newEmail);
         user.setRole(request.getRole());
         user.setUpdatedAt(OffsetDateTime.now());
 
-        return toResponse(userRepository.save(user));
+        user = userRepository.save(user);
+
+        try {
+            auditService.log(
+                    user.getId(),
+                    "UPDATE",
+                    "users",
+                    user.getId(),
+                    null,
+                    "SUCCESS"
+            );
+        } catch (Exception e) {
+            System.out.println("Audit log failed: " + e.getMessage());
+        }
+
+        return toResponse(user);
     }
 
     @Transactional

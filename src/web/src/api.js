@@ -112,7 +112,7 @@ export async function createPatient(demographics) {
   return text ? JSON.parse(text) : {};
 }
 
-export async function updateUser(id, role) {
+export async function updateUser(id, payload) {
   const token = localStorage.getItem("sw_token");
 
   const response = await fetch(`${API_BASE}/api/users/${id}`, {
@@ -121,7 +121,7 @@ export async function updateUser(id, role) {
       "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
     },
-    body: JSON.stringify({ role }),
+    body: JSON.stringify(payload),
   });
 
   const text = await response.text();

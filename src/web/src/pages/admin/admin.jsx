@@ -4,12 +4,10 @@ import { useEffect, useState } from "react";
 import { createUser, getUsers, updateUser } from "../../api";
 import { logoutUser } from "../../api";
 
-
 const handleLogout = () => {
   logoutUser();
   window.location.href = "/login";
 };
-
 
 function AdminDashboard() {
   const navigate = useNavigate();
@@ -27,8 +25,14 @@ function AdminDashboard() {
     rol: "",
   });
 
-const [createdUserInfo, setCreatedUserInfo] = useState(null);
+  const [editFormData, setEditFormData] = useState({
+    nume: "",
+    prenume: "",
+    email: "",
+    role: "",
+  });
 
+  const [createdUserInfo, setCreatedUserInfo] = useState(null);
   const [errors, setErrors] = useState({});
 
   const [stats, setStats] = useState({
@@ -45,10 +49,13 @@ const [createdUserInfo, setCreatedUserInfo] = useState(null);
       .normalize("NFD")
       .replace(/[\u0300-\u036f]/g, "");
 
+  const generateEmailFromValues = (prenume, nume) => {
+    if (!prenume || !nume) return "";
+    return `${normalizeText(prenume)}.${normalizeText(nume)}@seniorwatch.com`;
+  };
+
   const generateEmail = () =>
-    `${normalizeText(formData.prenume)}.${normalizeText(
-      formData.nume
-    )}@seniorwatch.com`;
+    generateEmailFromValues(formData.prenume, formData.nume);
 
   const generatePassword = () => "Senior123!";
 
@@ -56,7 +63,8 @@ const [createdUserInfo, setCreatedUserInfo] = useState(null);
     const newErrors = {};
 
     if (!formData.nume.trim()) newErrors.nume = "Numele este obligatoriu";
-    if (!formData.prenume.trim()) newErrors.prenume = "Prenumele este obligatoriu";
+    if (!formData.prenume.trim())
+      newErrors.prenume = "Prenumele este obligatoriu";
     if (!formData.rol) newErrors.rol = "Rolul este obligatoriu";
 
     setErrors(newErrors);
@@ -70,6 +78,21 @@ const [createdUserInfo, setCreatedUserInfo] = useState(null);
       ...formData,
       [name]: value,
     });
+  };
+
+  const handleEditChange = (e) => {
+    const { name, value } = e.target;
+
+    const updated = {
+      ...editFormData,
+      [name]: value,
+    };
+
+    if (name === "nume" || name === "prenume") {
+      updated.email = generateEmailFromValues(updated.prenume, updated.nume);
+    }
+
+    setEditFormData(updated);
   };
 
   const loadDashboardData = async () => {
@@ -99,38 +122,72 @@ const [createdUserInfo, setCreatedUserInfo] = useState(null);
     const password = generatePassword();
 
     try {
-     await createUser(email, password, formData.rol);
-await loadDashboardData();
+      await createUser(email, password, formData.rol);
+      await loadDashboardData();
 
-setShowCreateUser(false);
+      setShowCreateUser(false);
 
-setCreatedUserInfo({
-  email,
-  password,
-});
+      setCreatedUserInfo({
+        email,
+        password,
+      });
 
-setFormData({
-  nume: "",
-  prenume: "",
-  rol: "",
-});
+      setFormData({
+        nume: "",
+        prenume: "",
+        rol: "",
+      });
 
-setErrors({});
+      setErrors({});
     } catch (error) {
       console.log(error);
       alert("Eroare la crearea utilizatorului.");
     }
   };
 
+  const openEditUserModal = (user) => {
+    const username = user.email?.split("@")[0] || "";
+    const parts = username.split(".");
+
+    const prenume = parts[0] || "";
+    const nume = parts[1] || "";
+
+    const nicePrenume =
+      prenume.charAt(0).toUpperCase() + prenume.slice(1).toLowerCase();
+    const niceNume =
+      nume.charAt(0).toUpperCase() + nume.slice(1).toLowerCase();
+
+    setSelectedUser(user);
+
+    setEditFormData({
+      nume: niceNume,
+      prenume: nicePrenume,
+      email: user.email,
+      role: user.role,
+    });
+
+    setShowEditUser(true);
+  };
+
   const handleSaveEditUser = async () => {
     if (!selectedUser) return;
 
     try {
-      await updateUser(selectedUser.id, selectedUser.role);
+      await updateUser(selectedUser.id, {
+        email: editFormData.email,
+        role: editFormData.role,
+      });
+
       await loadDashboardData();
 
       setShowEditUser(false);
       setSelectedUser(null);
+      setEditFormData({
+        nume: "",
+        prenume: "",
+        email: "",
+        role: "",
+      });
     } catch (error) {
       console.log(error);
       alert("Eroare la actualizarea utilizatorului.");
@@ -175,6 +232,12 @@ setErrors({});
 
   const formIsValid =
     formData.nume.trim() && formData.prenume.trim() && formData.rol;
+
+  const editFormIsValid =
+    editFormData.nume.trim() &&
+    editFormData.prenume.trim() &&
+    editFormData.email &&
+    editFormData.role;
 
   return (
     <div className="admin-app">
@@ -233,9 +296,11 @@ setErrors({});
             🔗 HL7 FHIR
           </a>
         </nav>
+
         <button className="logoutBtn" onClick={handleLogout}>
-  Logout
-</button>
+          Logout
+        </button>
+
         <div className="admin-profile">
           <div>A</div>
 
@@ -350,10 +415,7 @@ setErrors({});
 
                     <button
                       className="admin-action"
-                      onClick={() => {
-                        setSelectedUser(user);
-                        setShowEditUser(true);
-                      }}
+                      onClick={() => openEditUserModal(user)}
                     >
                       Editare
                     </button>
@@ -521,13 +583,22 @@ setErrors({});
 
                 <div>
                   <h2>Editare utilizator</h2>
-                  <p>Modifică rolul utilizatorului selectat.</p>
+                  <p>Modifică numele, prenumele și rolul utilizatorului.</p>
                 </div>
               </div>
 
               <button
                 className="admin-closeBtn"
-                onClick={() => setShowEditUser(false)}
+                onClick={() => {
+                  setShowEditUser(false);
+                  setSelectedUser(null);
+                  setEditFormData({
+                    nume: "",
+                    prenume: "",
+                    email: "",
+                    role: "",
+                  });
+                }}
               >
                 ×
               </button>
@@ -539,24 +610,39 @@ setErrors({});
 
                 <div className="admin-formGrid">
                   <div className="admin-field">
-                    <label>Email</label>
-                    <input value={selectedUser.email} readOnly />
+                    <label>Nume *</label>
+                    <input
+                      name="nume"
+                      value={editFormData.nume}
+                      onChange={handleEditChange}
+                    />
+                  </div>
+
+                  <div className="admin-field">
+                    <label>Prenume *</label>
+                    <input
+                      name="prenume"
+                      value={editFormData.prenume}
+                      onChange={handleEditChange}
+                    />
+                  </div>
+
+                  <div className="admin-field">
+                    <label>Email generat automat</label>
+                    <input value={editFormData.email} readOnly />
                   </div>
 
                   <div className="admin-field">
                     <label>Rol</label>
 
                     <select
-                      value={selectedUser.role}
-                      onChange={(e) =>
-                        setSelectedUser({
-                          ...selectedUser,
-                          role: e.target.value,
-                        })
-                      }
+                      name="role"
+                      value={editFormData.role}
+                      onChange={handleEditChange}
                     >
                       <option value="DOCTOR">Medic</option>
                       <option value="PATIENT">Pacient</option>
+                      <option value="ADMIN">Administrator</option>
                     </select>
                   </div>
                 </div>
@@ -566,7 +652,16 @@ setErrors({});
                 <button
                   type="button"
                   className="admin-cancelBtn"
-                  onClick={() => setShowEditUser(false)}
+                  onClick={() => {
+                    setShowEditUser(false);
+                    setSelectedUser(null);
+                    setEditFormData({
+                      nume: "",
+                      prenume: "",
+                      email: "",
+                      role: "",
+                    });
+                  }}
                 >
                   Renunță
                 </button>
@@ -575,6 +670,7 @@ setErrors({});
                   type="button"
                   className="admin-submitBtn"
                   onClick={handleSaveEditUser}
+                  disabled={!editFormIsValid}
                 >
                   Salvează modificările
                 </button>
@@ -583,57 +679,58 @@ setErrors({});
           </div>
         </div>
       )}
+
       {createdUserInfo && (
-  <div className="admin-modalOverlay">
-    <div className="admin-modal admin-successModal">
-      <div className="admin-modalHead">
-        <div className="admin-modalTitle">
-          <div className="admin-modalIcon">✅</div>
+        <div className="admin-modalOverlay">
+          <div className="admin-modal admin-successModal">
+            <div className="admin-modalHead">
+              <div className="admin-modalTitle">
+                <div className="admin-modalIcon">✅</div>
 
-          <div>
-            <h2>Utilizator creat cu succes</h2>
-            <p>Datele de autentificare generate automat.</p>
-          </div>
-        </div>
+                <div>
+                  <h2>Utilizator creat cu succes</h2>
+                  <p>Datele de autentificare generate automat.</p>
+                </div>
+              </div>
 
-        <button
-          className="admin-closeBtn"
-          onClick={() => setCreatedUserInfo(null)}
-        >
-          ×
-        </button>
-      </div>
-
-      <div className="admin-form">
-        <div className="admin-formSection">
-          <h3>Credentiale utilizator</h3>
-
-<div className="admin-successFields">
-                <div className="admin-field">
-              <label>Email</label>
-              <input value={createdUserInfo.email} readOnly />
+              <button
+                className="admin-closeBtn"
+                onClick={() => setCreatedUserInfo(null)}
+              >
+                ×
+              </button>
             </div>
 
-            <div className="admin-field">
-              <label>Parolă</label>
-              <input value={createdUserInfo.password} readOnly />
+            <div className="admin-form">
+              <div className="admin-formSection">
+                <h3>Credentiale utilizator</h3>
+
+                <div className="admin-successFields">
+                  <div className="admin-field">
+                    <label>Email</label>
+                    <input value={createdUserInfo.email} readOnly />
+                  </div>
+
+                  <div className="admin-field">
+                    <label>Parolă</label>
+                    <input value={createdUserInfo.password} readOnly />
+                  </div>
+                </div>
+              </div>
+
+              <div className="admin-formActions">
+                <button
+                  type="button"
+                  className="admin-submitBtn"
+                  onClick={() => setCreatedUserInfo(null)}
+                >
+                  Am înțeles
+                </button>
+              </div>
             </div>
           </div>
         </div>
-
-        <div className="admin-formActions">
-          <button
-            type="button"
-            className="admin-submitBtn"
-            onClick={() => setCreatedUserInfo(null)}
-          >
-            Am înțeles
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-)}
+      )}
     </div>
   );
 }

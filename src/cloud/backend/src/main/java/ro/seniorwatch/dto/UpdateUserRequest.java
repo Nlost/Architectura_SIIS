@@ -12,4 +12,6 @@ public class UpdateUserRequest {
 
     @NotNull
     private UserRole role;
+    private String email;
+
 }
