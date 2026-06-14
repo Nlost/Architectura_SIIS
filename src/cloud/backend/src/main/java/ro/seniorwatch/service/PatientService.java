@@ -163,17 +163,16 @@ public PatientResponse updatePatient(UUID id, PatientRequest request, Authentica
         throw new IllegalArgumentException("Emailul pacientului este obligatoriu");
     }
 
-    if (oldEmail != null && !oldEmail.equalsIgnoreCase(newEmail)) {
-        if (userRepository.existsByEmail(newEmail)) {
-            throw new IllegalArgumentException("Există deja un utilizator cu acest email");
-        }
+if (oldEmail != null && !oldEmail.equalsIgnoreCase(newEmail)) {
+    if (userRepository.existsByEmail(newEmail)) {
+        throw new IllegalArgumentException("Există deja un utilizator cu acest email");
+    }
 
-        User patientUser = userRepository.findByEmail(oldEmail)
-                .orElseThrow(() -> new NoSuchElementException("User pacient not found for email: " + oldEmail));
-
+    userRepository.findByEmail(oldEmail).ifPresent(patientUser -> {
         patientUser.setEmail(newEmail);
         userRepository.save(patientUser);
-    }
+    });
+}
 
     demo.setNume(dto.getNume());
     demo.setPrenume(dto.getPrenume());

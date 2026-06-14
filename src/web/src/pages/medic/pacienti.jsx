@@ -979,5 +979,4 @@ const filteredPatients = patients.filter((p) => {
     </div>
   );
 }
-
 export default PacientiMedic;
