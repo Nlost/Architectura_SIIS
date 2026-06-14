@@ -27,8 +27,12 @@ body {
   left: 0;
   top: 0;
   padding: 32px 24px;
-background: linear-gradient(180deg, #7C3AED, #8f33f2);  color: white;
+  background: linear-gradient(180deg, #7C3AED, #8f33f2);
+  color: white;
   border-radius: 0 28px 28px 0;
+
+  display: flex;
+  flex-direction: column;
 }
 
 .brand {
@@ -82,10 +86,7 @@ nav a:hover {
 }
 
 .profile {
-  position: absolute;
-  left: 24px;
-  right: 24px;
-  bottom: 28px;
+  margin-top: auto;
   padding: 16px;
   border-radius: 22px;
   background: rgba(255, 255, 255, 0.16);
@@ -93,7 +94,6 @@ nav a:hover {
   align-items: center;
   gap: 13px;
 }
-
 .profile div {
   width: 50px;
   height: 50px;
@@ -478,4 +478,22 @@ nav a:hover {
     -420px 190px 0 rgba(196, 181, 253, 0.18),
     -140px 520px 0 rgba(124, 58, 237, 0.08);
   pointer-events: none;
+}
+
+.logoutBtn {
+  width: 100%;
+  height: 46px;
+  border: none;
+  border-radius: 15px;
+  background: rgba(255, 255, 255, 0.16);
+  color: white;
+  font-weight: 900;
+  cursor: pointer;
+  margin-top: auto;
+    margin-bottom: -150px;
+
+}
+
+.logoutBtn:hover {
+  background: rgba(255, 255, 255, 0.24);
 }

@@ -1,6 +1,13 @@
 import "./monitorizare.css";
 import { useEffect, useState } from "react";
 import { getPatients } from "../../api";
+import { logoutUser } from "../../api";
+
+
+const handleLogout = () => {
+  logoutUser();
+  window.location.href = "/login";
+};
 
 const formatDoctorName = (email) => {
   if (!email) return "Medic";
@@ -126,7 +133,9 @@ function MonitorizareMedic() {
           <a href="/medic/rapoarte">📋 Rapoarte</a>
           <a href="/medic/hl7">🔗 HL7 FHIR</a>
         </nav>
-
+        <button className="logoutBtn" onClick={handleLogout}>
+  Logout
+</button>
         <div className="profile">
           <div>{doctorInitials || "MD"}</div>
           <span>

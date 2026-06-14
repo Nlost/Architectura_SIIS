@@ -2,6 +2,13 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getUsers } from "../../api";
 import "./adminroluri.css";
+import { logoutUser } from "../../api";
+
+
+const handleLogout = () => {
+  logoutUser();
+  window.location.href = "/login";
+};
 
 function AdminRoluri() {
   const navigate = useNavigate();
@@ -81,7 +88,9 @@ function AdminRoluri() {
           </a>
 
         </nav>
-
+        <button className="logoutBtn" onClick={handleLogout}>
+  Logout
+</button>
         <div className="roles-profile">
           <div>A</div>
 

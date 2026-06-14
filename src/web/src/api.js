@@ -322,3 +322,9 @@ export async function getMyConsultations() {
 
   return text ? JSON.parse(text) : [];
 }
+
+export function logoutUser() {
+  localStorage.removeItem("sw_token");
+  localStorage.removeItem("sw_role");
+  localStorage.removeItem("sw_email");
+}

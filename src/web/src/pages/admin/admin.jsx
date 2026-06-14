@@ -2,6 +2,14 @@ import "./admin.css";
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { createUser, getUsers, updateUser } from "../../api";
+import { logoutUser } from "../../api";
+
+
+const handleLogout = () => {
+  logoutUser();
+  window.location.href = "/login";
+};
+
 
 function AdminDashboard() {
   const navigate = useNavigate();
@@ -225,7 +233,9 @@ setErrors({});
             🔗 HL7 FHIR
           </a>
         </nav>
-
+        <button className="logoutBtn" onClick={handleLogout}>
+  Logout
+</button>
         <div className="admin-profile">
           <div>A</div>
 

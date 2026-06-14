@@ -3,27 +3,33 @@ import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getPatients } from "../../api";
 import { FhirXmlBuilder } from "../../utils/fhirXmlBuilder";
+import { logoutUser } from "../../api";
 
+
+const handleLogout = () => {
+  logoutUser();
+  window.location.href = "/login";
+};
 function AdminHl7() {
   const navigate = useNavigate();
 
   const [patients, setPatients] = useState([]);
-  const [selectedId, setSelectedId] = useState("all");
   const [xml, setXml] = useState("");
   const [generatedAt, setGeneratedAt] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
 
-  const loadPatients = useCallback(async () => {
+  const loadAndBuild = useCallback(async () => {
     setLoading(true);
     setError("");
+    setCopied(false);
     try {
       const data = await getPatients();
+      const builder = new FhirXmlBuilder(data);
       setPatients(data);
-      setSelectedId((prev) =>
-        prev === "all" || data.some((p) => p.id === prev) ? prev : "all"
-      );
+      setXml(builder.toXmlString());
+      setGeneratedAt(new Date());
     } catch (err) {
       setError(err.message || "Nu s-au putut încărca pacienții de pe server.");
       setPatients([]);
@@ -34,41 +40,15 @@ function AdminHl7() {
   }, []);
 
   useEffect(() => {
-    loadPatients();
-  }, [loadPatients]);
-
-  const selectedPatients =
-    selectedId === "all" ? patients : patients.filter((p) => p.id === selectedId);
-
-  useEffect(() => {
-    if (loading || error) return;
-    const builder = new FhirXmlBuilder(
-      selectedId === "all" ? patients : patients.filter((p) => p.id === selectedId)
-    );
-    setXml(builder.toXmlString());
-    setGeneratedAt(new Date());
-    setCopied(false);
-  }, [loading, error, patients, selectedId]);
-
-  const patientLabel = (p) => {
-    const d = p.demographics || {};
-    const name = [d.nume, d.prenume].filter(Boolean).join(" ") || p.id;
-    return d.cnp ? `${name} — ${d.cnp}` : name;
-  };
+    loadAndBuild();
+  }, [loadAndBuild]);
 
   const handleDownload = () => {
     const blob = new Blob([xml], { type: "application/fhir+xml" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    const single = selectedId !== "all" && selectedPatients[0];
-    const slug = single
-      ? [single.demographics?.nume, single.demographics?.prenume]
-          .filter(Boolean)
-          .join("-")
-          .toLowerCase() || single.id
-      : "pacienti";
-    link.download = `${slug}-fhir-r4-${new Date().toISOString().slice(0, 10)}.xml`;
+    link.download = `pacienti-fhir-r4-${new Date().toISOString().slice(0, 10)}.xml`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -109,14 +89,13 @@ function AdminHl7() {
           <a href="#" onClick={(e) => { e.preventDefault(); navigate("/admin/adminaudit"); }}>
             📝 Audit
           </a>
-          <a href="#" onClick={(e) => { e.preventDefault(); navigate("/admin/adminstatus"); }}>
-            🟢 Status sistem
-          </a>
           <a href="#" className="active" onClick={(e) => e.preventDefault()}>
             🔗 HL7 FHIR
           </a>
         </nav>
-
+        <button className="logoutBtn" onClick={handleLogout}>
+  Logout
+</button>
         <div className="ahl7-profile">
           <div>A</div>
           <span>
@@ -134,23 +113,10 @@ function AdminHl7() {
             <span>Toți pacienții activi din sistem, ca Bundle FHIR R4 (XML)</span>
           </div>
           <div className="ahl7-heroBtns">
-            <select
-              className="ahl7-select"
-              value={selectedId}
-              onChange={(e) => setSelectedId(e.target.value)}
-              disabled={loading || patients.length === 0}
-            >
-              <option value="all">Toți pacienții ({patients.length})</option>
-              {patients.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {patientLabel(p)}
-                </option>
-              ))}
-            </select>
             <button
               className="ahl7-btn regen"
               type="button"
-              onClick={loadPatients}
+              onClick={loadAndBuild}
               disabled={loading}
             >
               ↻ Regenerează
@@ -187,7 +153,7 @@ function AdminHl7() {
             <div className="ahl7-statIcon green">👥</div>
             <div>
               <p>Pacienți exportați</p>
-              <h2>{loading ? "…" : selectedPatients.length}</h2>
+              <h2>{loading ? "…" : patients.length}</h2>
               <span>resurse Patient în Bundle</span>
             </div>
           </div>

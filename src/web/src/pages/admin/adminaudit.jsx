@@ -1,6 +1,13 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./adminaudit.css";
+import { logoutUser } from "../../api";
+
+
+const handleLogout = () => {
+  logoutUser();
+  window.location.href = "/login";
+};
 
 function AdminAudit() {
   const navigate = useNavigate();
@@ -94,7 +101,9 @@ function AdminAudit() {
           <a href="#" onClick={(e) => { e.preventDefault(); navigate("/admin/adminhl7"); }}>🔗 HL7 FHIR</a>
 
         </nav>
-
+        <button className="logoutBtn" onClick={handleLogout}>
+  Logout
+</button>
         <div className="audit-profile">
           <div>A</div>
 

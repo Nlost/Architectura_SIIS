@@ -2,6 +2,14 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { createUser, getUsers, updateUser, toggleUserActive } from "../../api";
 import "./adminutilizatori.css";
+import { logoutUser } from "../../api";
+
+
+const handleLogout = () => {
+  logoutUser();
+  window.location.href = "/login";
+};
+
 
 function AdminUtilizatori() {
   const navigate = useNavigate();
@@ -266,7 +274,9 @@ const handleToggleActive = async (user) => {
             🔗 HL7 FHIR
           </a>
         </nav>
-
+        <button className="logoutBtn" onClick={handleLogout}>
+  Logout
+</button>
         <div className="users-profile">
           <div>A</div>
           <span>

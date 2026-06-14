@@ -2,6 +2,13 @@ import "./pacienti.css";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getPatients, createPatient } from "../../api";
+import { logoutUser } from "../../api";
+
+
+const handleLogout = () => {
+  logoutUser();
+  window.location.href = "/login";
+};
 
 const initialNewPatient = {
   nume: "",
@@ -369,7 +376,9 @@ const filteredPatients = patients.filter((p) => {
             🔗 HL7 FHIR
           </a>
         </nav>
-
+        <button className="logoutBtn" onClick={handleLogout}>
+  Logout
+</button>
         <div className="profile">
           <div>{doctorInitials || "?"}</div>
           <span>

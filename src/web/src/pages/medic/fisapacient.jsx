@@ -1,11 +1,9 @@
 import "./fisapacient.css";
 import { useNavigate, useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
-import {
-  getPatient,
-  getConsultations,
-  getRecommendationsByPatient,
-} from "../../api";
+import { getPatient, getConsultations, getRecommendationsByPatient, } from "../../api";
+
+
 
 function FisaPacient() {
   const navigate = useNavigate();
@@ -16,7 +14,7 @@ function FisaPacient() {
   const [consultations, setConsultations] = useState([]);
   const [recommendations, setRecommendations] = useState([]);
 
-useEffect(() => {
+ useEffect(() => {
   const loadData = async () => {
     try {
       const patientData = await getPatient(id);
@@ -37,10 +35,6 @@ useEffect(() => {
 
   loadData();
 }, [id]);
-
-  useEffect(() => {
-  }, [id]);
-
   const formatDoctorName = (email) => {
     if (!email) return "Medic";
 
@@ -269,6 +263,10 @@ useEffect(() => {
                     />
                   </label>
 
+                  <label>
+                    SpO2
+                    <input value={sample.spo2 ? `${sample.spo2}%` : "—"} readOnly />
+                  </label>
                 </div>
               </div>
 

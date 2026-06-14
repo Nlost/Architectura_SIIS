@@ -44,8 +44,11 @@ body {
   color: white;
   border-radius: 0 28px 28px 0;
   z-index: 5;
-  
+
+  display: flex;
+  flex-direction: column;
 }
+
 
 .admin-brand {
   display: flex;
@@ -98,10 +101,7 @@ body {
 }
 
 .admin-profile {
-  position: absolute;
-  left: 24px;
-  right: 24px;
-  bottom: 28px;
+  margin-top: 0;
   padding: 16px;
   border-radius: 22px;
   background: rgba(255, 255, 255, 0.16);
@@ -615,4 +615,21 @@ body {
 
 .admin-successFields input {
   width: 100%;
+}
+.logoutBtn {
+  width: 100%;
+  height: 46px;
+  border: none;
+  border-radius: 15px;
+  background: rgba(255, 255, 255, 0.16);
+  color: white;
+  font-weight: 900;
+  cursor: pointer;
+
+  margin-top: auto;
+  margin-bottom: 14px;
+}
+
+.logoutBtn:hover {
+  background: rgba(255, 255, 255, 0.24);
 }

@@ -2,6 +2,14 @@ import "../../App.css";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getPatients } from "../../api";
+import { logoutUser } from "../../api";
+
+
+const handleLogout = () => {
+  logoutUser();
+  window.location.href = "/login";
+};
+
 
 function Medic() {
   const navigate = useNavigate();
@@ -10,7 +18,6 @@ function Medic() {
     if (!email || email === "medic") return "Medic";
 
     const username = email.split("@")[0];
-
     const nameParts = username
       .split(".")
       .filter(Boolean)
@@ -175,7 +182,10 @@ function Medic() {
             🔗 HL7 FHIR
           </a>
         </nav>
-
+        
+        <button className="logoutBtn" onClick={handleLogout}>
+  Logout
+</button>
         <div className="profile">
           <div>{doctorInitials || "?"}</div>
           <span>

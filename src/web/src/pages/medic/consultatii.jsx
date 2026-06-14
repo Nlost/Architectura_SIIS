@@ -1,6 +1,14 @@
 import "./consultatii.css";
 import { useEffect, useState } from "react";
 import { getPatients, getConsultations, createConsultation, createRecommendation, finalizeConsultation } from "../../api";
+import { logoutUser } from "../../api";
+
+
+const handleLogout = () => {
+  logoutUser();
+  window.location.href = "/login";
+};
+
 
 const initialConsultation = {
   patient_id: "",
@@ -16,8 +24,6 @@ const initialConsultation = {
   recommendation_duration: "",
   recommendation_notes: "",
 };
-
-
 
 const formatTimeOnly = (dateValue) => {
   if (!dateValue) return "—";
@@ -439,10 +445,12 @@ if (editingConsultation) {
           <a href="/medic/rapoarte">📋 Rapoarte</a>
           <a href="/medic/hl7">🔗 HL7 FHIR</a>
         </nav>
-
+        <button className="logoutBtn" onClick={handleLogout}>
+  Logout
+</button>
         <div className="profile">
+          
           <div>{doctorInitials || "MD"}</div>
-
           <span>
             <b>{doctorName}</b>
             Medic specialist
