@@ -3,7 +3,8 @@ package ro.seniorwatch.entity;
 import jakarta.persistence.*;
 import lombok.*;
 import ro.seniorwatch.entity.enums.HealthItemStatus;
-
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
@@ -53,10 +54,12 @@ public class Allergy {
     @JoinColumn(name = "responsible_person_id")
     private User responsiblePerson;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    @Builder.Default
-    private HealthItemStatus status = HealthItemStatus.ACTIVE;
+@Enumerated(EnumType.STRING)
+@JdbcTypeCode(SqlTypes.NAMED_ENUM)
+@Column(name = "status", nullable = false, columnDefinition = "health_item_status")
+@Builder.Default
+private HealthItemStatus status = HealthItemStatus.ACTIVE;
+
 
     @Column(name = "previous_version_id")
     private UUID previousVersionId;
