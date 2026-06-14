@@ -84,14 +84,18 @@ public class AllergyService {
                 .build();
 
         allergy = allergyRepository.save(allergy);
-        auditService.log(
-        caller.getId(),
-        "CREATE_ALLERGY",
-        "allergies",
-        allergy.getId(),
-        null,
-        "SUCCESS"
-);
+     try {
+    auditService.log(
+            caller.getId(),
+            "CREATE_ALLERGY",
+            "allergies",
+            allergy.getId(),
+            null,
+            "SUCCESS"
+    );
+} catch (Exception e) {
+    System.out.println("Audit log failed: " + e.getMessage());
+}
 
         return toResponse(allergy);
     }
