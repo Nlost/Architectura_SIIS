@@ -3,7 +3,7 @@
 .fisa-wrapper {
   width: 100%;
   max-width: none;
-  margin: 0 ;
+  margin: 0;
   background: rgba(255, 255, 255, 0.72);
   border: 1px solid #eadfff;
   border-radius: 30px;
@@ -61,17 +61,8 @@
   padding: 0 20px;
   font-weight: 1000;
   cursor: pointer;
-}
-
-.fisa-top-actions button:first-child {
   background: linear-gradient(135deg, #7c3aed, #6d28d9);
   color: white;
-}
-
-.fisa-top-actions button:last-child {
-  background: #f5efff;
-  color: #6d28d9;
-  border: 1px solid #d8caff;
 }
 
 .fisa-tabs {
@@ -124,6 +115,28 @@
   font-weight: 1000;
 }
 
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+
+.section-header h2 {
+  margin: 0;
+}
+
+.add-allergy-btn {
+  height: 42px;
+  border: none;
+  border-radius: 13px;
+  padding: 0 18px;
+  background: #6d28d9;
+  color: white;
+  font-weight: 1000;
+  cursor: pointer;
+}
+
 .fisa-form-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -140,7 +153,8 @@
 }
 
 .fisa-form-grid input,
-.fisa-form-grid textarea {
+.fisa-form-grid textarea,
+.fisa-form-grid select {
   width: 100%;
   border: 1px solid #dfd4f7;
   border-radius: 15px;
@@ -150,9 +164,11 @@
   font-weight: 800;
   padding: 0 14px;
   box-sizing: border-box;
+  outline: none;
 }
 
-.fisa-form-grid input {
+.fisa-form-grid input,
+.fisa-form-grid select {
   height: 46px;
 }
 
@@ -162,79 +178,22 @@
   resize: none;
 }
 
-.fisa-form-grid .wide {
-  grid-column: span 2;
+.fisa-form-grid .wide,
+.wide {
+  grid-column: 1 / -1;
 }
 
-@media (max-width: 1100px) {
-  .fisa-top-card {
-    grid-template-columns: 1fr;
-  }
-
-  .fisa-top-actions,
-  .fisa-tabs {
-    flex-wrap: wrap;
-  }
-
-  .fisa-form-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .fisa-form-grid .wide {
-    grid-column: auto;
-  }
-}
-.fisa-history-list {
+.allergy-box {
+  grid-column: 1 / -1;
   display: grid;
-  gap: 14px;
-}
-
-.history-card {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 18px;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  padding: 16px;
+  border: 1px solid #eadfff;
   border-radius: 18px;
-  background: #fbf8ff;
-  border: 1px solid #eadfff;
+  background: #fbf9ff;
 }
 
-.history-card h3 {
-  margin: 0 0 6px;
-  color: #13072f;
-}
-
-.history-card p {
-  margin: 0;
-  color: #6b617f;
-  font-weight: 700;
-}
-
-.monitoring-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 18px;
-  margin-bottom: 20px;
-}
-
-.monitor-card {
-  padding: 20px;
-  border-radius: 20px;
-  background: #fbf8ff;
-  border: 1px solid #eadfff;
-}
-
-.monitor-card p {
-  margin: 0 0 8px;
-  color: #7c6aa7;
-  font-weight: 900;
-}
-
-.monitor-card h3 {
-  margin: 0;
-  color: #13072f;
-  font-size: 26px;
-}
 .fisa-history-list {
   display: flex;
   flex-direction: column;
@@ -323,6 +282,10 @@
   margin-bottom: 20px;
 }
 
+.fisa-ecg {
+  margin-top: 8px;
+}
+
 .monitor-card {
   padding: 20px;
   border: 1px solid #eadfff;
@@ -346,20 +309,151 @@
   font-weight: 1000;
 }
 
-.fake-line-chart {
-  height: 180px;
+.allergy-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: rgba(19, 7, 47, 0.58);
+  backdrop-filter: blur(6px);
   display: flex;
-  align-items: flex-end;
-  gap: 12px;
-  padding: 16px;
-  border-radius: 18px;
-  background: linear-gradient(135deg, #f8f3ff, #ffffff);
-  border: 1px solid #eadfff;
+  align-items: center;
+  justify-content: center;
+  padding: 28px;
 }
 
-.fake-line-chart span {
-  flex: 1;
-  border-radius: 999px 999px 6px 6px;
-  background: linear-gradient(180deg, #8b5cf6, #6d28d9);
-  box-shadow: 0 8px 18px rgba(109, 40, 217, 0.18);
+.allergy-modal {
+  width: 720px;
+  max-width: 94vw;
+  background: white;
+  border-radius: 28px;
+  overflow: hidden;
+  box-shadow: 0 30px 90px rgba(19, 7, 47, 0.38);
+}
+
+.allergy-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 26px 30px;
+  background: linear-gradient(135deg, #f4edff, #ffffff);
+  border-bottom: 1px solid #eadfff;
+}
+
+.allergy-modal-header p {
+  margin: 0 0 6px;
+  color: #7c3aed;
+  font-size: 13px;
+  font-weight: 1000;
+}
+
+.allergy-modal-header h2 {
+  margin: 0;
+  color: #16072f;
+  font-size: 24px;
+  font-weight: 1000;
+}
+
+.allergy-modal-header button {
+  width: 44px;
+  height: 44px;
+  border: none;
+  border-radius: 15px;
+  background: #f1e9ff;
+  color: #6d28d9;
+  font-size: 28px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.allergy-modal-body {
+  padding: 26px 30px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.allergy-modal-body label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  color: #2a1f3d;
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.allergy-modal-body input,
+.allergy-modal-body select,
+.allergy-modal-body textarea {
+  width: 100%;
+  border: 1px solid #dfd4f7;
+  border-radius: 15px;
+  background: #fbf9ff;
+  color: #14082f;
+  font-size: 15px;
+  font-weight: 800;
+  box-sizing: border-box;
+  outline: none;
+}
+
+.allergy-modal-body input,
+.allergy-modal-body select {
+  height: 48px;
+  padding: 0 14px;
+}
+
+.allergy-modal-body textarea {
+  min-height: 100px;
+  padding: 14px;
+  resize: none;
+}
+
+.allergy-modal-actions {
+  padding: 20px 30px;
+  border-top: 1px solid #eadfff;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.allergy-modal-actions button {
+  height: 46px;
+  border: none;
+  border-radius: 15px;
+  padding: 0 22px;
+  font-size: 14px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.allergy-modal-actions button:first-child {
+  background: #f1ecff;
+  color: #4c1d95;
+}
+
+.allergy-modal-actions button:last-child {
+  background: linear-gradient(135deg, #7c3aed, #6d28d9);
+  color: white;
+}
+
+@media (max-width: 1100px) {
+  .fisa-top-card {
+    grid-template-columns: 1fr;
+  }
+
+  .fisa-top-actions,
+  .fisa-tabs {
+    flex-wrap: wrap;
+  }
+
+  .fisa-form-grid,
+  .monitoring-grid,
+  .allergy-modal-body,
+  .allergy-box {
+    grid-template-columns: 1fr;
+  }
+
+  .fisa-form-grid .wide,
+  .wide {
+    grid-column: auto;
+  }
 }

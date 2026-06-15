@@ -1,73 +1,52 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { getAuditEvents, logoutUser } from "../../api";
 import "./adminaudit.css";
 
+const handleLogout = () => {
+  logoutUser();
+  window.location.href = "/login";
+};
+const formatDate = (dateValue) => {
+  if (!dateValue) return "-";
+
+  const date = new Date(dateValue);
+
+  return date.toLocaleString("ro-RO", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+};
 function AdminAudit() {
+  
   const navigate = useNavigate();
 
   const [userFilter, setUserFilter] = useState("Toți utilizatorii");
   const [resourceFilter, setResourceFilter] = useState("Toate resursele");
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
+const [logs, setLogs] = useState([]);
+const filteredLogs = logs.filter((log) => {
+  return (
+    resourceFilter === "Toate resursele" ||
+    log.resource === resourceFilter
+  );
+});
+useEffect(() => {
+  const loadAudit = async () => {
+    try {
+      const data = await getAuditEvents();
+      setLogs(data);
+    } catch (error) {
+      console.log(error);
+    }
+  };
 
-  const logs = [
-    {
-      user: "Administrator",
-      event: "CREATE",
-      resource: "users",
-      resourceId: "USR-001",
-      description: "A creat un utilizator nou",
-      time: "2026-05-27 18:20",
-      status: "SUCCESS",
-    },
-    {
-      user: "Dr. Andrei Popescu",
-      event: "EXPORT",
-      resource: "clinical_visits",
-      resourceId: "VIS-204",
-      description: "A exportat raport medical",
-      time: "2026-05-27 17:48",
-      status: "SUCCESS",
-    },
-    {
-      user: "Maria Ionescu",
-      event: "LOGIN",
-      resource: "auth",
-      resourceId: "AUTH-044",
-      description: "Autentificare în platformă",
-      time: "2026-05-27 17:31",
-      status: "SUCCESS",
-    },
-    {
-      user: "Administrator",
-      event: "UPDATE",
-      resource: "permissions",
-      resourceId: "PERM-010",
-      description: "A modificat permisiunile rolului Medic",
-      time: "2026-05-27 16:55",
-      status: "SUCCESS",
-    },
-    {
-      user: "Sistem",
-      event: "READ",
-      resource: "patients",
-      resourceId: "PAT-078",
-      description: "Tentativă acces neautorizat",
-      time: "2026-05-27 15:40",
-      status: "DENIED",
-    },
-  ];
-
-  const filteredLogs = logs.filter((log) => {
-    const matchesUser =
-      userFilter === "Toți utilizatorii" || log.user === userFilter;
-
-    const matchesResource =
-      resourceFilter === "Toate resursele" || log.resource === resourceFilter;
-
-    return matchesUser && matchesResource;
-  });
-
+  loadAudit();
+}, []);
   return (
     <div className="audit-app">
       <aside className="audit-sidebar">
@@ -91,17 +70,18 @@ function AdminAudit() {
 
           <a href="#" className="active">📝 Audit</a>
 
-          <a href="#" onClick={(e) => { e.preventDefault(); navigate("/admin/adminstatus"); }}>
-            🟢 Status sistem
-          </a>
-        </nav>
+          <a href="#" onClick={(e) => { e.preventDefault(); navigate("/admin/adminhl7"); }}>🔗 HL7 FHIR</a>
 
+        </nav>
+        <button className="logoutBtn" onClick={handleLogout}>
+  Logout
+</button>
         <div className="audit-profile">
           <div>A</div>
 
-          <span>
+            <span>
             <b>Administrator</b>
-            admin@clinic.ro
+            {localStorage.getItem("sw_email") || "admin@seniorwatch.com"}
           </span>
         </div>
       </aside>
@@ -228,25 +208,34 @@ function AdminAudit() {
               <span>Status</span>
             </div>
 
-            {filteredLogs.map((log, index) => (
-              <div className="audit-row" key={index}>
-                <span>{log.user}</span>
+            {filteredLogs.map((log) => (
+             <div className="audit-row" key={log.id}>
+  <span>{log.userEmail || "-"}</span>
 
-                <span>
-                  <div className={`audit-type ${log.event}`}>{log.event}</div>
-                </span>
+  <span>
+    <div className={`audit-type ${log.eventType}`}>
+      {log.eventType}
+    </div>
+  </span>
 
-                <span>{log.resource}</span>
-                <span>{log.resourceId}</span>
-                <span>{log.description}</span>
-                <span>{log.time}</span>
+  <span>{log.resource || "-"}</span>
 
-                <span>
-                  <div className={`audit-status ${log.status}`}>
-                    {log.status}
-                  </div>
-                </span>
-              </div>
+  <span>
+    {log.resourceId
+      ? log.resourceId.toString().substring(0, 8)
+      : "-"}
+  </span>
+
+  <span>{log.clientIp || "-"}</span>
+
+  <span>{formatDate(log.occurredAt)}</span>
+
+  <span>
+    <div className={`audit-status ${log.outcome}`}>
+      {log.outcome}
+    </div>
+  </span>
+</div>
             ))}
           </div>
         </section>

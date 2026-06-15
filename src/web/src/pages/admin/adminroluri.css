@@ -27,6 +27,9 @@ body {
   background: linear-gradient(180deg, #7c3aed, #8f33f2);
   color: white;
   border-radius: 0 28px 28px 0;
+
+  display: flex;
+  flex-direction: column;
 }
 
 .roles-brand {
@@ -70,6 +73,7 @@ body {
   color: white;
   font-weight: 800;
   cursor: pointer;
+  text-decoration: none;
 }
 
 .roles-sidebar nav a.active,
@@ -78,16 +82,28 @@ body {
 }
 
 .roles-profile {
-  position: absolute;
-  left: 24px;
-  right: 24px;
-  bottom: 28px;
   padding: 16px;
   border-radius: 22px;
   background: rgba(255,255,255,0.16);
   display: flex;
   align-items: center;
   gap: 13px;
+}
+.logoutBtn {
+  width: 100%;
+  height: 46px;
+  border: none;
+  border-radius: 15px;
+  background: rgba(255, 255, 255, 0.16);
+  color: white;
+  font-weight: 900;
+  cursor: pointer;
+  margin-top: auto;
+  margin-bottom: 14px;
+}
+
+.logoutBtn:hover {
+  background: rgba(255, 255, 255, 0.24);
 }
 
 .roles-profile div {

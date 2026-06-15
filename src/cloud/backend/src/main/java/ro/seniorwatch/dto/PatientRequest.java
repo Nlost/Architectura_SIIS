@@ -11,4 +11,6 @@ public class PatientRequest {
     private UUID doctorId;
     @NotNull @Valid
     private DemographicsDto demographics;
+    private String password;
+
 }

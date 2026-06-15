@@ -16,17 +16,24 @@
     border: 1px solid rgba(109, 40, 217, 0.12);
   }
 
-  .consultatii-row {
-    grid-template-columns: 1.4fr 0.6fr 0.9fr 0.9fr 1.3fr 0.9fr 1.5fr;
-    width: 100%;
-    min-height: 82px;
-    background: #ffffff;
-    color: #1a093d;
-    font-weight: 900;
-    border: 1px solid #e5d8ff;
-    box-shadow: 0 10px 28px rgba(83, 47, 147, 0.06);
-    transition: 0.2s ease;
-  }
+.consultatii-row {
+  grid-template-columns:
+    1.5fr   /* pacient */
+    0.6fr   /* varsta */
+    1.2fr   /* data */
+    0.7fr   /* diagnostic */
+    1.6fr   /* motiv */
+    0.8fr   /* status */
+    1.2fr;  /* actiuni */
+
+  width: 100%;
+  min-height: 82px;
+  background: #ffffff;
+  color: #1a093d;
+  font-weight: 900;
+  border: 1px solid #e5d8ff;
+  box-shadow: 0 10px 28px rgba(83, 47, 147, 0.06);
+}
 
   .consultatii-row:hover {
     background: #f5efff;
@@ -95,22 +102,21 @@
   }
 
 .add-consultatie-btn {
-  height: 56px;
   border: none;
-  border-radius: 18px;
-  padding: 0 22px;
-  background: linear-gradient(135deg, #8b5cf6, #6d28d9) !important;
+  background: #7c3aed !important;
   color: #ffffff !important;
-  font-weight: 900;
+  padding: 12px 20px;
+  border-radius: 14px;
   font-size: 15px;
+  font-weight: 700;
   cursor: pointer;
-  box-shadow: 0 14px 30px rgba(109, 40, 217, 0.22);
-  transition: all 0.2s ease;
+  min-width: 180px;
+  height: 50px;
+  transition: 0.2s;
 }
 
 .add-consultatie-btn:hover {
-  transform: translateY(-2px);
-  filter: brightness(1.04);
+  background: #6d28d9;
 }
 
   .consultatie-badge {
@@ -175,25 +181,6 @@
     filter: brightness(0.96);
   }
 
-  @media (max-width: 1200px) {
-    .consultatii-row {
-      grid-template-columns: 1fr;
-      gap: 10px;
-    }
-
-    .consultatii-tools {
-      flex-direction: column;
-      align-items: stretch;
-    }
-
-    .consultatii-search {
-      width: 100%;
-    }
-
-    .consultatieActions {
-      flex-wrap: wrap;
-    }
-  }
   .consultatieModalOverlay {
   position: fixed;
   inset: 0;
@@ -426,14 +413,498 @@
   animation: fadeSection 0.25s ease;
 }
 
-@keyframes fadeSection {
-  from {
-    opacity: 0;
-    transform: translateY(6px);
-  }
+.emptySearchMessage {
+  padding: 22px;
+  text-align: center;
+  color: #7c6aa8;
+  font-weight: 700;
+}
+.programari-azi-btn {
+  border: none;
+  background: #efe7ff;
+  color: #6d28d9;
+  padding: 14px 20px;
+  border-radius: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
 
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+
+
+.programareCard {
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  gap: 18px;
+  padding: 18px;
+  border: 1px solid #e8dcff;
+  border-radius: 18px;
+  background: #fbf8ff;
+}
+
+.programareCard strong {
+  display: block;
+  font-size: 22px;
+  color: #240046;
+}
+
+.programareCard span {
+  display: inline-block;
+  margin-top: 8px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: #e9ddff;
+  color: #6d28d9;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.programareCard h3 {
+  margin: 0 0 6px;
+  color: #16002f;
+}
+
+.programareCard p {
+  margin: 0 0 8px;
+  color: #4b3b6b;
+  font-weight: 700;
+}
+
+.programareCard small {
+  color: #7c6aa8;
+  font-weight: 700;
+}
+
+.fieldError {
+  color: #dc2626;
+  font-size: 12px;
+  font-weight: 700;
+  margin-top: 6px;
+  display: block;
+}
+
+.programariModal {
+  width: 1000px;
+  max-width: 92vw;
+  max-height: 86vh;
+  background: white;
+  border-radius: 26px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.programariList {
+  padding: 24px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  overflow-y: auto;
+}
+
+
+
+.consultatieDetails div {
+  border: 1px solid #eadcff;
+  background: #fbf8ff;
+  border-radius: 16px;
+  padding: 14px 16px;
+}
+
+.consultatieDetails strong {
+  display: block;
+  color: #6d28d9;
+  font-size: 13px;
+  font-weight: 900;
+  margin-bottom: 6px;
+}
+
+.consultatieDetails p {
+  margin: 0;
+  color: #16002f;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+
+.detailCard strong {
+  display: block;
+  color: #6d28d9;
+  margin-bottom: 6px;
+}
+
+.detailCard p {
+  margin: 0;
+}
+
+.consultatieDetailsForm {
+  flex: 1;
+  overflow-y: auto;
+  padding: 26px 30px;
+}
+
+.consultatieDetailsForm .consultatieSection:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+  
+}
+.consultatieDetailsForm::-webkit-scrollbar-thumb {
+  background: linear-gradient(
+    180deg,
+    #8b5cf6,
+    #7c3aed
+  );
+  border-radius: 999px;
+}.consultatieDetailsForm::-webkit-scrollbar {
+  width: 10px;
+}
+
+.consultatieDetailsForm::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.consultatieDetailsForm::-webkit-scrollbar-thumb {
+  background: #a78bfa;
+  border-radius: 999px;
+}
+
+.consultatieDetailsForm::-webkit-scrollbar-thumb:hover {
+  background: #8b5cf6;
+}
+.calendarModalBody {
+  padding: 24px 28px 28px;
+}
+
+.calendarMonthTitle {
+  color: #16002f;
+  font-size: 22px;
+  font-weight: 1000;
+  margin-bottom: 18px;
+  text-transform: capitalize;
+}
+
+.calendarGrid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 10px;
+}
+
+.calendarWeekDays {
+  margin-bottom: 10px;
+}
+
+.calendarWeekDays div {
+  text-align: center;
+  color: #6d28d9;
+  font-size: 13px;
+  font-weight: 1000;
+  text-transform: uppercase;
+}
+
+.calendarDay {
+  min-height: 120px;
+  background: #fbf8ff;
+  border: 1px solid #eadcff;
+  border-radius: 16px;
+  padding: 10px;
+}
+
+.emptyDay {
+  background: transparent;
+  border: none;
+}
+.calendarBigModal {
+  width: 1280px;
+  max-width: 96vw;
+  height: 82vh;
+  background: #ffffff;
+  border-radius: 26px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 30px 90px rgba(19, 7, 47, 0.38);
+}
+
+.calendarLayout {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 20px;
+  padding: 24px;
+  background: #f4edff;
+}
+
+.calendarLeft,
+.calendarRight {
+  background: #ffffff;
+  border-radius: 22px;
+  padding: 18px;
+}
+
+.calendarWeekHeader,
+.calendarMonthGrid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 10px;
+}
+
+.calendarWeekHeader {
+  margin-bottom: 10px;
+}
+
+.calendarWeekHeader span {
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.calendarCell {
+  min-height: 76px;
+  border: 1px solid #d8d5e3;
+  border-radius: 14px;
+  background: #f8fafc;
+  text-align: left;
+  padding: 12px;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.calendarCell strong {
+  display: block;
+  color: #0f172a;
+  font-size: 17px;
+  font-weight: 1000;
+  margin-bottom: 8px;
+}
+
+.calendarCell small {
+  color: #64748b;
+  font-weight: 700;
+}
+
+.calendarCell:hover {
+  border-color: #a78bfa;
+  background: #f3e8ff;
+}
+
+.calendarCell.selectedDay {
+  background: #ede3ff;
+  border-color: #8b5cf6;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.18);
+}
+
+.calendarCell.otherMonth {
+  opacity: 0.45;
+}
+
+.calendarCell.hasAppointments small {
+  color: #6d28d9;
+}
+
+.calendarRight {
+  display: flex;
+  flex-direction: column;
+}
+
+.selectedDayHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #e5d8ff;
+  padding-bottom: 14px;
+  margin-bottom: 18px;
+}
+
+.selectedDayHeader h3 {
+  margin: 0;
+  color: #16002f;
+  font-size: 18px;
+  font-weight: 1000;
+}
+
+.selectedDayHeader span {
+  background: #f1e9ff;
+  color: #5b21b6;
+  padding: 8px 14px;
+  border-radius: 14px;
+  font-size: 13px;
+  font-weight: 800;
+  border: 1px solid #d8caff;
+}
+
+.noAppointmentsText {
+  color: #64748b;
+  font-weight: 800;
+  margin: 0 0 14px;
+}
+
+.selectedDayList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.selectedAppointmentCard {
+  display: grid;
+  grid-template-columns: 70px 1fr;
+  gap: 14px;
+  padding: 14px;
+  border: 1px solid #eadcff;
+  border-radius: 16px;
+  background: #fbf8ff;
+}
+
+.appointmentHour {
+  color: #6d28d9;
+  font-size: 18px;
+  font-weight: 1000;
+}
+
+.selectedAppointmentCard h4 {
+  margin: 0 0 4px;
+  color: #16002f;
+  font-size: 15px;
+  font-weight: 1000;
+}
+
+.selectedAppointmentCard p {
+  margin: 0 0 8px;
+  color: #4b3b6b;
+  font-weight: 800;
+}
+
+.selectedAppointmentCard span {
+  display: inline-block;
+  background: #ede3ff;
+  color: #6d28d9;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.addSelectedDayBtn {
+  margin-top: 18px;
+  height: 50px;
+  border: none;
+  border-radius: 16px;
+  background: #7c3aed;
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 1000;
+  cursor: pointer;
+}
+.calendarHeaderActions {
+  margin-left: auto;
+  margin-right: 140px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.calendarHeaderActions button {
+  width: 42px;
+  height: 42px;
+  border: none;
+  border-radius: 14px;
+  background: #f1e9ff;
+  color: #6d28d9;
+  font-size: 28px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.calendarHeaderActions strong {
+  min-width: 135px;
+  text-align: center;
+  color: #16002f;
+  font-size: 16px;
+  font-weight: 1000;
+  text-transform: capitalize;
+}
+
+.calendarCell.weekendDay {
+  background: #e5e7eb;
+  border-color: #cbd5e1;
+  cursor: not-allowed;
+}
+
+.calendarCell.weekendDay strong,
+.calendarCell.weekendDay small {
+  color: #64748b;
+}
+
+.calendarCell.weekendDay:hover {
+  background: #e5e7eb;
+  border-color: #cbd5e1;
+  box-shadow: none;
+}
+.calendarHeaderContent {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.weekendDay {
+  background: #f1f1f1 !important;
+  opacity: 0.75;
+}
+.consultatie-badge.activa {
+  background: #ede3ff;
+  color: #6d28d9;
+  border: 1px solid #c4b5fd;
+}
+
+.consultatie-badge.finalizata {
+  background: #dcfce7;
+  color: #047857;
+  border: 1px solid #86efac;
+}
+.finalizedTag {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  min-width: 130px;
+  height: 40px;
+
+  background: #dcfce7;
+  color: #15803d;
+
+  border: 1px solid #86efac;
+  border-radius: 12px;
+
+  font-size: 14px;
+  font-weight: 900;
+}
+.consultatieActions {
+  display: grid;
+  grid-template-columns: 80px 120px 120px;
+  gap: 10px;
+  align-items: center;
+}
+
+.consultatieActions button,
+.finalizedTag {
+  height: 42px;
+  border-radius: 13px;
+  font-weight: 900;
+  font-size: 14px;
+}
+
+.actionPlaceholder {
+  width: 120px;
+  height: 42px;
+}
+
+.finalizedTag {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #dcfce7;
+  color: #15803d;
+  border: 1px solid #86efac;
 }

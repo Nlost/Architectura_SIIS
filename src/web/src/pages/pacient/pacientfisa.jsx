@@ -1,8 +1,87 @@
 import "./pacientfisa.css";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import {
+  getPatientMe,
+  getRecommendationsByPatient,
+  getMyConsultations,
+} from "../../api";
+import { logoutUser } from "../../api";
+
+
+const handleLogout = () => {
+  logoutUser();
+  window.location.href = "/login";
+};
+const formatDate = (dateValue) => {
+  if (!dateValue) return "-";
+
+  const date = new Date(dateValue);
+  if (Number.isNaN(date.getTime())) return "-";
+
+  return date.toLocaleDateString("ro-RO", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+  });
+};
+
+const calculateAge = (birthDate) => {
+  if (!birthDate) return "-";
+
+  const date = new Date(birthDate);
+  if (Number.isNaN(date.getTime())) return "-";
+
+  const today = new Date();
+  let age = today.getFullYear() - date.getFullYear();
+  const monthDiff = today.getMonth() - date.getMonth();
+
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < date.getDate())) {
+    age--;
+  }
+
+  return `${age} ani`;
+};
 
 function PacientFisa() {
-  const navigate = useNavigate();
+  const [patient, setPatient] = useState(null);
+  const [recommendations, setRecommendations] = useState([]);
+  const [consultations, setConsultations] = useState([]);
+  const [activeTab, setActiveTab] = useState("fisa");
+
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const patientData = await getPatientMe();
+        setPatient(patientData);
+
+        if (patientData?.id) {
+          const recs = await getRecommendationsByPatient(patientData.id);
+          setRecommendations(recs);
+        }
+
+        const visits = await getMyConsultations();
+        setConsultations(visits);
+      } catch (error) {
+        console.log("Eroare fișă pacient:", error);
+      }
+    };
+
+    loadData();
+  }, []);
+
+  const d = patient?.demographics || {};
+  const sample = patient?.latestSample || {};
+
+  const fullName = [d.prenume, d.nume].filter(Boolean).join(" ") || "Pacient";
+
+  const initials =
+    `${(d.prenume || "")[0] || ""}${(d.nume || "")[0] || ""}`.toUpperCase() ||
+    "P";
+
+  const age = calculateAge(d.dataNasterii);
+
+  const address =
+    [d.strada, d.localitate, d.judet, d.tara].filter(Boolean).join(", ") || "-";
 
   return (
     <div className="app">
@@ -17,22 +96,21 @@ function PacientFisa() {
         </div>
 
         <nav>
-          <a onClick={() => navigate("/pacient")}>📊 Dashboard</a>
-          <a className="active">📄 Fișa mea</a>
-<a onClick={() => navigate("/pacient/pacientvalori")}>📈 Valori senzori</a>      
-<a onClick={() => navigate("/pacient/pacientrecomandari")}>
-  🩺 Recomandări
-</a>   
-<a onClick={() => navigate("/pacient/pacientalerte")}>
-  🚨 Alerte
-</a>
-          {/* <a>📋 Rapoarte</a> */}
+          <a href="/pacient">📊 Dashboard</a>
+          <a href="/pacient/pacientfisa" className="active">
+            📄 Fișa mea
+          </a>
+          <a href="/pacient/pacientvalori">📈 Valori senzori</a>
+          <a href="/pacient/pacientrecomandari">🩺 Recomandări</a>
+          <a href="/pacient/pacientalerte">🚨 Alerte</a>
         </nav>
-
+        <button className="logoutBtn" onClick={handleLogout}>
+  Logout
+</button>
         <div className="profile">
-          <div>MI</div>
+          <div>{initials}</div>
           <span>
-            <b>Maria Ionescu</b>
+            <b>{fullName}</b>
             Pacient
           </span>
         </div>
@@ -41,138 +119,257 @@ function PacientFisa() {
       <main className="main">
         <section className="pacient-fisa-wrapper">
           <div className="pacient-fisa-top-card">
-            <div className="pacient-fisa-avatar">MI</div>
+            <div className="pacient-fisa-avatar">{initials}</div>
 
             <div className="pacient-fisa-title">
               <p>FIȘĂ PACIENT</p>
-              <h1>Maria Ionescu</h1>
-      ▫ CNP: 2790101123456 · ☎ Telefon: 0744556677 · 🎂 71 ani
+              <h1>{fullName}</h1>
+              <span>
+                ▫ CNP: {d.cnp || "-"} · ☎ Telefon: {d.telefon || "-"} · 🎂{" "}
+                {age}
+              </span>
             </div>
           </div>
 
-          <div className="pacient-fisa-section">
-            <h2>Date generale</h2>
+          <div className="pacient-tabs">
+            <button
+              className={activeTab === "fisa" ? "active" : ""}
+              onClick={() => setActiveTab("fisa")}
+            >
+              Fișă medicală
+            </button>
 
-            <div className="pacient-fisa-grid">
-              <label>
-                Nume
-                <input value="Ionescu" readOnly />
-              </label>
-
-              <label>
-                Prenume
-                <input value="Maria" readOnly />
-              </label>
-
-              <label>
-                Sex
-                <input value="Feminin" readOnly />
-              </label>
-
-              <label>
-                Vârstă
-                <input value="71 ani" readOnly />
-              </label>
-
-              <label>
-                Telefon
-                <input value="0744556677" readOnly />
-              </label>
-
-              <label>
-                Email
-                <input value="maria.ionescu@email.com" readOnly />
-              </label>
-
-              <label className="wide">
-                Adresă
-                <input value="Timișoara, Str. Mureș nr. 8" readOnly />
-              </label>
-            </div>
+            <button
+              className={activeTab === "istoric" ? "active" : ""}
+              onClick={() => setActiveTab("istoric")}
+            >
+              Istoric consultații
+            </button>
           </div>
 
-          <div className="pacient-fisa-section">
-            <h2>Date clinice</h2>
+          {activeTab === "fisa" && (
+            <div className="pacient-tab-content">
+              <div className="pacient-fisa-section">
+                <h2>Date generale</h2>
 
-            <div className="pacient-fisa-grid">
-              <label>
-                Puls
-                <input value="78 bpm" readOnly />
-              </label>
+                <div className="pacient-fisa-grid">
+                  <label>
+                    Nume
+                    <input value={d.nume || "-"} readOnly />
+                  </label>
 
-              <label>
-                Temperatură
-                <input value="36.7°C" readOnly />
-              </label>
+                  <label>
+                    Prenume
+                    <input value={d.prenume || "-"} readOnly />
+                  </label>
 
-              <label>
-                ECG
-                <input value="ECG normal" readOnly />
-              </label>
+                  <label>
+                    Sex
+                    <input value={d.sex || "-"} readOnly />
+                  </label>
 
-              <label>
-                Alergii
-                <input value="Penicilină" readOnly />
-              </label>
+                  <label>
+                    Vârstă
+                    <input value={age} readOnly />
+                  </label>
 
-              <label className="wide">
-                Istoric medical
-                <textarea
-                  value="Episoade de tahicardie. Necesită supraveghere cardiologică și monitorizare periodică."
-                  readOnly
-                />
-              </label>
+                  <label>
+                    Telefon
+                    <input value={d.telefon || "-"} readOnly />
+                  </label>
 
-              <label className="wide">
-                Tratament
-                <textarea
-                  value="Monitorizare puls și ECG. Reevaluare cardiologică la nevoie."
-                  readOnly
-                />
-              </label>
-              
+                  <label>
+                    Email
+                    <input value={d.email || "-"} readOnly />
+                  </label>
+
+                  <label>
+                    Data nașterii
+                    <input value={formatDate(d.dataNasterii)} readOnly />
+                  </label>
+
+                  <label>
+                    CNP
+                    <input value={d.cnp || "-"} readOnly />
+                  </label>
+
+                  <label className="wide">
+                    Adresă
+                    <input value={address} readOnly />
+                  </label>
+
+                  <label>
+                    Profesie
+                    <input value={d.profesie || "-"} readOnly />
+                  </label>
+
+                  <label>
+                    Loc de muncă
+                    <input value={d.locDeMunca || "-"} readOnly />
+                  </label>
+                </div>
+              </div>
+
+              <div className="pacient-fisa-section">
+                <h2>Date clinice</h2>
+
+                <div className="pacient-fisa-grid">
+                  <label>
+                    Puls
+                    <input
+                      value={sample?.puls ? `${sample.puls} bpm` : "-"}
+                      readOnly
+                    />
+                  </label>
+
+                  <label>
+                    Temperatură
+                    <input
+                      value={
+                        sample?.temperatura ? `${sample.temperatura}°C` : "-"
+                      }
+                      readOnly
+                    />
+                  </label>
+
+                  <label>
+                    Umiditate
+                    <input
+                      value={sample?.umiditate ? `${sample.umiditate}%` : "-"}
+                      readOnly
+                    />
+                  </label>
+
+                  <label>
+                    Ultima măsurătoare
+                    <input value={formatDate(sample?.ts)} readOnly />
+                  </label>
+
+                  <label className="wide">
+                    Tratament / Recomandări
+                    <textarea
+                      value={
+                        recommendations.length > 0
+                          ? recommendations
+                              .map(
+                                (r) =>
+                                  `${r.tipActivitate || "Recomandare"} - ${
+                                    r.alteIndicatii ||
+                                    "fără indicații suplimentare"
+                                  }`
+                              )
+                              .join("\n")
+                          : "Nu există tratament sau recomandări active."
+                      }
+                      readOnly
+                    />
+                  </label>
+                </div>
+              </div>
+
+              <div className="pacient-fisa-section">
+                <h2>Recomandări medicale</h2>
+
+                {recommendations.length > 0 ? (
+                  recommendations.map((rec) => (
+                    <div
+                      className="pacient-fisa-grid recomandare-grid"
+                      key={rec.id}
+                    >
+                      <label>
+                        Tip recomandare
+                        <input
+                          value={rec.tipActivitate || "Recomandare medicală"}
+                          readOnly
+                        />
+                      </label>
+
+                      <label>
+                        Data
+                        <input
+                          value={formatDate(rec.createdAt || rec.recordedAt)}
+                          readOnly
+                        />
+                      </label>
+
+                      <label>
+                        Durată
+                        <input
+                          value={
+                            rec.durataZilnicaMinute
+                              ? `${rec.durataZilnicaMinute} minute / zi`
+                              : "Durată nespecificată"
+                          }
+                          readOnly
+                        />
+                      </label>
+
+                      <label className="wide">
+                        Indicații
+                        <textarea
+                          value={
+                            rec.alteIndicatii || "Fără indicații suplimentare."
+                          }
+                          readOnly
+                        />
+                      </label>
+                    </div>
+                  ))
+                ) : (
+                  <div className="pacient-fisa-grid">
+                    <label className="wide">
+                      Recomandări
+                      <textarea
+                        value="Nu există recomandări medicale. Recomandările vor apărea aici după consultație."
+                        readOnly
+                      />
+                    </label>
+                  </div>
+                )}
+              </div>
             </div>
-            
-          </div>
-          <div className="pacient-fisa-section">
-  <h2>Recomandări medicale</h2>
+          )}
 
-  <div className="pacient-recommendation-list">
-    <div className="pacient-recommendation-item">
-      <div className="pacient-recommendation-head">
-        <div className="pacient-recommendation-icon">🩺</div>
+          {activeTab === "istoric" && (
+            <div className="pacient-tab-content">
+              <div className="pacient-fisa-section">
+                <h2>Istoric consultații</h2>
 
-        <div>
-          <h3>Plimbare zilnică</h3>
-          <span>20 mai 2026</span>
-        </div>
-      </div>
-
-      <p>30 minute / zi</p>
-
-      <small>
-        Evitați efortul intens și monitorizați pulsul în timpul activității fizice.
-      </small>
-    </div>
-
-    <div className="pacient-recommendation-item">
-      <div className="pacient-recommendation-head">
-        <div className="pacient-recommendation-icon">⚠️</div>
-
-        <div>
-          <h3>Evitare efort intens</h3>
-          <span>18 mai 2026</span>
-        </div>
-      </div>
-
-      <p>Nespecificat</p>
-
-      <small>
-        Evitați activitățile solicitante până la următorul control.
-      </small>
-    </div>
-  </div>
-</div>
+                {consultations.length > 0 ? (
+                  consultations.map((c) => (
+                    <div className="istoric-empty" key={c.id}>
+                      <h3>Consultație - {formatDate(c.visitedAt)}</h3>
+                      <p>
+                        <b>Motiv:</b> {c.motivPrezentare || "-"}
+                      </p>
+                      <p>
+                        <b>Diagnostic:</b> {c.diagnosticIcd10Display || "-"}
+                      </p>
+                      <p>
+                        <b>Cod ICD-10:</b> {c.diagnosticIcd10Code || "-"}
+                      </p>
+                      <p>
+                        <b>Simptome:</b> {c.simptome || "-"}
+                      </p>
+                      <p>
+                        <b>Trimiteri:</b> {c.trimiteri || "-"}
+                      </p>
+                      <p>
+                        <b>Rețete:</b> {c.retete || "-"}
+                      </p>
+                    </div>
+                  ))
+                ) : (
+                  <div className="istoric-empty">
+                    <h3>Nu există consultații înregistrate</h3>
+                    <p>
+                      Consultațiile vor apărea aici după ce medicul le salvează.
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </section>
       </main>
     </div>

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import "./Login.css";
 import { useNavigate } from "react-router-dom";
-import { loginUser } from "../../api";
+import { loginUser, resetPassword } from "../../api";
 
 function Login() {
   const navigate = useNavigate();
@@ -11,7 +11,10 @@ function Login() {
 
   const [showPopup, setShowPopup] = useState(false);
   const [showResetModal, setShowResetModal] = useState(false);
-
+const [resetEmail, setResetEmail] = useState("");
+const [newPassword, setNewPassword] = useState("");
+const [confirmPassword, setConfirmPassword] = useState("");
+const [resetMessage, setResetMessage] = useState("");
   const handleLogin = async (e) => {
     e.preventDefault();
 
@@ -38,7 +41,39 @@ function Login() {
       setTimeout(() => setShowPopup(false), 3000);
     }
   };
+const handleResetPassword = async () => {
+  if (!resetEmail || !newPassword || !confirmPassword) {
+    setResetMessage("Completează toate câmpurile.");
+    return;
+  }
 
+  if (newPassword.length < 8) {
+    setResetMessage("Parola trebuie să aibă minimum 8 caractere.");
+    return;
+  }
+
+  if (newPassword !== confirmPassword) {
+    setResetMessage("Parolele nu coincid.");
+    return;
+  }
+
+  try {
+    await resetPassword(resetEmail, newPassword);
+
+    setResetMessage("Parola a fost resetată cu succes.");
+    setNewPassword("");
+    setConfirmPassword("");
+
+    setTimeout(() => {
+      setShowResetModal(false);
+      setResetMessage("");
+      setResetEmail("");
+    }, 1500);
+  } catch (error) {
+    console.log(error);
+    setResetMessage("Nu s-a putut reseta parola.");
+  }
+};
   return (
     <div className="login-page">
       <div className="login-card">
@@ -90,17 +125,29 @@ function Login() {
           <div className="reset-modal">
             <h2>Resetare parolă</h2>
 
-            <input
-              type="password"
-              placeholder="Noua parolă"
-              className="modal-input"
-            />
+<input
+  type="email"
+  placeholder="Email cont"
+  className="modal-input"
+  value={resetEmail}
+  onChange={(e) => setResetEmail(e.target.value)}
+/>
 
-            <input
-              type="password"
-              placeholder="Confirmă parola"
-              className="modal-input"
-            />
+<input
+  type="password"
+  placeholder="Noua parolă"
+  className="modal-input"
+  value={newPassword}
+  onChange={(e) => setNewPassword(e.target.value)}
+/>
+<input
+  type="password"
+  placeholder="Confirmă parola"
+  className="modal-input"
+  value={confirmPassword}
+  onChange={(e) => setConfirmPassword(e.target.value)}
+/>
+{resetMessage && <div className="login-error">{resetMessage}</div>}
 
             <div className="modal-actions">
               <button
@@ -111,13 +158,13 @@ function Login() {
                 Anulează
               </button>
 
-              <button
-                type="button"
-                className="save-btn"
-                onClick={() => setShowResetModal(false)}
-              >
-                Salvează
-              </button>
+<button
+  type="button"
+  className="save-btn"
+  onClick={handleResetPassword}
+>
+  Salvează
+</button>
             </div>
           </div>
         </div>

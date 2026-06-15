@@ -1,11 +1,23 @@
-import { useState } from "react";
 import "./admin.css";
 import { useNavigate } from "react-router-dom";
-import { createUser } from "../../api";
+import { useEffect, useState } from "react";
+import { createUser, getUsers, updateUser } from "../../api";
+import { logoutUser } from "../../api";
+
+const handleLogout = () => {
+  logoutUser();
+  window.location.href = "/login";
+};
 
 function AdminDashboard() {
   const navigate = useNavigate();
+
   const [showCreateUser, setShowCreateUser] = useState(false);
+  const [showEditUser, setShowEditUser] = useState(false);
+  const [selectedUser, setSelectedUser] = useState(null);
+
+  const [users, setUsers] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
 
   const [formData, setFormData] = useState({
     nume: "",
@@ -13,41 +25,47 @@ function AdminDashboard() {
     rol: "",
   });
 
+  const [editFormData, setEditFormData] = useState({
+    nume: "",
+    prenume: "",
+    email: "",
+    role: "",
+  });
+
+  const [createdUserInfo, setCreatedUserInfo] = useState(null);
   const [errors, setErrors] = useState({});
 
-  const normalizeText = (text) => {
-    return text
+  const [stats, setStats] = useState({
+    totalUsers: 0,
+    doctors: 0,
+    patients: 0,
+  });
+
+  const normalizeText = (text) =>
+    text
       .toLowerCase()
       .trim()
       .replace(/\s+/g, "")
       .normalize("NFD")
       .replace(/[\u0300-\u036f]/g, "");
+
+  const generateEmailFromValues = (prenume, nume) => {
+    if (!prenume || !nume) return "";
+    return `${normalizeText(prenume)}.${normalizeText(nume)}@seniorwatch.com`;
   };
 
-  const generateEmail = () => {
-    return `${normalizeText(formData.prenume)}.${normalizeText(
-      formData.nume
-    )}@seniorwatch.com`;
-  };
+  const generateEmail = () =>
+    generateEmailFromValues(formData.prenume, formData.nume);
 
- const generatePassword = () => {
-  return "Senior123!";
-};
+  const generatePassword = () => "Senior123!";
 
   const validateForm = () => {
     const newErrors = {};
 
-    if (!formData.nume.trim()) {
-      newErrors.nume = "Numele este obligatoriu";
-    }
-
-    if (!formData.prenume.trim()) {
+    if (!formData.nume.trim()) newErrors.nume = "Numele este obligatoriu";
+    if (!formData.prenume.trim())
       newErrors.prenume = "Prenumele este obligatoriu";
-    }
-
-    if (!formData.rol) {
-      newErrors.rol = "Rolul este obligatoriu";
-    }
+    if (!formData.rol) newErrors.rol = "Rolul este obligatoriu";
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -62,24 +80,57 @@ function AdminDashboard() {
     });
   };
 
+  const handleEditChange = (e) => {
+    const { name, value } = e.target;
+
+    const updated = {
+      ...editFormData,
+      [name]: value,
+    };
+
+    if (name === "nume" || name === "prenume") {
+      updated.email = generateEmailFromValues(updated.prenume, updated.nume);
+    }
+
+    setEditFormData(updated);
+  };
+
+  const loadDashboardData = async () => {
+    try {
+      const usersData = await getUsers();
+
+      setUsers(usersData);
+
+      setStats({
+        totalUsers: usersData.length,
+        doctors: usersData.filter((u) => u.role === "DOCTOR").length,
+        patients: usersData.filter((u) => u.role === "PATIENT").length,
+      });
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  useEffect(() => {
+    loadDashboardData();
+  }, []);
+
   const handleCreateUser = async () => {
     if (!validateForm()) return;
 
     const email = generateEmail();
     const password = generatePassword();
 
-    try {console.log("Date trimise:", {
-  email,
-  password,
-  role: formData.rol,
-});
+    try {
       await createUser(email, password, formData.rol);
-
-      alert(
-        `Utilizator creat cu succes!\n\nEmail: ${email}\nParolă: ${password}`
-      );
+      await loadDashboardData();
 
       setShowCreateUser(false);
+
+      setCreatedUserInfo({
+        email,
+        password,
+      });
 
       setFormData({
         nume: "",
@@ -94,8 +145,99 @@ function AdminDashboard() {
     }
   };
 
+  const openEditUserModal = (user) => {
+    const username = user.email?.split("@")[0] || "";
+    const parts = username.split(".");
+
+    const prenume = parts[0] || "";
+    const nume = parts[1] || "";
+
+    const nicePrenume =
+      prenume.charAt(0).toUpperCase() + prenume.slice(1).toLowerCase();
+    const niceNume =
+      nume.charAt(0).toUpperCase() + nume.slice(1).toLowerCase();
+
+    setSelectedUser(user);
+
+    setEditFormData({
+      nume: niceNume,
+      prenume: nicePrenume,
+      email: user.email,
+      role: user.role,
+    });
+
+    setShowEditUser(true);
+  };
+
+  const handleSaveEditUser = async () => {
+    if (!selectedUser) return;
+
+    try {
+      await updateUser(selectedUser.id, {
+        email: editFormData.email,
+        role: editFormData.role,
+      });
+
+      await loadDashboardData();
+
+      setShowEditUser(false);
+      setSelectedUser(null);
+      setEditFormData({
+        nume: "",
+        prenume: "",
+        email: "",
+        role: "",
+      });
+    } catch (error) {
+      console.log(error);
+      alert("Eroare la actualizarea utilizatorului.");
+    }
+  };
+
+  const getDisplayName = (email) => {
+    const username = email?.split("@")[0] || "utilizator";
+
+    return username
+      .split(".")
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(" ");
+  };
+
+  const getInitials = (email) =>
+    getDisplayName(email)
+      .split(" ")
+      .map((word) => word.charAt(0))
+      .join("")
+      .substring(0, 2)
+      .toUpperCase();
+
+  const formatRole = (role) => {
+    if (role === "DOCTOR") return "Medic";
+    if (role === "PATIENT") return "Pacient";
+    if (role === "ADMIN") return "Administrator";
+    return role;
+  };
+
+  const filteredUsers = users.filter((user) => {
+    const username = user.email?.split("@")[0] || "";
+    const role = formatRole(user.role).toLowerCase();
+    const search = searchTerm.toLowerCase();
+
+    return (
+      username.toLowerCase().includes(search) ||
+      user.email?.toLowerCase().includes(search) ||
+      role.includes(search)
+    );
+  });
+
   const formIsValid =
     formData.nume.trim() && formData.prenume.trim() && formData.rol;
+
+  const editFormIsValid =
+    editFormData.nume.trim() &&
+    editFormData.prenume.trim() &&
+    editFormData.email &&
+    editFormData.role;
 
   return (
     <div className="admin-app">
@@ -110,20 +252,54 @@ function AdminDashboard() {
         </div>
 
         <nav>
-          <a href="#" className="active">📊 Dashboard</a>
+          <a href="#" className="active">
+            📊 Dashboard
+          </a>
 
-          <a href="#" onClick={(e) => { e.preventDefault(); navigate("/admin/adminutilizatori"); }}>
+          <a
+            href="#"
+            onClick={(e) => {
+              e.preventDefault();
+              navigate("/admin/adminutilizatori");
+            }}
+          >
             👥 Utilizatori
           </a>
 
-          <a href="#" onClick={(e) => { e.preventDefault(); navigate("/admin/adminroluri"); }}>🛡️ Roluri</a>
+          <a
+            href="#"
+            onClick={(e) => {
+              e.preventDefault();
+              navigate("/admin/adminroluri");
+            }}
+          >
+            🛡️ Roluri
+          </a>
 
-          <a href="#" onClick={(e) => { e.preventDefault(); navigate("/admin/adminaudit"); }}>📝 Audit</a>
+          <a
+            href="#"
+            onClick={(e) => {
+              e.preventDefault();
+              navigate("/admin/adminaudit");
+            }}
+          >
+            📝 Audit
+          </a>
 
-          <a href="#" onClick={(e) => { e.preventDefault(); navigate("/admin/adminstatus"); }}>
-            🟢 Status sistem
+          <a
+            href="#"
+            onClick={(e) => {
+              e.preventDefault();
+              navigate("/admin/adminhl7");
+            }}
+          >
+            🔗 HL7 FHIR
           </a>
         </nav>
+
+        <button className="logoutBtn" onClick={handleLogout}>
+          Logout
+        </button>
 
         <div className="admin-profile">
           <div>A</div>
@@ -138,7 +314,12 @@ function AdminDashboard() {
       <main className="admin-main">
         <section className="admin-hero">
           <div className="admin-heroSearch">
-            <input placeholder="Caută utilizator, rol sau activitate..." />
+            <input
+              placeholder="Caută utilizator sau rol..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+
             <button>⌕</button>
           </div>
         </section>
@@ -146,36 +327,40 @@ function AdminDashboard() {
         <section className="admin-stats">
           <div className="admin-stat">
             <div className="admin-icon purple">👥</div>
+
             <div>
               <p>Utilizatori</p>
-              <h2>128</h2>
+              <h2>{stats.totalUsers}</h2>
               <span>total conturi platformă</span>
             </div>
           </div>
 
           <div className="admin-stat">
             <div className="admin-icon violet">🩺</div>
+
             <div>
               <p>Medici</p>
-              <h2>12</h2>
+              <h2>{stats.doctors}</h2>
               <span>conturi medicale active</span>
             </div>
           </div>
 
           <div className="admin-stat">
             <div className="admin-icon green">📱</div>
+
             <div>
               <p>Pacienți</p>
-              <h2>104</h2>
+              <h2>{stats.patients}</h2>
               <span>monitorizați în sistem</span>
             </div>
           </div>
 
           <div className="admin-stat">
             <div className="admin-icon pink">⚠</div>
+
             <div>
               <p>Probleme</p>
-              <h2>3</h2>
+              <h2>0</h2>
               <span>dispozitive inactive</span>
             </div>
           </div>
@@ -206,38 +391,36 @@ function AdminDashboard() {
                 <span>Acțiune</span>
               </div>
 
-              <div className="admin-tableRow">
-                <span className="admin-userName">
-                  <b>AP</b>
-                  Dr. Andrei Popescu
-                </span>
-                <span>andrei@clinic.ro</span>
-                <span>Medic</span>
-                <span className="admin-badge Activ">Activ</span>
-                <span className="admin-action">Editare</span>
-              </div>
+              {[...filteredUsers]
+                .reverse()
+                .slice(0, 5)
+                .map((user) => (
+                  <div className="admin-tableRow" key={user.id || user.email}>
+                    <span className="admin-userName">
+                      <b>{getInitials(user.email)}</b>
+                      <span>{getDisplayName(user.email)}</span>
+                    </span>
 
-              <div className="admin-tableRow">
-                <span className="admin-userName">
-                  <b>MI</b>
-                  Maria Ionescu
-                </span>
-                <span>maria@email.ro</span>
-                <span>Pacient</span>
-                <span className="admin-badge Activ">Activ</span>
-                <span className="admin-action">Editare</span>
-              </div>
+                    <span>{user.email}</span>
 
-              <div className="admin-tableRow">
-                <span className="admin-userName">
-                  <b>ER</b>
-                  Dr. Elena Radu
-                </span>
-                <span>elena@clinic.ro</span>
-                <span>Medic</span>
-                <span className="admin-badge Inactiv">Inactiv</span>
-                <span className="admin-action">Editare</span>
-              </div>
+                    <span>{formatRole(user.role)}</span>
+
+                    <span
+                      className={`admin-badge ${
+                        user.active ? "Activ" : "Inactiv"
+                      }`}
+                    >
+                      {user.active ? "Activ" : "Inactiv"}
+                    </span>
+
+                    <button
+                      className="admin-action"
+                      onClick={() => openEditUserModal(user)}
+                    >
+                      Editare
+                    </button>
+                  </div>
+                ))}
             </div>
           </div>
 
@@ -252,12 +435,12 @@ function AdminDashboard() {
 
               <div className="admin-role">
                 <strong>Medic</strong>
-                <span>12 conturi</span>
+                <span>{stats.doctors} conturi</span>
               </div>
 
               <div className="admin-role">
                 <strong>Pacient</strong>
-                <span>104 conturi</span>
+                <span>{stats.patients} conturi</span>
               </div>
             </div>
           </div>
@@ -274,8 +457,8 @@ function AdminDashboard() {
                 <div>
                   <h2>Utilizator nou</h2>
                   <p>
-                    Completează numele, prenumele și rolul. Emailul și parola
-                    se generează automat.
+                    Completează numele, prenumele și rolul. Emailul și parola se
+                    generează automat.
                   </p>
                 </div>
               </div>
@@ -302,6 +485,7 @@ function AdminDashboard() {
                       value={formData.nume}
                       onChange={handleChange}
                     />
+
                     {errors.nume && (
                       <span className="admin-error">{errors.nume}</span>
                     )}
@@ -316,6 +500,7 @@ function AdminDashboard() {
                       value={formData.prenume}
                       onChange={handleChange}
                     />
+
                     {errors.prenume && (
                       <span className="admin-error">{errors.prenume}</span>
                     )}
@@ -336,14 +521,19 @@ function AdminDashboard() {
 
                   <div className="admin-field">
                     <label>Rol *</label>
-                    <select name="rol" value={formData.rol} onChange={handleChange}>
+
+                    <select
+                      name="rol"
+                      value={formData.rol}
+                      onChange={handleChange}
+                    >
                       <option value="" disabled>
                         Alege rol
                       </option>
-                      <option value="ADMIN">Administrator</option>
                       <option value="DOCTOR">Medic</option>
                       <option value="PATIENT">Pacient</option>
                     </select>
+
                     {errors.rol && (
                       <span className="admin-error">{errors.rol}</span>
                     )}
@@ -380,6 +570,164 @@ function AdminDashboard() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {showEditUser && selectedUser && (
+        <div className="admin-modalOverlay">
+          <div className="admin-modal">
+            <div className="admin-modalHead">
+              <div className="admin-modalTitle">
+                <div className="admin-modalIcon">✏️</div>
+
+                <div>
+                  <h2>Editare utilizator</h2>
+                  <p>Modifică numele, prenumele și rolul utilizatorului.</p>
+                </div>
+              </div>
+
+              <button
+                className="admin-closeBtn"
+                onClick={() => {
+                  setShowEditUser(false);
+                  setSelectedUser(null);
+                  setEditFormData({
+                    nume: "",
+                    prenume: "",
+                    email: "",
+                    role: "",
+                  });
+                }}
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="admin-form">
+              <div className="admin-formSection">
+                <h3>Date utilizator</h3>
+
+                <div className="admin-formGrid">
+                  <div className="admin-field">
+                    <label>Nume *</label>
+                    <input
+                      name="nume"
+                      value={editFormData.nume}
+                      onChange={handleEditChange}
+                    />
+                  </div>
+
+                  <div className="admin-field">
+                    <label>Prenume *</label>
+                    <input
+                      name="prenume"
+                      value={editFormData.prenume}
+                      onChange={handleEditChange}
+                    />
+                  </div>
+
+                  <div className="admin-field">
+                    <label>Email generat automat</label>
+                    <input value={editFormData.email} readOnly />
+                  </div>
+
+                  <div className="admin-field">
+                    <label>Rol</label>
+
+                    <select
+                      name="role"
+                      value={editFormData.role}
+                      onChange={handleEditChange}
+                    >
+                      <option value="DOCTOR">Medic</option>
+                      <option value="PATIENT">Pacient</option>
+                      <option value="ADMIN">Administrator</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <div className="admin-formActions">
+                <button
+                  type="button"
+                  className="admin-cancelBtn"
+                  onClick={() => {
+                    setShowEditUser(false);
+                    setSelectedUser(null);
+                    setEditFormData({
+                      nume: "",
+                      prenume: "",
+                      email: "",
+                      role: "",
+                    });
+                  }}
+                >
+                  Renunță
+                </button>
+
+                <button
+                  type="button"
+                  className="admin-submitBtn"
+                  onClick={handleSaveEditUser}
+                  disabled={!editFormIsValid}
+                >
+                  Salvează modificările
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {createdUserInfo && (
+        <div className="admin-modalOverlay">
+          <div className="admin-modal admin-successModal">
+            <div className="admin-modalHead">
+              <div className="admin-modalTitle">
+                <div className="admin-modalIcon">✅</div>
+
+                <div>
+                  <h2>Utilizator creat cu succes</h2>
+                  <p>Datele de autentificare generate automat.</p>
+                </div>
+              </div>
+
+              <button
+                className="admin-closeBtn"
+                onClick={() => setCreatedUserInfo(null)}
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="admin-form">
+              <div className="admin-formSection">
+                <h3>Credentiale utilizator</h3>
+
+                <div className="admin-successFields">
+                  <div className="admin-field">
+                    <label>Email</label>
+                    <input value={createdUserInfo.email} readOnly />
+                  </div>
+
+                  <div className="admin-field">
+                    <label>Parolă</label>
+                    <input value={createdUserInfo.password} readOnly />
+                  </div>
+                </div>
+              </div>
+
+              <div className="admin-formActions">
+                <button
+                  type="button"
+                  className="admin-submitBtn"
+                  onClick={() => setCreatedUserInfo(null)}
+                >
+                  Am înțeles
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

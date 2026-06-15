@@ -9,7 +9,9 @@ import org.springframework.web.bind.annotation.*;
 import ro.seniorwatch.dto.CreateUserRequest;
 import ro.seniorwatch.dto.UserResponse;
 import ro.seniorwatch.service.UserService;
-
+import ro.seniorwatch.dto.UpdateUserRequest;
+import ro.seniorwatch.dto.UpdateUserActiveRequest;
+import java.util.UUID;
 import java.util.List;
 
 @RestController
@@ -30,4 +32,19 @@ public class UserController {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(userService.createUser(request));
     }
+    @PutMapping("/{id}")
+public ResponseEntity<UserResponse> updateUser(
+        @PathVariable UUID id,
+        @Valid @RequestBody UpdateUserRequest request
+) {
+    return ResponseEntity.ok(userService.updateUser(id, request));
+}
+
+@PatchMapping("/{id}/active")
+public ResponseEntity<UserResponse> updateUserActive(
+        @PathVariable UUID id,
+        @Valid @RequestBody UpdateUserActiveRequest request
+) {
+    return ResponseEntity.ok(userService.updateUserActive(id, request));
+}
 }

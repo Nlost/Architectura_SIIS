@@ -2,6 +2,7 @@ package ro.seniorwatch.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ro.seniorwatch.dto.*;
@@ -20,6 +21,9 @@ public class PatientService {
     private final PatientRepository patientRepository;
     private final UserRepository userRepository;
     private final DemographicsRepository demographicsRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final SensorSampleRepository sensorSampleRepository;
+    private final AuditService auditService;
 
     @Transactional(readOnly = true)
     public List<PatientResponse> listPatients(Authentication auth) {
@@ -46,6 +50,7 @@ public class PatientService {
     @Transactional
     public PatientResponse createPatient(PatientRequest request, Authentication auth) {
         String email = (String) auth.getPrincipal();
+
         User caller = userRepository.findByEmail(email)
                 .orElseThrow(() -> new NoSuchElementException("User not found"));
 
@@ -56,12 +61,36 @@ public class PatientService {
         User doctor = userRepository.findById(doctorId)
                 .orElseThrow(() -> new NoSuchElementException("Doctor not found: " + doctorId));
 
+        DemographicsDto dto = request.getDemographics();
+
+        if (dto.getEmail() == null || dto.getEmail().isBlank()) {
+            throw new IllegalArgumentException("Emailul pacientului este obligatoriu");
+        }
+
+        if (userRepository.existsByEmail(dto.getEmail())) {
+            throw new IllegalArgumentException("Există deja un utilizator cu acest email");
+        }
+
+        String rawPassword =
+                request.getPassword() != null && !request.getPassword().isBlank()
+                        ? request.getPassword()
+                        : "Senior123!";
+
+        User patientUser = User.builder()
+                .email(dto.getEmail())
+                .passwordHash(passwordEncoder.encode(rawPassword))
+                .role(UserRole.PATIENT)
+                .active(true)
+                .build();
+
+        userRepository.save(patientUser);
+
         Patient patient = Patient.builder()
                 .doctor(doctor)
                 .build();
+
         patient = patientRepository.save(patient);
 
-        DemographicsDto dto = request.getDemographics();
         Demographics demo = Demographics.builder()
                 .patient(patient)
                 .nume(dto.getNume())
@@ -79,16 +108,106 @@ public class PatientService {
                 .profesie(dto.getProfesie())
                 .locDeMunca(dto.getLocDeMunca())
                 .build();
+
         demographicsRepository.save(demo);
         patient.setDemographics(demo);
+        try {
+    auditService.log(
+            caller.getId(),
+            "CREATE",
+            "patients",
+            patient.getId(),
+            null,
+            "SUCCESS"
+    );
+} catch (Exception e) {
+    System.out.println("Audit log failed: " + e.getMessage());
+}
 
         return toResponse(patient);
     }
 
+@Transactional
+public PatientResponse updatePatient(UUID id, PatientRequest request, Authentication auth) {
+    String email = (String) auth.getPrincipal();
+
+    User caller = userRepository.findByEmail(email)
+            .orElseThrow(() -> new NoSuchElementException("User not found"));
+
+    Patient patient = patientRepository.findByIdWithDemographics(id)
+            .orElseThrow(() -> new NoSuchElementException("Patient not found: " + id));
+
+    if (caller.getRole() != UserRole.ADMIN &&
+            !patient.getDoctor().getId().equals(caller.getId())) {
+        throw new IllegalArgumentException("Pacientul nu aparține medicului autentificat");
+    }
+
+    DemographicsDto dto = request.getDemographics();
+
+    if (dto == null) {
+        throw new IllegalArgumentException("Datele pacientului sunt obligatorii");
+    }
+
+    Demographics demo = patient.getDemographics();
+
+    if (demo == null) {
+        demo = Demographics.builder()
+                .patient(patient)
+                .build();
+    }
+
+    String oldEmail = demo.getEmail();
+    String newEmail = dto.getEmail();
+
+    if (newEmail == null || newEmail.isBlank()) {
+        throw new IllegalArgumentException("Emailul pacientului este obligatoriu");
+    }
+
+if (oldEmail != null && !oldEmail.equalsIgnoreCase(newEmail)) {
+    if (userRepository.existsByEmail(newEmail)) {
+        throw new IllegalArgumentException("Există deja un utilizator cu acest email");
+    }
+
+    userRepository.findByEmail(oldEmail).ifPresent(patientUser -> {
+        patientUser.setEmail(newEmail);
+        userRepository.save(patientUser);
+    });
+}
+
+    demo.setNume(dto.getNume());
+    demo.setPrenume(dto.getPrenume());
+    demo.setEmail(newEmail);
+    demo.setTelefon(dto.getTelefon());
+    demo.setLocalitate(dto.getLocalitate());
+    demo.setStrada(dto.getStrada());
+    demo.setProfesie(dto.getProfesie());
+    demo.setLocDeMunca(dto.getLocDeMunca());
+
+    demographicsRepository.save(demo);
+    patient.setDemographics(demo);
+
+    try {
+        auditService.log(
+                caller.getId(),
+                "UPDATE",
+                "patients",
+                patient.getId(),
+                null,
+                "SUCCESS"
+        );
+    } catch (Exception e) {
+        System.out.println("Audit log failed: " + e.getMessage());
+    }
+
+    return toResponse(patient);
+}
+
     private PatientResponse toResponse(Patient p) {
         DemographicsDto demoDto = null;
+
         if (p.getDemographics() != null) {
             Demographics d = p.getDemographics();
+
             demoDto = DemographicsDto.builder()
                     .nume(d.getNume())
                     .prenume(d.getPrenume())
@@ -106,12 +225,40 @@ public class PatientService {
                     .locDeMunca(d.getLocDeMunca())
                     .build();
         }
-        return PatientResponse.builder()
-                .id(p.getId())
-                .doctorId(p.getDoctor() != null ? p.getDoctor().getId() : null)
-                .active(p.isActive())
-                .createdAt(p.getCreatedAt())
-                .demographics(demoDto)
-                .build();
+
+
+        SensorSampleDto latestSampleDto = null;
+
+SensorSample latestSample = sensorSampleRepository
+        .findFirstByBatchPatientIdOrderByTsDesc(p.getId())
+        .orElse(null);
+
+if (latestSample != null) {
+    latestSampleDto = SensorSampleDto.builder()
+            .ts(latestSample.getTs())
+            .puls(latestSample.getPuls())
+            .spo2(latestSample.getSpo2())
+            .temperatura(latestSample.getTemperatura())
+            .umiditate(latestSample.getUmiditate())
+            .build();
+}
+
+return PatientResponse.builder()
+        .id(p.getId())
+        .doctorId(p.getDoctor() != null ? p.getDoctor().getId() : null)
+        .active(p.isActive())
+        .createdAt(p.getCreatedAt())
+        .demographics(demoDto)
+        .latestSample(latestSampleDto)
+        .build();
     }
+    @Transactional(readOnly = true)
+public PatientResponse getMyPatient(Authentication auth) {
+    String email = (String) auth.getPrincipal();
+
+    Patient patient = patientRepository.findByDemographicsEmail(email)
+            .orElseThrow(() -> new NoSuchElementException("Patient not found for email: " + email));
+
+    return toResponse(patient);
+}
 }

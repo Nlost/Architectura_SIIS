@@ -15,4 +15,5 @@ public class PatientResponse {
     private boolean active;
     private OffsetDateTime createdAt;
     private DemographicsDto demographics;
+    private SensorSampleDto latestSample;
 }

@@ -8,7 +8,9 @@ import ro.seniorwatch.dto.LoginResponse;
 import ro.seniorwatch.entity.User;
 import ro.seniorwatch.repository.UserRepository;
 import ro.seniorwatch.security.JwtUtil;
-
+import org.springframework.transaction.annotation.Transactional;
+import ro.seniorwatch.dto.ResetPasswordRequest;
+import ro.seniorwatch.entity.User;
 @Service
 @RequiredArgsConstructor
 public class AuthService {
@@ -37,4 +39,17 @@ public class AuthService {
                 .email(user.getEmail())
                 .build();
     }
+
+    @Transactional
+public void resetPassword(ResetPasswordRequest request) {
+    User user = userRepository.findByEmail(request.getEmail())
+            .orElseThrow(() -> new IllegalArgumentException("Utilizatorul nu există"));
+
+    if (request.getNewPassword() == null || request.getNewPassword().length() < 8) {
+        throw new IllegalArgumentException("Parola trebuie să aibă minimum 8 caractere");
+    }
+
+    user.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
+    userRepository.save(user);
+}
 }

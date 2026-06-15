@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.*;
 import ro.seniorwatch.dto.LoginRequest;
 import ro.seniorwatch.dto.LoginResponse;
 import ro.seniorwatch.service.AuthService;
+import ro.seniorwatch.dto.ResetPasswordRequest;
 
 @RestController
 @RequestMapping("/auth")
@@ -22,4 +23,9 @@ public class AuthController {
         String clientIp = httpRequest.getRemoteAddr();
         return ResponseEntity.ok(authService.login(request, clientIp));
     }
+@PostMapping("/reset-password")
+public ResponseEntity<Void> resetPassword(@RequestBody ResetPasswordRequest request) {
+    authService.resetPassword(request);
+    return ResponseEntity.ok().build();
+}
 }

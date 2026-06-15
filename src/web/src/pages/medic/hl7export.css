@@ -1,0 +1,234 @@
+@import "../../App.css";
+
+.hl7-content {
+  grid-template-columns: 1fr;
+  width: 100%;
+}
+.hl7-content .panel {
+  width: 100%;
+  background: #ffffff;
+  border: 1px solid rgba(109, 40, 217, 0.12);
+}
+
+.hl7-tools {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.hl7-subtitle {
+  margin: 6px 0 0;
+  max-width: 560px;
+  color: #7c6aa7;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.hl7-table {
+  margin-top: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.hl7-row {
+  display: grid;
+  align-items: center;
+  gap: 14px;
+  grid-template-columns: 56px 2fr 1.4fr 0.9fr 0.8fr;
+  width: 100%;
+  min-height: 64px;
+  padding: 0 18px;
+  border-radius: 14px;
+  background: #ffffff;
+  color: #1a093d;
+  font-weight: 900;
+  border: 1px solid #e5d8ff;
+  box-shadow: 0 10px 28px rgba(83, 47, 147, 0.06);
+  transition: 0.2s ease;
+  cursor: pointer;
+}
+.hl7-row:hover {
+  background: #f5efff;
+  border-color: #c4b5fd;
+  transform: translateY(-1px);
+}
+.hl7-row.selected {
+  background: #f3ecff;
+  border-color: #a78bfa;
+  box-shadow: 0 10px 28px rgba(109, 40, 217, 0.16);
+}
+.hl7-row.hl7-header {
+  min-height: 48px;
+  background: #1a093d;
+  border-color: #1a093d;
+  color: #e9d5ff;
+  font-size: 13px;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  cursor: default;
+}
+.hl7-row.hl7-header:hover {
+  transform: none;
+}
+.hl7-check {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+}
+.hl7-check input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  accent-color: #6d28d9;
+}
+.hl7-row .patientName {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.hl7-row .patientName b {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  color: #ffffff;
+  font-size: 13px;
+}
+.hl7-row .patientName {
+  color: #13072f;
+  font-weight: 900;
+}
+.hl7-row .patientName b {
+  background: linear-gradient(135deg, #7c3aed, #5b21b6);
+}
+.hl7-row .cnpText {
+  color: #7c6aa7;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.2px;
+}
+
+.hl7-rowActions {
+  display: flex;
+  gap: 8px;
+}
+.hl7-rowBtn {
+  border: none;
+  padding: 10px 14px;
+  border-radius: 13px;
+  font-weight: 1000;
+  cursor: pointer;
+  transition: 0.2s ease;
+  color: white;
+}
+.hl7-rowBtn:hover {
+  transform: translateY(-2px);
+  filter: brightness(0.96);
+}
+.hl7-rowBtn.view {
+  background: #6d28d9;
+  box-shadow: 0 10px 22px rgba(109, 40, 217, 0.22);
+}
+.hl7-rowBtn.export {
+  background: #10b981;
+  box-shadow: 0 10px 22px rgba(16, 185, 129, 0.2);
+}
+
+.hl7-previewBlock {
+  margin-top: 24px;
+}
+.hl7-previewHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.hl7-previewHead h2 {
+  margin: 0;
+  color: #1a093d;
+}
+
+.hl7-tools .hl7-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 48px;
+  padding: 0 22px;
+  margin: 0;
+  border: none;
+  border-radius: 14px;
+  font-size: 14px;
+  font-weight: 900;
+  line-height: 1;
+  white-space: nowrap;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  cursor: pointer;
+  transition: 0.2s ease;
+  color: #ffffff;
+}
+.hl7-tools .hl7-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.hl7-tools .hl7-btn:not(:disabled):hover {
+  transform: translateY(-2px);
+  filter: brightness(0.96);
+}
+.hl7-tools .hl7-btn.regen {
+  background: #f8f3ff;
+  color: #5b21b6;
+  border: 1px solid #cdb8ff;
+}
+.hl7-tools .hl7-btn.copy {
+  background: #10b981;
+  color: #ffffff;
+  box-shadow: 0 10px 22px rgba(16, 185, 129, 0.2);
+}
+.hl7-tools .hl7-btn.download {
+  background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+  color: #ffffff;
+  box-shadow: 0 10px 22px rgba(109, 40, 217, 0.22);
+}
+
+.hl7-status {
+  margin-top: 18px;
+  padding: 18px 22px;
+  border-radius: 14px;
+  background: #f5efff;
+  border: 1px solid #d8caff;
+  color: #5b21b6;
+  font-weight: 800;
+}
+.hl7-status.hl7-error {
+  background: #ffd1dc;
+  border-color: #fb7185;
+  color: #be123c;
+}
+
+.hl7-xml-preview {
+  margin-top: 18px;
+  max-height: 560px;
+  overflow: auto;
+  padding: 22px;
+  border-radius: 16px;
+  background: #1a093d;
+  border: 1px solid #e5d8ff;
+  box-shadow: 0 10px 28px rgba(83, 47, 147, 0.1);
+}
+.hl7-xml-preview code {
+  display: block;
+  white-space: pre;
+  font-family: "Consolas", "Fira Code", "Courier New", monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  color: #e9d5ff;
+}
