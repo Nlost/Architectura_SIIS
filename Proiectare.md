@@ -32,7 +32,7 @@ monofont: "DejaVu Sans Mono"
 | Rol | Membru | Componentă atribuită |
 |---|---|---|
 | Programator-șef | Balan Dan | Backend Cloud (module2-cloud), integrare HL7/FHIR, coordonare tehnică |
-| Ajutor programator-șef | Ardelean Marius | Infrastructură Azure, deployment, observabilitate |
+| Ajutor programator-șef | Ardelean Marius | Infrastructură AWS, deployment, observabilitate |
 | Secretar / Manager | Balan Cristina | Documentație, planificare, avizare |
 | Programator | Mathe Alexandra | Firmware ESP32 (module4-esp32) |
 | Programator | Morgovan Raluca | Interfață web (module1-web) — partea medic |
@@ -48,23 +48,23 @@ Matricea de responsabilități respectă principiul „o componentă → un resp
 
 ### Descriere succintă
 
-SeniorWatch este un sistem distribuit pe **patru straturi fizice** interconectate printr-un **Cloud Azure central**.
+SeniorWatch este un sistem distribuit pe **patru straturi fizice** interconectate printr-un **Cloud AWS central**.
 
 Fluxuri principale:
 
 | Sursă | Destinație | Protocol / canal | Scop |
 |---|---|---|---|
 | ESP32 + senzori | Android mobil | BLE (GATT) | transmisie cadre de măsurători |
-| Android mobil | Cloud Azure | HTTPS + JWT | upload batch măsurători, alarme |
-| Web medic | Cloud Azure | HTTPS + JWT | vizualizare și management clinic |
-| Cloud Azure | Sistem MF extern | FHIR R4 | scrisori medicale outbound |
-| Sistem MF extern | Cloud Azure | HL7 v2.5 | referral inbound |
+| Android mobil | Cloud AWS | HTTPS + JWT | upload batch măsurători, alarme |
+| Web medic | Cloud AWS | HTTPS + JWT | vizualizare și management clinic |
+| Cloud AWS | Sistem MF extern | FHIR R4 | scrisori medicale outbound |
+| Sistem MF extern | Cloud AWS | HL7 v2.5 | referral inbound |
 
 Topologie logică (rezumat):
 
-- Lanțul operațional principal: ESP32 + senzori -> Android mobil -> Cloud Azure.
-- Interfața medicală: Web medic <-> Cloud Azure (acces securizat cu JWT).
-- Interoperabilitate externă: Cloud Azure <-> Sistem MF extern prin HL7 v2.5 / FHIR R4.
+- Lanțul operațional principal: ESP32 + senzori -> Android mobil -> Cloud AWS.
+- Interfața medicală: Web medic <-> Cloud AWS (acces securizat cu JWT).
+- Interoperabilitate externă: Cloud AWS <-> Sistem MF extern prin HL7 v2.5 / FHIR R4.
 
 Sistemul urmează un model arhitectural hibrid:
 
@@ -79,7 +79,7 @@ Sistemul urmează un model arhitectural hibrid:
 | ESP32 | Microcontroller + peripheral BLE (GATT server) | C/C++ (Arduino / ESP-IDF) | PlatformIO / VS Code |
 | Android | MVVM + Coordinator | Kotlin, Android SDK, Jetpack (Room, WorkManager), BLE API | Android Studio |
 | Cloud | Three-tier (Controller → Service → Repository) | Java Spring Boot / ASP.NET Core, REST, JWT | IntelliJ IDEA / VS 2022 |
-| Bază de date | Relațional normalizat | **Azure SQL Database** | Azure Data Studio / SSMS |
+| Bază de date | Relațional normalizat | **Amazon RDS PostgreSQL** | pgAdmin / DBeaver |
 | Web | SPA + REST client | React/Angular, TypeScript | VS Code |
 | Integrare externă | Message-based | HL7 v2.5 (inbound), FHIR R4 (outbound) | HAPI FHIR / test harness |
 
@@ -89,7 +89,7 @@ Sistemul urmează un model arhitectural hibrid:
 |---|---|---|
 | ESP32 | FreeRTOS (sub ESP-IDF) | două task-uri: achiziție senzori @ 10 Hz, BLE GATT |
 | Android | Android 10+ (API 29+) | foreground service pentru BLE; WorkManager pentru upload |
-| Cloud | Linux (Azure App Service) | containerizat; scalare verticală/orizontală configurabilă |
+| Cloud | Linux (AWS Elastic Beanstalk) | containerizat; scalare verticală/orizontală configurabilă |
 | Web | browser-agnostic | Chrome/Edge/Firefox — versiuni din ultimii 2 ani |
 
 ### Schema-bloc a arhitecturii (uniformitate cu Specificațiile)
@@ -98,7 +98,7 @@ Schema-bloc de ansamblu (inclusă direct în acest document):
 
 ```text
                      +--------------------------------+
-                     |         Cloud Azure            |
+                     |         Cloud AWS            |
                      |  Auth | Ingestion | Alerts     |
                      |  Patients | Visits | Reports   |
                      +----------------+---------------+
@@ -111,13 +111,13 @@ Schema-bloc de ansamblu (inclusă direct în acest document):
 
 +--------------------+      BLE GATT      +--------------------+
 |   ESP32 + senzori  |<------------------>|  Android pacient   |
-| ECG, SpO2, temp.   |                    | upload + offline   |
+| ECG, puls, temp.   |                    | upload + offline   |
 +--------------------+                    +---------+----------+
                                                     |
                                                     | HTTPS + JWT
                                                     v
                                            +--------------------+
-                                           |    Cloud Azure     |
+                                           |    Cloud AWS     |
                                            +---------+----------+
                                                      |
                                                      | HL7 v2 / FHIR R4
@@ -154,7 +154,7 @@ Pentru **aplicația Android (pacient)**:
 Login pacient
  └── Home
      ├── Status dispozitiv (conectat / deconectat / baterie)
-     ├── Ultimele măsurători (puls, SpO2, temperatură)
+     ├── Ultimele măsurători (puls, temperatură)
      ├── Jurnal alarme locale
      ├── Recomandări primite (Recommendation)
      └── Setări (permisiuni BLE, sincronizare)
@@ -186,7 +186,7 @@ Referință documentară   : <descriere inclusă în document>
 |---|---|
 | Responsabilitate | Achiziție semnale fiziologice și ambientale; emitere cadre BLE la 10 s |
 | Tehnologie | C/C++ pe ESP32 (FreeRTOS), BLE GATT server |
-| Intrări | Semnal analog ECG, date I²C de la MAX30100 (puls/SpO2), date 1-wire/digitale de la DHT11 (temperatură/umiditate), comenzi BLE pe caracteristica CONTROL |
+| Intrări | Semnal analog ECG, date I²C de la sen-11574 (puls), date 1-wire/digitale de la DHT11 (temperatură/umiditate), comenzi BLE pe caracteristica CONTROL |
 | Prelucrări | Buffer circular ECG (80 eșantioane / fereastră 10 s); calibrare offset; compunerea structurii SensorFrameWire (178 octeți) |
 | Ieșiri | SensorFrame prin NOTIFY pe caracteristica SENSOR_FRAME; flag leadOff pe LEAD_OFF |
 | Interacțiuni | Android (BLE GATT central) |
@@ -221,7 +221,7 @@ Referință documentară   : <descriere inclusă în document>
 | Atribut | Valoare |
 |---|---|
 | Responsabilitate | API REST central, autentificare, persistență, ingestie idempotentă, HL7/FHIR |
-| Tehnologie | Spring Boot / ASP.NET Core, Azure App Service, Azure SQL, JWT Bearer |
+| Tehnologie | Spring Boot, AWS Elastic Beanstalk, RDS PostgreSQL, JWT Bearer |
 | Intrări | Apeluri REST din mobil și web; mesaje HL7 v2 inbound; evenimente FHIR |
 | Prelucrări | Autorizare pe roluri (ADMIN/DOCTOR/PATIENT); validare DTO; deduplicare pe batchId; generare AlertEvent; transformare consultație → Bundle FHIR |
 | Ieșiri | Răspunsuri REST (IngestionAck, PatientDetail, MeasurementSeries etc.); Bundle FHIR outbound către MF |
@@ -384,7 +384,7 @@ Schemă integrată a canalelor (inclusă direct):
 
 ### Schema generală (logică)
 
-Baza de date relațională (Azure SQL) este organizată în grupe tematice:
+Baza de date relațională (RDS PostgreSQL) este organizată în grupe tematice:
 
 1. **Securitate & audit:** `users`, `roles`, `role_assignments`, `permissions`, `audit_events`.
 2. **Pacient & demografie:** `patients`, `demographics`, `medical_records`, `patient_identification`.
@@ -485,7 +485,6 @@ Câmpuri:
 - Câmp: batch_id; Tip: VARCHAR(64); Restricții: FK → measurement_batches.batch_id
 - Câmp: ts; Tip: DATETIME2(3); Restricții: NOT NULL, INDEX
 - Câmp: puls; Tip: SMALLINT; Restricții: 0–300
-- Câmp: spo2; Tip: TINYINT; Restricții: 0–100
 - Câmp: temperatura; Tip: DECIMAL(4,1)
 - Câmp: umiditate; Tip: DECIMAL(4,1)
 - Câmp: ecg_blob; Tip: VARBINARY(MAX); Restricții: opțional (stocare ECG 10 s)
@@ -565,10 +564,10 @@ Câmpuri:
 
 | Conținut | Tip stocare | Format |
 |---|---|---|
-| raw_message HL7 inbound | coloană NVARCHAR(MAX) + opțional Azure Blob pentru arhivă | text ER7 |
-| bundle_json FHIR outbound | coloană NVARCHAR(MAX) | JSON |
-| rapoarte generate (PDF/CSV) | Azure Blob Storage, container reports/ | PDF / CSV |
-| log-uri tehnice | Azure Application Insights | structurat |
+| raw_message HL7 inbound | coloană TEXT + opțional Amazon S3 pentru arhivă | text ER7 |
+| bundle_json FHIR outbound | coloană TEXT | JSON |
+| rapoarte generate (PDF/CSV) | Amazon S3, bucket seniorwatch-reports | PDF / CSV |
+| log-uri tehnice | Amazon CloudWatch Logs | structurat |
 
 ***
 \newpage

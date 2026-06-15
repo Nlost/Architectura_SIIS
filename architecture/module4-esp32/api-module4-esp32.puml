@@ -16,7 +16,7 @@ skinparam PackageBorderColor #999999
 note as CONTRACT
   == Responsabilitatea modulului ==
   Firmware C++/Arduino pe ESP32 care:
-   1) initializeaza placa si senzorii (MAX30100 puls/SpO2, AD8232 ECG, DHT11 umid/temp)
+   1) initializeaza placa si senzorii (sen-11574 puls, AD8232 ECG, DHT11 umid/temp)
    2) citeste toti senzorii in cicluri de ~10 secunde
    3) impacheteaza rezultatele intr-un SensorFrame (vezi mai jos)
    4) trimite cadrul prin BLE GATT (notify) catre aplicatia Android
@@ -24,7 +24,7 @@ note as CONTRACT
   == Ce NU face modulul ==
    - NU agregheaza pe 30 s si NU face medii - asta face Android
    - NU evalueaza alarme - rulele nu ajung pe ESP
-   - NU vorbeste direct cu Azure / internetul
+   - NU vorbeste direct cu AWS / internetul
    - NU stocheaza nimic persistent
 
   == Granita de iesire - catre Android (BLE) ==
@@ -46,7 +46,7 @@ note as CONTRACT
    Cerinte indirecte respectate la nivelul modulului:
     - seqNumber + timestampMs pe fiecare SensorFrame ->
       suporta versionarea (EuroRec 5, 32) odata ce cadrul
-      ajunge si este persistat in Azure SQL.
+      ajunge si este persistat in RDS PostgreSQL.
     - Identificare unica a dispozitivului prin MAC BLE
       (numele advertising WH-<last4>), care se mapeaza la
       sensorKitId si la pacient (EuroRec 31, 38).
@@ -60,7 +60,6 @@ end note
 package "Tipuri interne (valori)" #F5F5F5 {
   class PulseOxReading <<ValueObject>> {
     heartRateBpm : uint16_t
-    spO2Percent  : float
     validReading : bool
   }
   class EcgSample <<ValueObject>> {
@@ -109,9 +108,9 @@ package "Board setup" #E3F2FD {
 ' ============================================================
 package "Drivere senzor" #E8F5E9 {
   class PulseOxSensor <<Module>> {
-    ' MAX30100 pe I2C (0x57). Masoara puls + SpO2.
+    ' sen-11574 pe I2C (0x57). Masoara puls.
     + init() : bool
-    + readHeartRateAndSpO2() : PulseOxReading
+    + readHeartRate() : PulseOxReading
     + singleMeasurementCycle() : PulseOxReading
     + setLedCurrent(irCurrent: uint8_t, redCurrent: uint8_t) : void
   }

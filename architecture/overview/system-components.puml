@@ -11,16 +11,16 @@ package "Modul purtabil" {
   [ESP32 + senzori\nECG, umiditate, temperatură, puls] as ESP
 }
 
-cloud "Microsoft Azure\nComponentă cloud" as AZURE {
+cloud "Amazon Web Services (AWS)\nComponentă cloud" as AWS {
   package "API " {
-    [REST API\n(App Service / Functions)] as API
+    [REST API\n(Elastic Beanstalk)] as API
   }
   package "Date" {
-    database "Azure SQL\n(fișe, consultații,\nreguli alarme)" as SQL
+    database "RDS PostgreSQL\n(fișe, consultații,\nreguli alarme)" as SQL
   }
   package "Opțional" {
-    [Notification Hubs\n(push Android)] as NH
-    [Key Vault] as KV
+    [SNS\n(push Android)] as SNS
+    [Secrets Manager] as SM
   }
 }
 
@@ -33,8 +33,8 @@ ESP -down-> MOB : Bluetooth LE\n(măsurători ~10 s)
 MOB -down-> API : HTTPS\ningestie ~30 s\n+ alarmă asincronă
 WEB -down-> API : HTTPS\nfișă, grafice, rapoarte
 API -down-> SQL : CRUD / istoric
-API ..> NH : notificări (opțional)
-API ..> KV : secrete
+API ..> SNS : notificări (opțional)
+API ..> SM : secrete
 API ..> HL7 : mesaje trimitere (intrare)
 API ..> FHIR : scrisoare medicală (ieșire)
 

@@ -1,0 +1,50 @@
+@startuml aws-deployment
+!theme plain
+title Deployment — referință AWS (wearable health)
+
+node "Amazon Web Services (AWS)" {
+
+  node "VPC seniorwatch-vpc (eu-central-1)" {
+
+    node "Elastic Beanstalk" as eb {
+      artifact "API Web App\n(Docker / Spring Boot)" as api
+    }
+
+    database "RDS PostgreSQL\n(seniorwatch-postgres)" as dbsql {
+      artifact "Tabele: users, doctors_patients,\npatients, visits, recommendations,\nalarm_rules, measurements, alerts..."
+    }
+
+    node "Supporting" {
+      storage "S3 Bucket\n(seniorwatch-reports)" as s3
+      artifact "CloudWatch Logs" as cw
+      artifact "AWS Secrets Manager" as sm
+    }
+
+    node "Integrare (opțional)" {
+      artifact "Conector HL7 / FHIR" as fhir
+      artifact "SNS Topics\n(mobile-alerts, ops-alerts)" as sns
+    }
+  }
+}
+
+node "Utilizatori" {
+  actor "Medic / Pacient\n(browser)" as user
+  node "Android\n(app mobilă)" as and
+}
+
+node "Edge" {
+  artifact "ESP32\nmodul inteligent" as esp
+}
+
+user --> api : HTTPS
+and --> api : HTTPS\n(ingestie, sync)
+api --> dbsql : PostgreSQL
+api --> sm : secrete
+api --> cw : telemetrie
+api --> s3 : fișiere (rapoarte)
+api --> fhir : HL7/FHIR
+api --> sns : push (opțional)
+esp ..> and : BLE
+
+
+@enduml

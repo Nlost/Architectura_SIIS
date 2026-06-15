@@ -1,7 +1,7 @@
 # Arhitectură — sistem purtabil de supraveghere a stării de sănătate
 
 Documentația este aliniată la tema tehnică (Clinica „Sănătatea noastră", vers. 1.1, 14.02.2026).
-Componenta cloud este proiectată pentru **Microsoft Azure**.
+Componenta cloud este proiectată pentru **Amazon Web Services (AWS)**.
 
 ---
 
@@ -16,13 +16,13 @@ docs/architecture/
 │
 ├── overview/                      # Diagrame de ansamblu ale întregului sistem
 │   ├── system-components.puml     # Componente: web, cloud, mobil, ESP32
-│   ├── azure-deployment.puml      # Deployment pe Azure (resurse, legături)
+│   ├── aws-deployment.puml        # Deployment pe AWS (resurse, legături)
 │   └── sequence-measurement-sync.puml  # Secvență: ESP32 → Android → API → SQL
 │
 ├── module1-web/                   # Aplicație web (medic + pacient)
 │   └── api-module1-web.puml       # Servicii <<Service>> + contract modul (self-contained)
 │
-├── module2-cloud/                 # Componentă cloud — Azure App Service
+├── module2-cloud/                 # Componentă cloud — AWS Elastic Beanstalk
 │   ├── api-module2-cloud.puml     # Controller + Service per domeniu + contract modul
 │   └── openapi-cloud.yaml         # OpenAPI 3.0 (Swagger / Postman)
 │
@@ -69,21 +69,21 @@ docs/architecture/
 
 ---
 
-## Cloud pe Azure (referință scurtă)
+## Cloud pe AWS (referință scurtă)
 
-| Cerință (temă) | Azure (indicativ) |
-|----------------|-------------------|
-| Utilizatori, asocieri medic–pacient | Entra ID B2C / B2B + tabele rol în SQL |
+| Cerință (temă) | AWS (indicativ) |
+|----------------|-----------------|
+| Utilizatori, asocieri medic–pacient | Cognito / JWT + tabele rol în RDS PostgreSQL |
 | Izolare date per medic | Autorizare API + filtru `doctor_id` |
 | Pacient ↔ smartphone ↔ senzori | `device_id` unic în DB |
-| Fișă, consultații, reguli | **Azure SQL** + API (App Service sau Functions) |
+| Fișă, consultații, reguli | **RDS PostgreSQL** + API (Elastic Beanstalk) |
 | Ingestie de la mobil | `POST /ingestion/*`, mesaje idempotente (`batch_id`) |
-| Push opțional | **Notification Hubs** |
-| HL7 / FHIR | Endpoint dedicat; opțional **Azure API for FHIR** |
+| Push opțional | **SNS** |
+| HL7 / FHIR | Endpoint dedicat; conector HL7/FHIR |
 
 **Fluxuri:** batch măsurători ~30 s (din ferestre 10 s); alarmă asincronă imediat la prag; TLS + JWT; audit pe HL7/FHIR.
 
-**Diagrame legate:** `overview/azure-deployment.puml`, `overview/sequence-measurement-sync.puml`.
+**Diagrame legate:** `overview/aws-deployment.puml`, `overview/sequence-measurement-sync.puml`.
 
 ---
 
@@ -92,9 +92,9 @@ docs/architecture/
 | Modul | Folder | Rol |
 |-------|--------|-----|
 | Aplicație web | `module1-web/` | Fișă pacient, consultații ICD-10, recomandări, alarme, grafice, HL7/FHIR |
-| Cloud Azure | `module2-cloud/` | REST API, autentificare, stocare, ingestie, recomandări/alarme spre mobil |
+| Cloud AWS | `module2-cloud/` | REST API, autentificare, stocare, ingestie, recomandări/alarme spre mobil |
 | Aplicație mobilă Android | `module3-mobile/` | BLE de la ESP32, agregare 30 s, burst accelerometru, alarme locale, offline |
-| Modul inteligent ESP32 | `module4-esp32/` | ECG, puls/SpO2, umiditate, temperatură; cadru BLE la 10 s |
+| Modul inteligent ESP32 | `module4-esp32/` | ECG, puls, umiditate, temperatură; cadru BLE la 10 s |
 | **Integrare** | `integration/` | **Lipirea** celor patru module: BLE, REST, HL7/FHIR, fluxuri end-to-end |
 
 ---

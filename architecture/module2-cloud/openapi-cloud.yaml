@@ -2,14 +2,14 @@ openapi: "3.0.3"
 info:
   title: Wearable Health System — Cloud REST API
   description: |
-    API-ul componentei cloud (Azure App Service) pentru sistemul purtabil
+    API-ul componentei cloud (AWS Elastic Beanstalk) pentru sistemul purtabil
     de supraveghere a stării de sănătate — Clinica „Sănătatea noastră".
     Accesibil de aplicația web și aplicația mobilă Android.
   version: "1.0.0"
 
 servers:
-  - url: https://<app-name>.azurewebsites.net/api/v1
-    description: Azure App Service (de completat cu numele real)
+  - url: https://seniorwatch-dev.eba-g2g95ywt.eu-central-1.elasticbeanstalk.com/api/v1
+    description: AWS Elastic Beanstalk (dev)
 
 security:
   - bearerAuth: []

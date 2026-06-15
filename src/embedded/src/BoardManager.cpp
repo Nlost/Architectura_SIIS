@@ -36,7 +36,7 @@ bool BoardManager::initSensors()
     Serial.println("[BoardManager] Init sensors...");
 
     // aici doar stub pentru acum:
-    // MAX30100, AD8232, DHT11 vor veni ulterior
+    // sen-11574, AD8232, DHT11 vor veni ulterior
 
     delay(500);
 

@@ -20,7 +20,7 @@ note as CONTRACT
    2) citeste accelerometrul telefonului la ~1 Hz
    3) agregheaza 3 ferestre de 10 s intr-un UplinkBatch de 30 s
    4) evalueaza local regulile de alarma si emite AlertEvent (cand depaseste prag)
-   5) trimite HTTPS catre cloud-ul Azure (batch masuratori + alarme)
+   5) trimite HTTPS catre cloud-ul AWS (batch masuratori + alarme)
    6) primeste de la cloud recomandari si reguli (cache local)
    7) afiseaza la pacient: status conexiune, recomandari, alarme locale
 
@@ -33,7 +33,7 @@ note as CONTRACT
    SensorFrame binar pe characteristic 0000FF02-... (NOTIFY)
    Vezi: integration/ble-esp32-android.md
 
-  == Granita de iesire - catre cloud Azure (HTTPS + JWT) ==
+  == Granita de iesire - catre cloud AWS (HTTPS + JWT) ==
    POST /ingestion/measurements  (UplinkBatch la 30 s, idempotent pe batchId)
    POST /ingestion/alerts        (AlertEvent asincron la prag)
    GET  /patients/me/recommendations
@@ -126,7 +126,7 @@ package "Evaluare alarme (local)" #FCE4EC {
 }
 
 ' ============================================================
-' CLOUD SYNC - granita de iesire catre Azure
+' CLOUD SYNC - granita de iesire catre AWS
 ' ============================================================
 package "Sincronizare cloud (HTTPS)" #F3E5F5 {
   class CloudSyncService <<Service>> {

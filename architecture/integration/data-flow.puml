@@ -15,7 +15,6 @@ object "SensorFrame\n(firmware, binar BLE)" as F1 #FFECB3 {
   seqNumber     : uint32
   timestampMs   : uint32 (ms de la boot)
   heartRateBpm  : uint16
-  spO2Percent   : uint8
   humidityX10   : uint16
   tempCX10      : int16
   ecgSamples    : uint16[0..80]
@@ -67,7 +66,7 @@ F1 -right-> F2 : parseSensorFrame()\n(LITTLE_ENDIAN,\nclock corectat\nla timpul 
 
 F2 -right-> F3 : aggregateWindow(30 s)\n- mediere puls/temp/umid\n- pastrare ECG reprezentativ\n- atasare burst accel (~30 esantioane)\n- generare batchId = UUID
 
-F3 -right-> F4 : POST /ingestion/measurements\n- verif idempotenta batchId\n- validare range (temp, puls)\n- INSERT in Azure SQL
+F3 -right-> F4 : POST /ingestion/measurements\n- verif idempotenta batchId\n- validare range (temp, puls)\n- INSERT in RDS PostgreSQL
 
 F2 .down.> A1 : AlarmEvaluatorService\n(daca depaseste\nNormalRangeProfile)
 A1 -down-> F4 : POST /ingestion/alerts\n(flux asincron,\nNOT blocheaza batch-ul)
@@ -92,7 +91,7 @@ note bottom of F3
 end note
 
 note bottom of F4
-  Persistat in Azure SQL
+  Persistat in RDS PostgreSQL
   prin IngestionService.
   MonitoringService citeste
   pentru grafice / rapoarte.
