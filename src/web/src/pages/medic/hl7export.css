@@ -13,6 +13,8 @@
 .hl7-tools {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
   gap: 12px;
 }
 
@@ -153,36 +155,47 @@
   color: #1a093d;
 }
 
-.hl7-btn {
+.hl7-tools .hl7-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
   height: 48px;
-  padding: 0 20px;
+  padding: 0 22px;
+  margin: 0;
   border: none;
   border-radius: 14px;
   font-size: 14px;
   font-weight: 900;
+  line-height: 1;
+  white-space: nowrap;
+  flex-shrink: 0;
+  box-sizing: border-box;
   cursor: pointer;
   transition: 0.2s ease;
   color: #ffffff;
 }
-.hl7-btn:disabled {
+.hl7-tools .hl7-btn:disabled {
   opacity: 0.55;
   cursor: not-allowed;
 }
-.hl7-btn:not(:disabled):hover {
+.hl7-tools .hl7-btn:not(:disabled):hover {
   transform: translateY(-2px);
   filter: brightness(0.96);
 }
-.hl7-btn.regen {
+.hl7-tools .hl7-btn.regen {
   background: #f8f3ff;
   color: #5b21b6;
   border: 1px solid #cdb8ff;
 }
-.hl7-btn.copy {
+.hl7-tools .hl7-btn.copy {
   background: #10b981;
+  color: #ffffff;
   box-shadow: 0 10px 22px rgba(16, 185, 129, 0.2);
 }
-.hl7-btn.download {
+.hl7-tools .hl7-btn.download {
   background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+  color: #ffffff;
   box-shadow: 0 10px 22px rgba(109, 40, 217, 0.22);
 }
 
