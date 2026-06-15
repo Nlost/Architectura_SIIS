@@ -17,4 +17,6 @@ public class SensorSampleDto {
     private Short spo2;
     private BigDecimal temperatura;
     private BigDecimal umiditate;
+    // ECG raw ADC samples encoded as base64 (little-endian uint16 per sample).
+    private String ecgBytes;
 }

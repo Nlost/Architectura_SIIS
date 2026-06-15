@@ -437,6 +437,30 @@ export async function archiveAllergy(allergyId) {
   return text ? JSON.parse(text) : {};
 }
 
+export async function getEcgSeries(patientId, limit = 40) {
+  const token = localStorage.getItem("sw_token");
+
+  const response = await fetch(
+    `${API_BASE}/api/measurements/${patientId}/ecg?limit=${limit}`,
+    {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+
+  const text = await response.text();
+
+  if (!response.ok) {
+    console.log("Get ECG status:", response.status);
+    console.log("Get ECG backend response:", text);
+    throw new Error(text || "Nu s-a putut încărca semnalul ECG");
+  }
+
+  return text ? JSON.parse(text) : null;
+}
+
 export async function getAlerts(patientId) {
   const token = localStorage.getItem("sw_token");
 

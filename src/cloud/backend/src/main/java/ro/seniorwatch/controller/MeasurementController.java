@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import ro.seniorwatch.dto.EcgSeriesResponse;
 import ro.seniorwatch.dto.MeasurementBatchRequest;
 import ro.seniorwatch.dto.MeasurementBatchResponse;
 import ro.seniorwatch.service.MeasurementService;
@@ -29,5 +30,12 @@ public class MeasurementController {
     @GetMapping("/{patientId}")
     public ResponseEntity<List<MeasurementBatchResponse>> listBatches(@PathVariable UUID patientId) {
         return ResponseEntity.ok(measurementService.listBatches(patientId));
+    }
+
+    @GetMapping("/{patientId}/ecg")
+    public ResponseEntity<EcgSeriesResponse> getEcgSeries(
+            @PathVariable UUID patientId,
+            @RequestParam(defaultValue = "40") int limit) {
+        return ResponseEntity.ok(measurementService.getEcgSeries(patientId, limit));
     }
 }

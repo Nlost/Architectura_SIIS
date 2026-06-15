@@ -5,8 +5,10 @@ import { useEffect, useState, useCallback } from "react";import {
   getConsultations,
   getRecommendationsByPatient,
   getAllergiesByPatient,
+  getEcgSeries,
   createAllergy,
 } from "../../api";
+import EcgMonitor from "../../components/EcgMonitor";
 
 function FisaPacient() {
   const navigate = useNavigate();
@@ -17,6 +19,7 @@ function FisaPacient() {
   const [consultations, setConsultations] = useState([]);
   const [recommendations, setRecommendations] = useState([]);
   const [allergies, setAllergies] = useState([]);
+  const [ecg, setEcg] = useState(null);
 
   const [showAllergyModal, setShowAllergyModal] = useState(false);
   const [newAllergy, setNewAllergy] = useState({
@@ -38,6 +41,14 @@ const loadData = useCallback(async () => {
 
     const allergyData = await getAllergiesByPatient(id);
     setAllergies(allergyData);
+
+    try {
+      const ecgData = await getEcgSeries(id);
+      setEcg(ecgData);
+    } catch (ecgError) {
+      console.log("Eroare ECG:", ecgError);
+      setEcg(null);
+    }
   } catch (error) {
     console.log(error);
     alert("Eroare la încărcarea fișei pacientului.");
@@ -433,6 +444,16 @@ useEffect(() => {
                   <p>Umiditate</p>
                   <h3>{sample.umiditate ? `${sample.umiditate}%` : "—"}</h3>
                 </div>
+              </div>
+
+              <div className="fisa-ecg">
+                <EcgMonitor
+                  bpm={sample.puls ? Number(sample.puls) : 72}
+                  samples={ecg?.samples || null}
+                  samplingHz={ecg?.samplingHz || 1000}
+                  baseline={ecg?.baseline ?? 2048}
+                  adcMax={ecg?.adcMax ?? 4095}
+                />
               </div>
             </div>
           )}

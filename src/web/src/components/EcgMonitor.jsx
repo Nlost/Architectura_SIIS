@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import "./EcgMonitor.css";
 
 const gaussian = (x, mu, sigma, amp) =>
@@ -12,13 +12,45 @@ const ecgWave = (phase) =>
   gaussian(phase, 0.288, 0.009, -0.24) + // S
   gaussian(phase, 0.43, 0.04, 0.26); // T wave
 
-function EcgMonitor({ bpm = 72, lead = "FF03", live = true }) {
+function EcgMonitor({
+  bpm = 72,
+  lead = "FF03",
+  live = true,
+  samples = null,
+  samplingHz = 1000,
+  baseline = 2048,
+  adcMax = 4095,
+}) {
   const canvasRef = useRef(null);
   const bpmRef = useRef(bpm);
+  const dataRef = useRef(null);
+  const cursorRef = useRef(0);
 
   useEffect(() => {
     bpmRef.current = bpm && bpm > 20 && bpm < 240 ? bpm : 72;
   }, [bpm]);
+
+  // Normalize the real ECG samples (raw ADC) into a [-~1, ~1] range with auto-gain.
+  const normalized = useMemo(() => {
+    if (!Array.isArray(samples) || samples.length < 2) return null;
+
+    const half = adcMax / 2 || 2048;
+    const values = new Float32Array(samples.length);
+    let peak = 0;
+    for (let i = 0; i < samples.length; i++) {
+      const v = (Number(samples[i]) - baseline) / half;
+      values[i] = v;
+      const abs = Math.abs(v);
+      if (abs > peak) peak = abs;
+    }
+    const gain = 0.9 / Math.max(peak, 0.12);
+    return { values, gain };
+  }, [samples, baseline, adcMax]);
+
+  useEffect(() => {
+    dataRef.current = normalized;
+    cursorRef.current = 0;
+  }, [normalized]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -52,11 +84,28 @@ function EcgMonitor({ bpm = 72, lead = "FF03", live = true }) {
       buffer = next;
     };
 
+    const nextValue = (dtPerPixel) => {
+      const data = dataRef.current;
+      if (data && data.values.length >= 2) {
+        const stride = samplingHz / pixelsPerSecond;
+        cursorRef.current += stride;
+        if (cursorRef.current >= data.values.length) {
+          cursorRef.current -= data.values.length;
+        }
+        const idx = Math.floor(cursorRef.current);
+        return data.values[idx] * data.gain;
+      }
+
+      const beat = 60 / bpmRef.current;
+      elapsed += dtPerPixel;
+      const phase = (elapsed % beat) / beat;
+      return ecgWave(phase);
+    };
+
     const draw = (now) => {
       const dt = (now - last) / 1000;
       last = now;
 
-      const beat = 60 / bpmRef.current;
       const dtPerPixel = 1 / pixelsPerSecond;
 
       let advance = dt * pixelsPerSecond + carry;
@@ -65,9 +114,7 @@ function EcgMonitor({ bpm = 72, lead = "FF03", live = true }) {
       if (steps > width) steps = width;
 
       for (let i = 0; i < steps; i++) {
-        elapsed += dtPerPixel;
-        const phase = (elapsed % beat) / beat;
-        buffer.push(ecgWave(phase));
+        buffer.push(nextValue(dtPerPixel));
         buffer.shift();
       }
 
@@ -118,7 +165,9 @@ function EcgMonitor({ bpm = 72, lead = "FF03", live = true }) {
       cancelAnimationFrame(raf);
       window.removeEventListener("resize", resize);
     };
-  }, []);
+  }, [samplingHz]);
+
+  const hasReal = Array.isArray(samples) && samples.length >= 2;
 
   return (
     <div className="ecg-card">
@@ -135,7 +184,11 @@ function EcgMonitor({ bpm = 72, lead = "FF03", live = true }) {
       </div>
 
       <div className="ecg-foot">
-        <span className="ecg-status">Semnal ECG activ ({lead})</span>
+        <span className="ecg-status">
+          {hasReal
+            ? `Semnal ECG activ (${lead})`
+            : "Semnal ECG simulat (fără date senzor)"}
+        </span>
         <span className="ecg-speed">25 mm/s</span>
       </div>
     </div>

@@ -1,7 +1,7 @@
 import "./pacientvalori.css";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { getPatientMe } from "../../api";
+import { getPatientMe, getEcgSeries } from "../../api";
 import { logoutUser } from "../../api";
 import EcgMonitor from "../../components/EcgMonitor";
 
@@ -56,12 +56,23 @@ function PacientValori() {
   const navigate = useNavigate();
 
   const [patient, setPatient] = useState(null);
+  const [ecg, setEcg] = useState(null);
 
   useEffect(() => {
     const loadPatient = async () => {
       try {
         const data = await getPatientMe();
         setPatient(data);
+
+        if (data?.id) {
+          try {
+            const series = await getEcgSeries(data.id);
+            setEcg(series);
+          } catch (ecgError) {
+            console.log("Eroare ECG pacient:", ecgError);
+            setEcg(null);
+          }
+        }
       } catch (error) {
         console.log("Eroare valori pacient:", error);
       }
@@ -159,7 +170,13 @@ function PacientValori() {
         </section>
 
         <section className="valori-ecg">
-          <EcgMonitor bpm={puls ? Number(puls) : 72} />
+          <EcgMonitor
+            bpm={puls ? Number(puls) : 72}
+            samples={ecg?.samples || null}
+            samplingHz={ecg?.samplingHz || 1000}
+            baseline={ecg?.baseline ?? 2048}
+            adcMax={ecg?.adcMax ?? 4095}
+          />
         </section>
 
         <section className="valori-panel">
