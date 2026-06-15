@@ -10,9 +10,10 @@ import androidx.room.RoomDatabase
         SensorMeasurementEntity::class,
         AverageMeasurementEntity::class,
         AlertEntity::class,
-        AccelBurstEntity::class
+        AccelBurstEntity::class,
+        EcgBurstEntity::class
     ],
-    version = 2
+    version = 3
 )
 abstract class AppDatabase : RoomDatabase() {
 
@@ -29,9 +30,10 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "health_monitor_database"
                 )
-                    // Am adaugat tabela accel_bursts (version 1 -> 2). Fara o migrare
-                    // scrisa manual, Room recreeaza baza la upgrade (sterge datele de
-                    // test). Acceptabil pentru dezvoltare; pentru productie scrii un Migration.
+                    // Am adaugat tabela accel_bursts (version 1 -> 2) si ecg_bursts
+                    // (version 2 -> 3). Fara o migrare scrisa manual, Room recreeaza baza
+                    // la upgrade (sterge datele de test). Acceptabil pentru dezvoltare;
+                    // pentru productie scrii un Migration.
                     .fallbackToDestructiveMigration()
                     .build()
 

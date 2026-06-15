@@ -2,11 +2,13 @@ package com.example.mobileapp.data.sync
 
 import android.util.Log
 import com.example.mobileapp.data.local.AccelBurstEntity
+import com.example.mobileapp.data.local.EcgBurstEntity
 import com.example.mobileapp.data.local.HealthDao
 import com.example.mobileapp.network.AccelBurst
 import com.example.mobileapp.network.AccelSample
 import com.example.mobileapp.network.AlertRequest
 import com.example.mobileapp.network.ApiClient
+import com.example.mobileapp.network.EcgBatch
 import com.example.mobileapp.network.LoginRequest
 import com.example.mobileapp.network.MeasurementBatch
 import com.example.mobileapp.network.Sample
@@ -51,6 +53,7 @@ class CloudSyncRepository(
         syncMeasurements()
         syncAlerts()
         syncAccelBursts()
+        syncEcgBursts()
     }
 
     private suspend fun syncMeasurements() {
@@ -135,6 +138,33 @@ class CloudSyncRepository(
         }
     }
 
+    private suspend fun syncEcgBursts() {
+        val unsynced = dao.getUnsyncedEcgBursts()
+        if (unsynced.isEmpty()) return
+
+        val type = object : TypeToken<List<Int>>() {}.type
+
+        for (b in unsynced) {
+            val samples: List<Int> = gson.fromJson(b.samplesJson, type)
+            val response = api.sendEcgBatch(
+                EcgBatch(
+                    patientId = b.patientId,
+                    burstId = b.burstId,
+                    intervalStart = b.intervalStart,
+                    intervalEnd = b.intervalEnd,
+                    sampleRateHz = b.sampleRateHz,
+                    samples = samples
+                )
+            )
+            if (response.isSuccessful) {
+                dao.markEcgBurstsSynced(listOf(b.id))
+                Log.d(TAG, "Trimis burst ECG cu ${samples.size} mostre.")
+            } else {
+                throw RuntimeException("ecg HTTP ${response.code()}")
+            }
+        }
+    }
+
     // ── COADA: pune un burst de accel in Room (cerinta e + g) ──────────────────
 
     suspend fun queueAccelBurst(
@@ -155,6 +185,30 @@ class CloudSyncRepository(
                 intervalEnd = intervalEnd,
                 samplesJson = gson.toJson(samples),
                 fallDetected = fallDetected
+            )
+        )
+    }
+
+    // ── COADA: pune un burst ECG in Room (forma de unda + g) ───────────────────
+
+    suspend fun queueEcgBurst(
+        samples: List<Int>,
+        intervalStart: String,
+        intervalEnd: String,
+        sampleRateHz: Int
+    ) {
+        val patientId = session.patientId ?: run {
+            Log.w(TAG, "patientId lipseste — nu salvez burst-ul ECG.")
+            return
+        }
+        dao.insertEcgBurst(
+            EcgBurstEntity(
+                patientId = patientId,
+                burstId = UUID.randomUUID().toString(),
+                intervalStart = intervalStart,
+                intervalEnd = intervalEnd,
+                sampleRateHz = sampleRateHz,
+                samplesJson = gson.toJson(samples)
             )
         )
     }

@@ -25,4 +25,8 @@ interface SeniorWatchApi {
     // FLAG: confirma calea exacta cu echipa Cloud (nu e in lista documentata).
     @POST("/api/accel")
     suspend fun sendAccelBurst(@Body burst: AccelBurst): Response<Unit>
+
+    // FLAG: confirma calea exacta cu echipa Cloud (nu e in lista documentata).
+    @POST("/api/ecg")
+    suspend fun sendEcgBatch(@Body batch: EcgBatch): Response<Unit>
 }

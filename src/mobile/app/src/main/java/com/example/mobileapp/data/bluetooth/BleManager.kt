@@ -36,6 +36,11 @@ class BleManager(
 
     private var onStatusChanged: ((String) -> Unit)? = null
     private var onDataReceived: ((String) -> Unit)? = null
+    private var onEcgDataReceived: ((String) -> Unit)? = null
+
+    // Coada de caracteristici pe care le abonam la notificari. BLE permite o
+    // singura operatie GATT odata, deci activam descriptorii pe rand (FF02, apoi FF03).
+    private val notifyQueue = ArrayDeque<BluetoothGattCharacteristic>()
 
     private var isScanning = false
     private var isConnected = false
@@ -52,6 +57,10 @@ class BleManager(
 
         val CHARACTERISTIC_UUID: UUID =
             UUID.fromString("0000ff02-0000-1000-8000-00805f9b34fb")
+
+        // Caracteristica pe care ESP32 trimite forma de unda ECG bruta (ADC).
+        val ECG_CHARACTERISTIC_UUID: UUID =
+            UUID.fromString("0000ff03-0000-1000-8000-00805f9b34fb")
 
         val CLIENT_CHARACTERISTIC_CONFIG_UUID: UUID =
             UUID.fromString("00002902-0000-1000-8000-00805f9b34fb")
@@ -82,10 +91,12 @@ class BleManager(
     @SuppressLint("MissingPermission")
     fun startScan(
         onStatusChanged: (String) -> Unit,
-        onDataReceived: (String) -> Unit
+        onDataReceived: (String) -> Unit,
+        onEcgDataReceived: (String) -> Unit = {}
     ) {
         this.onStatusChanged = onStatusChanged
         this.onDataReceived = onDataReceived
+        this.onEcgDataReceived = onEcgDataReceived
 
         if (!hasBluetoothPermissions()) {
             updateStatus("Permisiuni Bluetooth lipsă.")
@@ -271,13 +282,33 @@ class BleManager(
                 return
             }
 
+            // Construim coada de abonare: intai masuratorile (FF02), apoi ECG (FF03)
+            // daca exista. ECG e optional — daca firmware-ul nu expune FF03, mergem
+            // mai departe doar cu masuratorile.
+            notifyQueue.clear()
+            notifyQueue.add(characteristic)
+            service.getCharacteristic(ECG_CHARACTERISTIC_UUID)?.let { notifyQueue.add(it) }
+
+            enableNextNotification(gatt)
+        }
+
+        @SuppressLint("MissingPermission")
+        private fun enableNextNotification(gatt: BluetoothGatt) {
+            val characteristic = notifyQueue.removeFirstOrNull()
+
+            if (characteristic == null) {
+                updateStatus("Conectat. Aștept date de la ESP32...")
+                return
+            }
+
             val notificationsEnabled = gatt.setCharacteristicNotification(
                 characteristic,
                 true
             )
 
             if (!notificationsEnabled) {
-                updateStatus("Nu s-au putut activa notificările BLE.")
+                updateStatus("Nu s-au putut activa notificările BLE pentru ${characteristic.uuid}.")
+                enableNextNotification(gatt)
                 return
             }
 
@@ -286,7 +317,8 @@ class BleManager(
             )
 
             if (descriptor == null) {
-                updateStatus("Descriptorul de notificări nu a fost găsit.")
+                updateStatus("Descriptorul de notificări lipsește pentru ${characteristic.uuid}.")
+                enableNextNotification(gatt)
                 return
             }
 
@@ -304,9 +336,10 @@ class BleManager(
                 }
 
             if (writeStarted) {
-                updateStatus("Activez notificările BLE...")
+                updateStatus("Activez notificările BLE pentru ${characteristic.uuid}...")
             } else {
-                updateStatus("Nu s-a putut scrie descriptorul BLE.")
+                updateStatus("Nu s-a putut scrie descriptorul BLE pentru ${characteristic.uuid}.")
+                enableNextNotification(gatt)
             }
         }
 
@@ -316,11 +349,11 @@ class BleManager(
             status: Int
         ) {
             if (descriptor.uuid == CLIENT_CHARACTERISTIC_CONFIG_UUID) {
-                if (status == BluetoothGatt.GATT_SUCCESS) {
-                    updateStatus("Conectat. Aștept date de la ESP32...")
-                } else {
+                if (status != BluetoothGatt.GATT_SUCCESS) {
                     updateStatus("Activarea notificărilor BLE a eșuat. Status: $status")
                 }
+                // Trecem la urmatoarea caracteristica din coada (sau finalizam).
+                enableNextNotification(gatt)
             }
         }
 
@@ -329,9 +362,7 @@ class BleManager(
             characteristic: BluetoothGattCharacteristic,
             value: ByteArray
         ) {
-            if (characteristic.uuid == CHARACTERISTIC_UUID) {
-                handleReceivedData(value)
-            }
+            dispatchCharacteristic(characteristic.uuid, value)
         }
 
         @Deprecated("Deprecated in Android 13, păstrat pentru compatibilitate.")
@@ -339,9 +370,15 @@ class BleManager(
             gatt: BluetoothGatt,
             characteristic: BluetoothGattCharacteristic
         ) {
-            if (characteristic.uuid == CHARACTERISTIC_UUID) {
-                handleReceivedData(characteristic.value)
-            }
+            dispatchCharacteristic(characteristic.uuid, characteristic.value)
+        }
+    }
+
+    private fun dispatchCharacteristic(uuid: UUID, value: ByteArray?) {
+        if (value == null) return
+        when (uuid) {
+            CHARACTERISTIC_UUID -> handleReceivedData(value)
+            ECG_CHARACTERISTIC_UUID -> handleEcgData(value)
         }
     }
 
@@ -351,6 +388,16 @@ class BleManager(
         mainHandler.post {
             onStatusChanged?.invoke("Date primite BLE: $message")
             onDataReceived?.invoke(message)
+        }
+    }
+
+    private fun handleEcgData(value: ByteArray) {
+        // Lasam parsarea valorilor brute pe seama consumatorului (MainActivity),
+        // simetric cu FF02: aici doar transmitem payload-ul text mai departe.
+        val payload = value.toString(Charsets.UTF_8).trim()
+
+        mainHandler.post {
+            onEcgDataReceived?.invoke(payload)
         }
     }
 

@@ -69,4 +69,15 @@ interface HealthDao {
 
     @Query("UPDATE accel_bursts SET synced = 1 WHERE id IN (:ids)")
     suspend fun markAccelBurstsSynced(ids: List<Int>)
+
+    // ── Burst ECG (forma de unda, offline) ────────────────────────────────────
+
+    @Insert
+    suspend fun insertEcgBurst(burst: EcgBurstEntity)
+
+    @Query("SELECT * FROM ecg_bursts WHERE synced = 0 ORDER BY id ASC")
+    suspend fun getUnsyncedEcgBursts(): List<EcgBurstEntity>
+
+    @Query("UPDATE ecg_bursts SET synced = 1 WHERE id IN (:ids)")
+    suspend fun markEcgBurstsSynced(ids: List<Int>)
 }

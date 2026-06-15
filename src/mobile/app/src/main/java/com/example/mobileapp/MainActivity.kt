@@ -88,6 +88,7 @@ import java.util.Date
 import java.util.Locale
 import androidx.compose.runtime.DisposableEffect
 import com.example.mobileapp.data.sensors.AccelCollector
+import com.example.mobileapp.data.sensors.EcgCollector
 import com.example.mobileapp.network.AccelBurst
 import java.util.UUID
 
@@ -189,6 +190,23 @@ fun parseBleMessageToMeasurement(message: String): SensorMeasurement? {
         android.util.Log.e("BLE_PARSE", "Eroare parsare: ${e.message}, mesaj: $message")
         null
     }
+}
+
+/*
+    ESP32 trimite pe caracteristica FF03 forma de unda ECG bruta: valori ADC
+    intregi separate prin virgula, spatiu sau linie noua, ex.
+
+    "512,514,520,...".
+
+    FLAG: confirma formatul exact (text vs. binar) cu firmware-ul. Daca ESP32
+    trimite octeti bruti (ex. uint16 little-endian), aici trebuie schimbata
+    parsarea — momentan presupunem text, simetric cu FF02.
+*/
+fun parseEcgPayload(payload: String): List<Int> {
+    if (payload.isBlank()) return emptyList()
+    return payload
+        .split(',', ';', ' ', '\n', '\r', '\t')
+        .mapNotNull { it.trim().toIntOrNull() }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -581,7 +599,9 @@ fun MobileHealthApp() {
     val bleManager = remember { BleManager(context) }
     val repository = remember { CloudSyncRepository(dao) }
     val accelCollector = remember { AccelCollector(context) }
+    val ecgCollector = remember { EcgCollector() }
     var accelStatus by remember { mutableStateOf("Accelerometru: inactiv") }
+    var ecgStatus by remember { mutableStateOf("ECG: inactiv") }
     var fallDetected by remember { mutableStateOf(false) }
 
     // Status conexiune internet (cerinta g) — pentru afisare in UI.
@@ -716,6 +736,16 @@ fun MobileHealthApp() {
     }
 
     DisposableEffect(Unit) {
+        // ECG: burst-urile vin "impinse" de ESP32 (FF03), le punem in coada si le
+        // trimitem la cloud (offline-safe prin Room + WorkManager, cerinta g).
+        ecgCollector.start { samples, start, end, rate ->
+            ecgStatus = "ECG: burst de ${samples.size} mostre la ${getCurrentTime()}"
+            coroutineScope.launch {
+                repository.queueEcgBurst(samples, start, end, rate)
+                repository.syncPending().onFailure { SyncWorker.requestImmediate(context) }
+            }
+        }
+
         accelCollector.start(
             onBurstReady = { samples, start, end, fall ->
                 fallDetected = fall
@@ -746,7 +776,10 @@ fun MobileHealthApp() {
                 }
             }
         )
-        onDispose { accelCollector.stop() }
+        onDispose {
+            accelCollector.stop()
+            ecgCollector.stop()
+        }
     }
 
     MaterialTheme {
@@ -814,6 +847,7 @@ fun MobileHealthApp() {
                         hasAlert = hasAlert,
                         isOnline = isOnline,
                         accelStatus = accelStatus,
+                        ecgStatus = ecgStatus,
                         recentMeasurements = recentMeasurements,
                         lastAverage = lastAverage,
                         lastSyncMessage = lastSyncMessage,
@@ -838,6 +872,12 @@ fun MobileHealthApp() {
                                         bleStatus =
                                             "Mesaj BLE primit, dar format invalid: $message"
                                     }
+                                },
+                                onEcgDataReceived = { payload ->
+                                    val values = parseEcgPayload(payload)
+                                    if (values.isNotEmpty()) {
+                                        ecgCollector.addSamples(values)
+                                    }
                                 }
                             )
                         },
@@ -856,6 +896,7 @@ fun MobileHealthApp() {
                             lastAverage = null
                             fallDetected = false
                             accelStatus = "Accelerometru: inactiv"
+                            ecgStatus = "ECG: inactiv"
                             lastSyncMessage =
                                 "Nu exista date primite inca de la senzori."
                             lastBleMessage = "Niciun mesaj BLE primit."
@@ -941,6 +982,7 @@ fun DashboardScreen(
     hasAlert: Boolean,
     isOnline: Boolean,
     accelStatus: String,
+    ecgStatus: String,
     recentMeasurements: List<SensorMeasurement>,
     lastAverage: AverageMeasurement?,
     lastSyncMessage: String,
@@ -1103,6 +1145,7 @@ fun DashboardScreen(
                 if (isOnline) "Internet: online" else "Internet: OFFLINE — date in coada locala",
                 "Cloud: sincronizare REST catre backend",
                 accelStatus,
+                ecgStatus,
                 if (hasReceivedSensorData) {
                     "Date senzori: primite"
                 } else {
