@@ -2,6 +2,7 @@ import "./consultatii.css";
 import { useEffect, useState } from "react";
 import { getPatients, getConsultations, createConsultation, createRecommendation, finalizeConsultation } from "../../api";
 import { logoutUser } from "../../api";
+import icd10Codes from "../../data/icd10Codes";
 
 
 const handleLogout = () => {
@@ -294,6 +295,17 @@ const stats = {
       ...newConsultation,
       [name]: value,
     });
+  };
+
+  const handleIcdSelect = (e) => {
+    const code = e.target.value;
+    const selected = icd10Codes.find((item) => item.code === code);
+
+    setNewConsultation((prev) => ({
+      ...prev,
+      diagnostic_icd10_code: code,
+      diagnostic_icd10_display: selected ? selected.display : "",
+    }));
   };
 
 const handleFinalizeConsultation = async (consultationId) => {
@@ -701,6 +713,23 @@ Calendar programări
                   </div>
 
                   <div className="consultatieFormGrid twoCols">
+                    <label className="fullField">
+                      Selectează diagnostic (ICD-10)
+                      <select
+                        name="icd10_select"
+                        value={newConsultation.diagnostic_icd10_code}
+                        onChange={handleIcdSelect}
+                      >
+                        <option value="">Alege o boală din listă…</option>
+
+                        {icd10Codes.map((item) => (
+                          <option key={item.code} value={item.code}>
+                            {item.code} — {item.display}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+
                     <label>
                       Simptome
                       <textarea
