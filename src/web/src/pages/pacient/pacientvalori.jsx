@@ -59,26 +59,47 @@ function PacientValori() {
   const [ecg, setEcg] = useState(null);
 
   useEffect(() => {
-    const loadPatient = async () => {
+    let active = true;
+    let patientId = null;
+
+    const refresh = async () => {
+      if (document.hidden) return;
+
       try {
         const data = await getPatientMe();
+        if (!active) return;
         setPatient(data);
-
-        if (data?.id) {
-          try {
-            const series = await getEcgSeries(data.id);
-            setEcg(series);
-          } catch (ecgError) {
-            console.log("Eroare ECG pacient:", ecgError);
-            setEcg(null);
-          }
-        }
+        patientId = data?.id || patientId;
       } catch (error) {
         console.log("Eroare valori pacient:", error);
+        return;
+      }
+
+      if (patientId) {
+        try {
+          const series = await getEcgSeries(patientId);
+          if (!active) return;
+          setEcg((prev) =>
+            prev &&
+            series &&
+            prev.endTs === series.endTs &&
+            prev.samples?.length === series.samples?.length
+              ? prev
+              : series
+          );
+        } catch (ecgError) {
+          console.log("Eroare ECG pacient:", ecgError);
+        }
       }
     };
 
-    loadPatient();
+    refresh();
+    const interval = setInterval(refresh, 5000);
+
+    return () => {
+      active = false;
+      clearInterval(interval);
+    };
   }, []);
 
   const d = patient?.demographics || {};

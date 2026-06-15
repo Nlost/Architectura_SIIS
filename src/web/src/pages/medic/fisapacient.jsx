@@ -60,6 +60,45 @@ useEffect(() => {
   loadData();
 }, [loadData]);
 
+useEffect(() => {
+  if (!id) return undefined;
+
+  let active = true;
+
+  const refreshSensors = async () => {
+    if (document.hidden) return;
+
+    try {
+      const p = await getPatient(id);
+      if (active) setPatient(p);
+    } catch (error) {
+      console.log("Eroare actualizare senzori:", error);
+    }
+
+    try {
+      const ecgData = await getEcgSeries(id);
+      if (!active) return;
+      setEcg((prev) =>
+        prev &&
+        ecgData &&
+        prev.endTs === ecgData.endTs &&
+        prev.samples?.length === ecgData.samples?.length
+          ? prev
+          : ecgData
+      );
+    } catch (ecgError) {
+      console.log("Eroare ECG:", ecgError);
+    }
+  };
+
+  const interval = setInterval(refreshSensors, 5000);
+
+  return () => {
+    active = false;
+    clearInterval(interval);
+  };
+}, [id]);
+
   const saveAllergy = async () => {
     if (!newAllergy.substanceDisplay.trim()) {
       alert("Completează substanța alergiei.");
