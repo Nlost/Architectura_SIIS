@@ -437,6 +437,27 @@ export async function archiveAllergy(allergyId) {
   return text ? JSON.parse(text) : {};
 }
 
+export async function getAlerts(patientId) {
+  const token = localStorage.getItem("sw_token");
+
+  const response = await fetch(`${API_BASE}/api/alerts/${patientId}`, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  const text = await response.text();
+
+  if (!response.ok) {
+    console.log("Get alerts status:", response.status);
+    console.log("Get alerts backend response:", text);
+    throw new Error(text || "Nu s-au putut încărca alertele");
+  }
+
+  return text ? JSON.parse(text) : [];
+}
+
 export async function getAuditEvents() {
   const token = localStorage.getItem("sw_token");
 

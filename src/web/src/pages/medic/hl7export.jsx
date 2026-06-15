@@ -1,45 +1,146 @@
 import "./hl7export.css";
-import { useCallback, useEffect, useState } from "react";
-import { getPatients } from "../../api";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  getPatients,
+  getConsultations,
+  getAllergiesByPatient,
+  getRecommendationsByPatient,
+  getAlerts,
+  logoutUser,
+} from "../../api";
 import { FhirXmlBuilder } from "../../utils/fhirXmlBuilder";
-import { logoutUser } from "../../api";
 
 
 const handleLogout = () => {
   logoutUser();
   window.location.href = "/login";
 };
+
+const calcAge = (birthDate) => {
+  if (!birthDate) return null;
+  const today = new Date();
+  const birth = new Date(birthDate);
+  if (Number.isNaN(birth.getTime())) return null;
+
+  let age = today.getFullYear() - birth.getFullYear();
+  const m = today.getMonth() - birth.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
+    age--;
+  }
+  return age;
+};
+
 function Hl7Export() {
 
   const [patients, setPatients] = useState([]);
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
   const [xml, setXml] = useState("");
   const [generatedAt, setGeneratedAt] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [generating, setGenerating] = useState(false);
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
 
-  const loadAndBuild = useCallback(async () => {
+  const loadPatients = useCallback(async () => {
     setLoading(true);
     setError("");
-    setCopied(false);
     try {
       const data = await getPatients();
-      const builder = new FhirXmlBuilder(data);
       setPatients(data);
-      setXml(builder.toXmlString());
-      setGeneratedAt(new Date());
     } catch (err) {
       setError(err.message || "Nu s-au putut încărca pacienții de pe server.");
       setPatients([]);
-      setXml("");
     } finally {
       setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    loadAndBuild();
-  }, [loadAndBuild]);
+    loadPatients();
+  }, [loadPatients]);
+
+  const filteredPatients = useMemo(() => {
+    const search = searchTerm.toLowerCase();
+    return patients.filter((p) => {
+      const d = p.demographics || {};
+      return (
+        d.nume?.toLowerCase().includes(search) ||
+        d.prenume?.toLowerCase().includes(search) ||
+        d.cnp?.includes(search)
+      );
+    });
+  }, [patients, searchTerm]);
+
+  const selectedSet = useMemo(() => new Set(selectedIds), [selectedIds]);
+
+  const allFilteredSelected =
+    filteredPatients.length > 0 &&
+    filteredPatients.every((p) => selectedSet.has(p.id));
+
+  const togglePatient = (id) => {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+  };
+
+  const toggleSelectAll = () => {
+    if (allFilteredSelected) {
+      const filteredIds = new Set(filteredPatients.map((p) => p.id));
+      setSelectedIds((prev) => prev.filter((id) => !filteredIds.has(id)));
+    } else {
+      setSelectedIds((prev) => {
+        const merged = new Set(prev);
+        filteredPatients.forEach((p) => merged.add(p.id));
+        return [...merged];
+      });
+    }
+  };
+
+  const selectedPatients = useMemo(
+    () => patients.filter((p) => selectedSet.has(p.id)),
+    [patients, selectedSet]
+  );
+
+  const handleGenerate = async () => {
+    setCopied(false);
+    if (selectedPatients.length === 0) {
+      setXml("");
+      setGeneratedAt(null);
+      setError("Selectează cel puțin un pacient pentru export.");
+      return;
+    }
+
+    setError("");
+    setGenerating(true);
+    try {
+      const allVisits = await getConsultations().catch(() => []);
+
+      const records = await Promise.all(
+        selectedPatients.map(async (p) => {
+          const [allergies, recommendations, alerts] = await Promise.all([
+            getAllergiesByPatient(p.id).catch(() => []),
+            getRecommendationsByPatient(p.id).catch(() => []),
+            getAlerts(p.id).catch(() => []),
+          ]);
+
+          const visits = (allVisits || []).filter((v) => v.patientId === p.id);
+
+          return { patient: p, visits, allergies, recommendations, alerts };
+        })
+      );
+
+      const builder = new FhirXmlBuilder(records);
+      setXml(builder.toXmlString());
+      setGeneratedAt(new Date());
+    } catch (err) {
+      setError(err.message || "Nu s-a putut genera exportul FHIR.");
+      setXml("");
+      setGeneratedAt(null);
+    } finally {
+      setGenerating(false);
+    }
+  };
 
   const handleDownload = () => {
     const blob = new Blob([xml], { type: "application/fhir+xml" });
@@ -108,9 +209,9 @@ function Hl7Export() {
           <div className="stat">
             <div className="icon green">👥</div>
             <div>
-              <p>Pacienți exportați</p>
-              <h2>{loading ? "…" : patients.length}</h2>
-              <span>resurse Patient în Bundle</span>
+              <p>Pacienți selectați</p>
+              <h2>{loading ? "…" : selectedIds.length}</h2>
+              <span>din {patients.length} pacienți</span>
             </div>
           </div>
           <div className="stat">
@@ -128,31 +229,36 @@ function Hl7Export() {
             <div className="panelHead">
               <div>
                 <h1>Export pacienți — HL7 FHIR R4</h1>
+                <p className="hl7-subtitle">
+                  Include date demografice, consultații, diagnostice, alergii,
+                  recomandări, alerte și ultimele măsurători.
+                </p>
               </div>
               <div className="hl7-tools">
+                <div className="patients-search">
+                  <span>⌕</span>
+                  <input
+                    type="text"
+                    placeholder="Caută după nume, prenume sau CNP..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+                </div>
                 <button
                   className="hl7-btn regen"
                   type="button"
-                  onClick={loadAndBuild}
+                  onClick={loadPatients}
                   disabled={loading}
                 >
-                  ↻ Regenerează
-                </button>
-                <button
-                  className="hl7-btn copy"
-                  type="button"
-                  onClick={handleCopy}
-                  disabled={loading || !xml}
-                >
-                  {copied ? "✓ Copiat" : "Copiază XML"}
+                  ↻ Reîncarcă
                 </button>
                 <button
                   className="hl7-btn download"
                   type="button"
-                  onClick={handleDownload}
-                  disabled={loading || !xml}
+                  onClick={handleGenerate}
+                  disabled={loading || generating || selectedIds.length === 0}
                 >
-                  ⬇ Descarcă .xml
+                  {generating ? "Se generează…" : "⚙ Generează XML"}
                 </button>
               </div>
             </div>
@@ -167,10 +273,95 @@ function Hl7Export() {
               </div>
             )}
 
-            {!loading && !error && (
-              <pre className="hl7-xml-preview">
-                <code>{xml}</code>
-              </pre>
+            {!loading && !error && patients.length === 0 && (
+              <div className="hl7-status">Niciun pacient înregistrat.</div>
+            )}
+
+            {!loading && patients.length > 0 && (
+              <div className="hl7-table">
+                <div className="hl7-row hl7-header">
+                  <span className="hl7-check">
+                    <input
+                      type="checkbox"
+                      checked={allFilteredSelected}
+                      onChange={toggleSelectAll}
+                      aria-label="Selectează toți pacienții"
+                    />
+                  </span>
+                  <span>Pacient</span>
+                  <span>CNP</span>
+                  <span>Vârstă</span>
+                  <span>Sex</span>
+                </div>
+
+                {filteredPatients.length === 0 && (
+                  <div className="hl7-row">
+                    <span />
+                    <span>Niciun pacient găsit pentru căutarea curentă.</span>
+                  </div>
+                )}
+
+                {filteredPatients.map((p) => {
+                  const d = p.demographics || {};
+                  const fullName = [d.nume, d.prenume].filter(Boolean).join(" ");
+                  const initials =
+                    `${(d.nume || "")[0] || ""}${(d.prenume || "")[0] || ""}`.toUpperCase() ||
+                    "?";
+                  const age = d.dataNasterii ? `${calcAge(d.dataNasterii)} ani` : "—";
+                  const checked = selectedSet.has(p.id);
+
+                  return (
+                    <label
+                      className={`hl7-row${checked ? " selected" : ""}`}
+                      key={p.id}
+                    >
+                      <span className="hl7-check">
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={() => togglePatient(p.id)}
+                        />
+                      </span>
+                      <span className="patientName">
+                        <b>{initials}</b>
+                        {fullName || "—"}
+                      </span>
+                      <span className="cnpText">{d.cnp || "—"}</span>
+                      <span>{age}</span>
+                      <span>{d.sex || "—"}</span>
+                    </label>
+                  );
+                })}
+              </div>
+            )}
+
+            {!loading && xml && (
+              <div className="hl7-previewBlock">
+                <div className="hl7-previewHead">
+                  <h2>Previzualizare FHIR Bundle ({selectedPatients.length})</h2>
+                  <div className="hl7-tools">
+                    <button
+                      className="hl7-btn copy"
+                      type="button"
+                      onClick={handleCopy}
+                      disabled={!xml}
+                    >
+                      {copied ? "✓ Copiat" : "Copiază XML"}
+                    </button>
+                    <button
+                      className="hl7-btn download"
+                      type="button"
+                      onClick={handleDownload}
+                      disabled={!xml}
+                    >
+                      ⬇ Descarcă .xml
+                    </button>
+                  </div>
+                </div>
+                <pre className="hl7-xml-preview">
+                  <code>{xml}</code>
+                </pre>
+              </div>
             )}
           </div>
         </section>
