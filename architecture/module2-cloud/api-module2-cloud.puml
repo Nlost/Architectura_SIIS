@@ -1,5 +1,5 @@
 @startuml api-module2-cloud
-title Modul 2 - Cloud Azure: REST API (Controller + Service)
+title Modul 2 - Cloud AWS: REST API (Controller + Service)
 
 allowmixing
 skinparam classAttributeIconSize 0
@@ -16,9 +16,9 @@ skinparam PackageBorderColor #999999
 ' ============================================================
 note as CONTRACT
   == Responsabilitatea modulului ==
-  Backend REST gazduit in Azure (App Service / Functions) care:
+  Backend REST gazduit in AWS (Elastic Beanstalk) care:
    1) autentifica medici si pacienti (JWT)
-   2) stocheaza in Azure SQL dosarul electronic de sanatate (EHR)
+   2) stocheaza in RDS PostgreSQL dosarul electronic de sanatate (EHR)
       cu versionare pe fiecare "health item" (EuroRec 5-7, 15-17, 31, 32)
    3) administreaza utilizatorii si rolurile (admin / privileged / common)
    4) audit append-only pentru toate accesele si modificarile

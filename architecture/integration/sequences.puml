@@ -13,7 +13,7 @@ skinparam NoteBackgroundColor #FFFDE7
 actor "Medic" as M
 participant "Web UI" as W
 participant "Cloud API\n(PatientService)" as CP
-database "Azure SQL" as DB
+database "RDS PostgreSQL" as DB
 actor "Pacient" as P
 participant "Android App" as AND
 participant "ESP32" as ESP
@@ -59,7 +59,7 @@ participant "Android\n(BluetoothService)" as BT
 participant "Android\n(SensorAggregatorService)" as AGG
 participant "Android\n(CloudSyncService)" as CS
 participant "Cloud API\n(IngestionController)" as IC
-database "Azure SQL" as DB
+database "RDS PostgreSQL" as DB
 
 == 2. Masuratori - flux de 30 secunde ==
 
@@ -92,7 +92,7 @@ participant "Android\n(SensorAggregatorService)" as AGG
 participant "Android\n(AlarmEvaluatorService)" as AE
 participant "Android\n(CloudSyncService)" as CS
 participant "Cloud API\n(IngestionController)" as IC
-participant "NotificationService\n(Azure NHub)" as NH
+participant "NotificationService\n(AWS SNS)" as NH
 participant "Web UI medic" as WUI
 
 == 3. Alarma declansata la prag ==
@@ -128,7 +128,7 @@ participant "Sistem MF" as MFSYS
 participant "Cloud API\n(IntegrationController)" as INT
 participant "Cloud\n(HL7ParserService)" as PAR
 participant "PatientService" as PS
-database "Azure SQL" as DB
+database "RDS PostgreSQL" as DB
 participant "Web UI specialist" as WEB
 
 == 4. Primire trimitere HL7 de la medicul de familie ==
@@ -159,7 +159,7 @@ participant "Web UI" as W
 participant "Cloud API\n(ClinicalVisitController)" as CV
 participant "Cloud\n(FhirBuilderService)" as FHIR
 participant "Sistem MF (FHIR)" as MFSYS
-database "Azure SQL" as DB
+database "RDS PostgreSQL" as DB
 
 == 5. Trimitere scrisoare medicala FHIR catre MF ==
 

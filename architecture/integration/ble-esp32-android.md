@@ -47,15 +47,14 @@ Dimensiune maximă recomandată: **180 octeți** (pentru MTU BLE 185).
 | 0  | `version`      | `uint8`  | 1 | format versionat (start: `0x01`) |
 | 1  | `seqNumber`    | `uint32` | 4 | crescător, reset la reboot |
 | 5  | `timestampMs`  | `uint32` | 4 | ms de la boot ESP32 |
-| 9  | `heartRateBpm` | `uint16` | 2 | puls (MAX30100) |
-| 11 | `spO2Percent`  | `uint8`  | 1 | saturație O2, 0–100 |
-| 12 | `humidityX10`  | `uint16` | 2 | umiditate × 10 (ex. 453 → 45.3 %) |
-| 14 | `tempCX10`     | `int16`  | 2 | temperatură × 10 (ex. 367 → 36.7 °C) |
-| 16 | `ecgCount`     | `uint8`  | 1 | numărul de eșantioane ECG (max 80) |
-| 17 | `ecgSamples`   | `uint16[]` | 2 × ecgCount | ADC 10–12 bit pe 16 bit |
+| 9  | `heartRateBpm` | `uint16` | 2 | puls (sen-11574) |
+| 11 | `humidityX10`  | `uint16` | 2 | umiditate × 10 (ex. 453 → 45.3 %) |
+| 13 | `tempCX10`     | `int16`  | 2 | temperatură × 10 (ex. 367 → 36.7 °C) |
+| 15 | `ecgCount`     | `uint8`  | 1 | numărul de eșantioane ECG (max 80) |
+| 16 | `ecgSamples`   | `uint16[]` | 2 × ecgCount | ADC 10–12 bit pe 16 bit |
 | —  | `flags`        | `uint8`  | 1 | bit 0 = leadOff, bit 1 = lowBattery |
 
-Pe 80 eșantioane ECG: 17 + 160 + 1 = **178 octeți** — încape în MTU-ul standard.
+Pe 80 eșantioane ECG: 16 + 160 + 1 = **177 octeți** — încape în MTU-ul standard.
 
 ### Serializare pe firmware
 
@@ -65,7 +64,6 @@ struct __attribute__((packed)) SensorFrameWire {
   uint32_t seqNumber;
   uint32_t timestampMs;
   uint16_t heartRateBpm;
-  uint8_t  spO2Percent;
   uint16_t humidityX10;
   int16_t  tempCX10;
   uint8_t  ecgCount;
@@ -83,7 +81,6 @@ fun parseSensorFrame(bytes: ByteArray): SensorSample {
     val seq     = buf.int
     val tsMs    = buf.int
     val bpm     = buf.short.toInt() and 0xFFFF
-    val spo2    = buf.get().toInt() and 0xFF
     val humid   = (buf.short.toInt() and 0xFFFF) / 10.0
     val tempC   = buf.short.toInt() / 10.0
     val ecgN    = buf.get().toInt() and 0xFF

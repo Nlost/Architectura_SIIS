@@ -1,0 +1,36 @@
+// Catalog uzual de coduri ICD-10 folosite la consultații.
+// Fiecare intrare conține codul ICD-10 și denumirea afișată a bolii.
+const icd10Codes = [
+  { code: "I10", display: "Hipertensiune arterială esențială (primară)" },
+  { code: "I11", display: "Boală cardiacă hipertensivă" },
+  { code: "I20", display: "Angină pectorală" },
+  { code: "I21", display: "Infarct miocardic acut" },
+  { code: "I25", display: "Cardiopatie ischemică cronică" },
+  { code: "I48", display: "Fibrilație și flutter atrial" },
+  { code: "I49", display: "Alte aritmii cardiace" },
+  { code: "I50", display: "Insuficiență cardiacă" },
+  { code: "I63", display: "Infarct cerebral (AVC ischemic)" },
+  { code: "I70", display: "Ateroscleroză" },
+  { code: "E11", display: "Diabet zaharat de tip 2" },
+  { code: "E78", display: "Tulburări ale metabolismului lipoproteinelor (dislipidemie)" },
+  { code: "E66", display: "Obezitate" },
+  { code: "E03", display: "Hipotiroidism" },
+  { code: "E05", display: "Hipertiroidism (tireotoxicoză)" },
+  { code: "J44", display: "Bronhopneumopatie obstructivă cronică (BPOC)" },
+  { code: "J45", display: "Astm bronșic" },
+  { code: "J18", display: "Pneumonie, agent nespecificat" },
+  { code: "N18", display: "Boală cronică de rinichi" },
+  { code: "K21", display: "Boală de reflux gastroesofagian" },
+  { code: "K29", display: "Gastrită și duodenită" },
+  { code: "M54", display: "Dorsalgie (durere de spate)" },
+  { code: "M17", display: "Gonartroză (artroza genunchiului)" },
+  { code: "M81", display: "Osteoporoză fără fractură patologică" },
+  { code: "G20", display: "Boala Parkinson" },
+  { code: "G30", display: "Boala Alzheimer" },
+  { code: "F32", display: "Episod depresiv" },
+  { code: "F41", display: "Alte tulburări anxioase" },
+  { code: "R07", display: "Durere în gât și torace" },
+  { code: "R51", display: "Cefalee" },
+];
+
+export default icd10Codes;

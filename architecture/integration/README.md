@@ -17,7 +17,7 @@ Acest folder descrie **punctele de contact** între cele patru module proiectate
 
 | # | Perimetru | Protocol | Direcție | Conținut | Frecvență |
 |---|-----------|----------|----------|----------|-----------|
-| 1 | ESP32 ↔ Android | **BLE GATT** | ESP32 → Android (notify) | `SensorFrame` (puls/SpO2, ECG, umid/temp) | ~10 s |
+| 1 | ESP32 ↔ Android | **BLE GATT** | ESP32 → Android (notify) | `SensorFrame` (puls, ECG, umid/temp) | ~10 s |
 | 2 | Android ↔ Cloud (ingestie batch) | **HTTPS REST** | Android → Cloud | `UplinkBatch` (agregat 30 s + burst accel) | ~30 s |
 | 3 | Android ↔ Cloud (alarmă) | **HTTPS REST** | Android → Cloud | `AlertEvent` (+ text) | asincron, la prag |
 | 4 | Android ↔ Cloud (downlink) | **HTTPS REST** | Cloud → Android | `Recommendation[]`, `AlarmRule[]` | la login + periodic |
@@ -48,7 +48,7 @@ Acest folder descrie **punctele de contact** între cele patru module proiectate
 
 ## Observabilitate
 
-- **Application Insights** (Azure) — log + corelare pe `batchId` / `alertId`.
+- **CloudWatch Logs** (AWS) — log + corelare pe `batchId` / `alertId`.
 - Audit separat pentru mesaje HL7/FHIR (trace-ul fiecărui mesaj primit/trimis).
 - Metrici recomandate: rata de succes ingestie, latență `/ingestion/*`, mărimea cozii offline per `deviceId`.
 

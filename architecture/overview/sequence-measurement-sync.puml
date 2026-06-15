@@ -1,12 +1,12 @@
 @startuml sequence-measurement-sync
 !theme plain
-title Secvență — măsurători și alarmă (modul → mobil → Azure)
+title Secvență — măsurători și alarmă (modul → mobil → AWS)
 
 actor Pacient
 participant "Modul ESP32" as ESP
 participant "App Android" as APP
-participant "REST API\nAzure" as API
-database "Azure SQL" as DB
+participant "REST API\nAWS" as API
+database "RDS PostgreSQL" as DB
 
 loop la ~10 secunde
   ESP -> APP : SensorSample\n(ECG, umiditate, temp, puls)

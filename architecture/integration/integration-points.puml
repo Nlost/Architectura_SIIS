@@ -24,10 +24,10 @@ node "Aplicatie web (browser)" as WEB #E8F5E9 {
   component "React / Angular UI" as UI
 }
 
-node "Cloud Azure (App Service)" as CLOUD #F3E5F5 {
+node "Cloud AWS (Elastic Beanstalk)" as CLOUD #F3E5F5 {
   component "REST API" as API
   component "Integration\nHL7 / FHIR" as INT
-  database "Azure SQL" as DB
+  database "RDS PostgreSQL" as DB
 }
 
 ' ============================================================
@@ -46,7 +46,7 @@ API  -left->  CS  : [4] HTTPS GET /recommendations\n+ /alarm-rules (downlink)
 UI   -down->  API : [5] HTTPS REST + JWT\nCRUD fisa / consultatii / grafice
 MF   -down->  INT : [6] HL7 v2 inbound\ntrimitere la specialist
 INT  -up->    MF  : [7] FHIR Bundle outbound\nscrisoare medicala
-API  -down->  DB  : TDS / SQL
+API  -down->  DB  : PostgreSQL
 INT  -down->  DB  : audit HL7/FHIR
 
 note right of CS
