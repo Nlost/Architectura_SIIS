@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getPatientMe } from "../../api";
 import { logoutUser } from "../../api";
+import EcgMonitor from "../../components/EcgMonitor";
 
 
 const handleLogout = () => {
@@ -155,6 +156,10 @@ function PacientValori() {
               <span>{getHumidityInterpretation(umiditate)}</span>
             </div>
           </div>
+        </section>
+
+        <section className="valori-ecg">
+          <EcgMonitor bpm={puls ? Number(puls) : 72} />
         </section>
 
         <section className="valori-panel">

@@ -1,0 +1,97 @@
+.ecg-card {
+  padding: 18px 20px;
+  border-radius: 22px;
+  background: linear-gradient(180deg, #0b1f15 0%, #07130d 100%);
+  border: 1px solid rgba(34, 197, 94, 0.28);
+  box-shadow: 0 18px 44px rgba(4, 20, 12, 0.4);
+}
+
+.ecg-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.ecg-title {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: #7cffb0;
+  font-size: 17px;
+  font-weight: 900;
+  letter-spacing: 0.3px;
+}
+
+.ecg-heart {
+  font-size: 17px;
+  line-height: 1;
+}
+
+.ecg-live {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: #34f37a;
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: 1.4px;
+}
+
+.ecg-live::before {
+  content: "";
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #34f37a;
+  box-shadow: 0 0 10px #34f37a;
+  animation: ecgLivePulse 1.2s ease-in-out infinite;
+}
+
+@keyframes ecgLivePulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.25;
+    transform: scale(0.78);
+  }
+}
+
+.ecg-screen {
+  position: relative;
+  width: 100%;
+  height: 190px;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #06120c;
+  border: 1px solid rgba(34, 197, 94, 0.15);
+}
+
+.ecg-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.ecg-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 13px;
+}
+
+.ecg-status {
+  color: #34f37a;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.ecg-speed {
+  color: #7d8a82;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.3px;
+}
