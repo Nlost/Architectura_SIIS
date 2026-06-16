@@ -28,6 +28,7 @@
   border: 1px solid #d8caff; box-shadow: none;
   min-height: 64px; text-transform: uppercase; letter-spacing: 0.4px;
 }
+
 .pacienti-row .patientName { color: #13072f; font-weight: 900; }
 .pacienti-row .patientName b { background: linear-gradient(135deg, #7c3aed, #5b21b6); }
 .dangerText { color: #e11d48 !important; font-weight: 1000; }
@@ -205,4 +206,36 @@
 @media (max-width: 900px) {
   .formGrid.threeCols, .formGrid.twoCols { grid-template-columns: 1fr; }
   .widePatientModal { width: 100%; max-height: 95vh; }
+}
+/* EDITARE PACIENT */
+
+#editPatientForm {
+  padding: 30px 36px;
+  background: #fbf9ff;
+}
+
+#editPatientForm .formSection {
+  background: white;
+  border: 1px solid #eadfff;
+  border-radius: 22px;
+  padding: 22px;
+  margin-bottom: 20px;
+}
+
+#editPatientForm .sectionTitle h3 {
+  color: #5b21b6;
+  font-size: 17px;
+  font-weight: 900;
+}
+
+#editPatientForm input {
+  background: #faf8ff;
+}
+
+#editPatientForm .formGrid {
+  gap: 18px;
+}
+
+#editPatientForm .formGrid input {
+  height: 52px;
 }

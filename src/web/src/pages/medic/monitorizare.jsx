@@ -42,14 +42,27 @@ const getInitials = (patient) => {
 const getStatus = (sample) => {
   if (!sample) return "Fără date";
 
-  const puls = Number(sample.puls);
-  const temperatura = Number(sample.temperatura);
+  const puls = Number(sample.puls || 0);
+  const temperatura = Number(sample.temperatura || 0);
+  const umiditate = Number(sample.umiditate || 0);
 
-  if (puls > 100 || temperatura >= 37.5) {
+  if (
+    puls > 110 ||
+    puls < 40 ||
+    temperatura > 38 ||
+    temperatura < 35 ||
+    umiditate > 80
+  ) {
     return "Alertă";
   }
 
-  if (puls >= 90 || temperatura >= 37.2) {
+  if (
+    puls > 95 ||
+    puls < 50 ||
+    temperatura > 37.5 ||
+    temperatura < 36 ||
+    umiditate > 70
+  ) {
     return "Observație";
   }
 
@@ -225,15 +238,19 @@ function MonitorizareMedic() {
                       {getPatientName(patient)}
                     </span>
 
-                    <span className={sample?.puls > 100 ? "dangerText" : ""}>
-                      {sample?.puls ? `${sample.puls} bpm` : "—"}
+                     <span className={sample?.puls > 110 || sample?.puls < 40 ? "dangerText" : ""}>           
+                     {sample?.puls ? `${sample.puls} bpm` : "—"}
                     </span>
 
-                    <span>
-                      {sample?.temperatura
-                        ? `${sample.temperatura}°C`
-                        : "—"}
-                    </span>
+<span
+  className={
+    sample?.temperatura > 38 || sample?.temperatura < 35
+      ? "dangerText"
+      : ""
+  }
+>
+  {sample?.temperatura ? `${sample.temperatura}°C` : "—"}
+</span>
 
                     <span>
                       {sample?.umiditate

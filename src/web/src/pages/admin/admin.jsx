@@ -355,15 +355,6 @@ function AdminDashboard() {
             </div>
           </div>
 
-          <div className="admin-stat">
-            <div className="admin-icon pink">⚠</div>
-
-            <div>
-              <p>Probleme</p>
-              <h2>0</h2>
-              <span>dispozitive inactive</span>
-            </div>
-          </div>
         </section>
 
         <section className="admin-content">
