@@ -61,49 +61,70 @@ function Medic() {
     );
   };
 
-  const getStatus = (sample) => {
-    if (!sample) return "Stabil";
+const getStatus = (sample) => {
+  if (!sample) return "Stabil";
 
-    const puls = Number(sample.puls || 0);
-    const temperatura = Number(sample.temperatura || 0);
-    const spo2 = Number(sample.spo2 || 100);
-    const umiditate = Number(sample.umiditate || 0);
+  const puls = Number(sample.puls || 0);
+  const temperatura = Number(sample.temperatura || 0);
+  const umiditate = Number(sample.umiditate || 0);
 
-    if (puls > 110 || temperatura > 38 || spo2 < 92 || umiditate > 80) {
-      return "Alertă";
-    }
+  // ALERTĂ
+  if (
+    puls > 110 ||
+    puls < 40 ||
+    temperatura > 38 ||
+    temperatura < 35 ||
+    umiditate > 80
+  ) {
+    return "Alertă";
+  }
 
-    if (puls > 95 || temperatura > 37.5 || spo2 < 95 || umiditate > 70) {
-      return "Observație";
-    }
+  // OBSERVAȚIE
+  if (
+    puls > 95 ||
+    puls < 50 ||
+    temperatura > 37.5 ||
+    temperatura < 36 ||
+    umiditate > 70
+  ) {
+    return "Observație";
+  }
 
-    return "Stabil";
-  };
+  return "Stabil";
+};
 
-  const getAlertMessage = (sample) => {
-    if (!sample) return "Nu există valori recente.";
+const getAlertMessage = (sample) => {
+  if (!sample) return "Nu există valori recente.";
 
-    const messages = [];
+  const messages = [];
 
-    if (Number(sample.puls || 0) > 110) {
-      messages.push(`Puls ridicat: ${sample.puls} bpm`);
-    }
+  if (Number(sample.puls || 0) > 110) {
+    messages.push(`Puls ridicat: ${sample.puls} bpm`);
+  }
 
-    if (Number(sample.temperatura || 0) > 38) {
-      messages.push(`Temperatură crescută: ${sample.temperatura}°C`);
-    }
+  if (Number(sample.puls || 0) < 40) {
+    messages.push(`Puls scăzut: ${sample.puls} bpm`);
+  }
 
-    if (Number(sample.spo2 || 100) < 92) {
-      messages.push(`SpO2 scăzut: ${sample.spo2}%`);
-    }
+  if (Number(sample.temperatura || 0) > 38) {
+    messages.push(`Temperatură crescută: ${sample.temperatura}°C`);
+  }
 
-    if (Number(sample.umiditate || 0) > 80) {
-      messages.push(`Umiditate crescută: ${sample.umiditate}%`);
-    }
+  if (
+    Number(sample.temperatura || 0) > 0 &&
+    Number(sample.temperatura || 0) < 35
+  ) {
+    messages.push(`Temperatură scăzută: ${sample.temperatura}°C`);
+  }
 
-    return messages.length > 0 ? messages.join(" · ") : "Valori în limite normale.";
-  };
+  if (Number(sample.umiditate || 0) > 80) {
+    messages.push(`Umiditate crescută: ${sample.umiditate}%`);
+  }
 
+  return messages.length > 0
+    ? messages.join(" • ")
+    : "Valori în limite normale.";
+};
   useEffect(() => {
     const loadDashboard = async () => {
       try {

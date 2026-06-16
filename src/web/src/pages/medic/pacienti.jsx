@@ -139,7 +139,7 @@ const handleEditPatient = (patient) => {
     return age;
   };
   const getStatus = (sample) => {
-  if (!sample) return "Stabil";
+  if (!sample) return "Fara date";
 
   if (
     sample.puls > 110 ||
