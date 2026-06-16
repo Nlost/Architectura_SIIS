@@ -1,0 +1,15 @@
+{
+  "name": "SeniorWatchCore",
+  "version": "1.0.0",
+  "description": "Module firmware SeniorWatch compilate pentru testele native Unity.",
+  "keywords": ["seniorwatch", "test"],
+  "frameworks": "*",
+  "platforms": "native",
+  "build": {
+    "includeDir": "../../../../src/embedded/include",
+    "srcDir": "../../../../src/embedded/src",
+    "srcFilter": [
+      "+<SensorAggregator.cpp>"
+    ]
+  }
+}

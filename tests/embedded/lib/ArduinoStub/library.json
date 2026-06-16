@@ -1,0 +1,8 @@
+{
+  "name": "ArduinoStub",
+  "version": "1.0.0",
+  "description": "Stub minimal pentru Arduino.h / DHT.h folosit la testele native ale firmware-ului SeniorWatch.",
+  "keywords": ["test", "stub", "arduino"],
+  "frameworks": "*",
+  "platforms": "native"
+}
