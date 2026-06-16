@@ -4,12 +4,6 @@ title: ""
 
 <div class="cover-page">
 
-<p class="cover-org"><strong>Fundația „Bătrânii sunt ai noștri"</strong></p>
-<p class="cover-contact">Str. Sapienței nr. 28/A, Timișoara, cod 300555</p>
-<p class="cover-contact">Tel. 0356-366555 | fundatiabatriniisuntainostri@fbs.ro</p>
-
-<hr class="cover-rule" />
-
 <h1 class="cover-title">PLAN DE MARKETING</h1>
 <h2 class="cover-subtitle">SeniorWatch – Sistem de Teleasistență la Domiciliu</h2>
 
