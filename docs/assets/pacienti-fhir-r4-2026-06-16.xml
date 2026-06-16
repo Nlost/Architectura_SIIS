@@ -1,0 +1,414 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Bundle xmlns="http://hl7.org/fhir">
+  <id value="patients-export-1781618414686"/>
+  <meta>
+    <lastUpdated value="2026-06-16T14:00:14.685Z"/>
+    <profile value="http://hl7.org/fhir/StructureDefinition/Bundle"/>
+  </meta>
+  <type value="collection"/>
+  <timestamp value="2026-06-16T14:00:14.685Z"/>
+  <total value="13"/>
+  <link>
+    <relation value="self"/>
+    <url value="https://seniorwatch.mardelean.com/api/patients"/>
+  </link>
+  <entry>
+    <fullUrl value="https://seniorwatch.mardelean.com/fhir/Patient/395cf5e1-fbaa-4e4f-8edf-cea5417e5f78"/>
+    <resource>
+      <Patient xmlns="http://hl7.org/fhir">
+        <id value="395cf5e1-fbaa-4e4f-8edf-cea5417e5f78"/>
+        <identifier>
+          <use value="official"/>
+          <system value="https://hl7.ro/fhir/sid/cnp"/>
+          <value value="6000809013534"/>
+        </identifier>
+        <active value="true"/>
+        <name>
+          <use value="official"/>
+          <text value="Craciun Bianca"/>
+          <family value="Craciun"/>
+          <given value="Bianca"/>
+        </name>
+        <telecom>
+          <system value="phone"/>
+          <value value="0770613413"/>
+          <use value="home"/>
+        </telecom>
+        <telecom>
+          <system value="email"/>
+          <value value="bianca.craciun@seniorwatchc.com"/>
+          <use value="home"/>
+        </telecom>
+        <gender value="female"/>
+        <birthDate value="2000-08-09"/>
+        <address>
+          <use value="home"/>
+          <type value="physical"/>
+          <line value="strada Florilor"/>
+          <city value="Alba Iulia"/>
+          <district value="Alba"/>
+          <postalCode value="510001"/>
+          <country value="Romania"/>
+        </address>
+        <generalPractitioner>
+          <reference value="Practitioner/1d84b4b8-7e76-4eaf-bc71-1a0f596cead4"/>
+          <type value="Practitioner"/>
+        </generalPractitioner>
+      </Patient>
+    </resource>
+  </entry>
+  <entry>
+    <fullUrl value="https://seniorwatch.mardelean.com/fhir/Encounter/bb5cca4e-b2fa-41e8-bc75-e0e46742b3ef"/>
+    <resource>
+      <Encounter xmlns="http://hl7.org/fhir">
+        <id value="bb5cca4e-b2fa-41e8-bc75-e0e46742b3ef"/>
+        <status value="in-progress"/>
+        <class>
+          <system value="http://terminology.hl7.org/CodeSystem/v3-ActCode"/>
+          <code value="AMB"/>
+          <display value="ambulatory"/>
+        </class>
+        <subject>
+          <reference value="Patient/395cf5e1-fbaa-4e4f-8edf-cea5417e5f78"/>
+        </subject>
+        <reasonCode>
+          <text value="Control"/>
+        </reasonCode>
+        <period>
+          <start value="2026-06-23T14:20:00Z"/>
+        </period>
+      </Encounter>
+    </resource>
+  </entry>
+  <entry>
+    <fullUrl value="https://seniorwatch.mardelean.com/fhir/Encounter/6f2f51d5-d75e-4935-b9c7-3fd1b9dde05f"/>
+    <resource>
+      <Encounter xmlns="http://hl7.org/fhir">
+        <id value="6f2f51d5-d75e-4935-b9c7-3fd1b9dde05f"/>
+        <status value="in-progress"/>
+        <class>
+          <system value="http://terminology.hl7.org/CodeSystem/v3-ActCode"/>
+          <code value="AMB"/>
+          <display value="ambulatory"/>
+        </class>
+        <subject>
+          <reference value="Patient/395cf5e1-fbaa-4e4f-8edf-cea5417e5f78"/>
+        </subject>
+        <reasonCode>
+          <text value="Control"/>
+        </reasonCode>
+        <period>
+          <start value="2026-06-22T07:40:00Z"/>
+        </period>
+      </Encounter>
+    </resource>
+  </entry>
+  <entry>
+    <fullUrl value="https://seniorwatch.mardelean.com/fhir/Condition/6f2f51d5-d75e-4935-b9c7-3fd1b9dde05f-condition"/>
+    <resource>
+      <Condition xmlns="http://hl7.org/fhir">
+        <id value="6f2f51d5-d75e-4935-b9c7-3fd1b9dde05f-condition"/>
+        <clinicalStatus>
+          <coding>
+            <system value="http://terminology.hl7.org/CodeSystem/condition-clinical"/>
+            <code value="active"/>
+          </coding>
+        </clinicalStatus>
+        <code>
+          <coding>
+            <system value="http://hl7.org/fhir/sid/icd-10"/>
+            <code value="I10"/>
+            <display value="Hipertensiune"/>
+          </coding>
+          <text value="Hipertensiune"/>
+        </code>
+        <subject>
+          <reference value="Patient/395cf5e1-fbaa-4e4f-8edf-cea5417e5f78"/>
+        </subject>
+        <encounter>
+          <reference value="Encounter/6f2f51d5-d75e-4935-b9c7-3fd1b9dde05f"/>
+        </encounter>
+        <recordedDate value="2026-06-22T07:40:00Z"/>
+        <note>
+          <text value="Simptome: Dureri de cap"/>
+        </note>
+        <note>
+          <text value="Trimiteri: Fara"/>
+        </note>
+        <note>
+          <text value="Rețete: Nurofen"/>
+        </note>
+      </Condition>
+    </resource>
+  </entry>
+  <entry>
+    <fullUrl value="https://seniorwatch.mardelean.com/fhir/Encounter/7a013633-7953-4473-bd1b-70bf53e6cbc1"/>
+    <resource>
+      <Encounter xmlns="http://hl7.org/fhir">
+        <id value="7a013633-7953-4473-bd1b-70bf53e6cbc1"/>
+        <status value="in-progress"/>
+        <class>
+          <system value="http://terminology.hl7.org/CodeSystem/v3-ActCode"/>
+          <code value="AMB"/>
+          <display value="ambulatory"/>
+        </class>
+        <subject>
+          <reference value="Patient/395cf5e1-fbaa-4e4f-8edf-cea5417e5f78"/>
+        </subject>
+        <reasonCode>
+          <text value="Control"/>
+        </reasonCode>
+        <period>
+          <start value="2026-06-16T11:00:00Z"/>
+        </period>
+      </Encounter>
+    </resource>
+  </entry>
+  <entry>
+    <fullUrl value="https://seniorwatch.mardelean.com/fhir/Condition/7a013633-7953-4473-bd1b-70bf53e6cbc1-condition"/>
+    <resource>
+      <Condition xmlns="http://hl7.org/fhir">
+        <id value="7a013633-7953-4473-bd1b-70bf53e6cbc1-condition"/>
+        <clinicalStatus>
+          <coding>
+            <system value="http://terminology.hl7.org/CodeSystem/condition-clinical"/>
+            <code value="active"/>
+          </coding>
+        </clinicalStatus>
+        <code>
+          <coding>
+            <system value="http://hl7.org/fhir/sid/icd-10"/>
+            <code value="I49"/>
+            <display value="Alte aritmii cardiace"/>
+          </coding>
+          <text value="Alte aritmii cardiace"/>
+        </code>
+        <subject>
+          <reference value="Patient/395cf5e1-fbaa-4e4f-8edf-cea5417e5f78"/>
+        </subject>
+        <encounter>
+          <reference value="Encounter/7a013633-7953-4473-bd1b-70bf53e6cbc1"/>
+        </encounter>
+        <recordedDate value="2026-06-16T11:00:00Z"/>
+        <note>
+          <text value="Simptome: Dureri in zona inimii"/>
+        </note>
+        <note>
+          <text value="Trimiteri: Cardiolagie"/>
+        </note>
+        <note>
+          <text value="Rețete: Metoprolol 50mg - 1 comprimat dimineata/zi timp de 30 de zile"/>
+        </note>
+      </Condition>
+    </resource>
+  </entry>
+  <entry>
+    <fullUrl value="https://seniorwatch.mardelean.com/fhir/AllergyIntolerance/b6bd94a3-29ca-42cd-ac4c-2a0bca868568"/>
+    <resource>
+      <AllergyIntolerance xmlns="http://hl7.org/fhir">
+        <id value="b6bd94a3-29ca-42cd-ac4c-2a0bca868568"/>
+        <clinicalStatus>
+          <coding>
+            <system value="http://terminology.hl7.org/CodeSystem/allergyintolerance-clinical"/>
+            <code value="active"/>
+          </coding>
+        </clinicalStatus>
+        <code>
+          <text value="Penicilina"/>
+        </code>
+        <patient>
+          <reference value="Patient/395cf5e1-fbaa-4e4f-8edf-cea5417e5f78"/>
+        </patient>
+        <recordedDate value="2026-06-14T14:48:43.700252Z"/>
+        <reaction>
+          <manifestation>
+            <text value="Durere de cap"/>
+          </manifestation>
+          <severity value="mild"/>
+        </reaction>
+      </AllergyIntolerance>
+    </resource>
+  </entry>
+  <entry>
+    <fullUrl value="https://seniorwatch.mardelean.com/fhir/AllergyIntolerance/a3ee858e-db5f-46c4-b81f-b25fcbc25a44"/>
+    <resource>
+      <AllergyIntolerance xmlns="http://hl7.org/fhir">
+        <id value="a3ee858e-db5f-46c4-b81f-b25fcbc25a44"/>
+        <clinicalStatus>
+          <coding>
+            <system value="http://terminology.hl7.org/CodeSystem/allergyintolerance-clinical"/>
+            <code value="active"/>
+          </coding>
+        </clinicalStatus>
+        <code>
+          <text value="Penicilina"/>
+        </code>
+        <patient>
+          <reference value="Patient/395cf5e1-fbaa-4e4f-8edf-cea5417e5f78"/>
+        </patient>
+        <recordedDate value="2026-06-14T11:56:39.471039Z"/>
+        <reaction>
+          <manifestation>
+            <text value="Dureri de cap"/>
+          </manifestation>
+          <severity value="mild"/>
+        </reaction>
+      </AllergyIntolerance>
+    </resource>
+  </entry>
+  <entry>
+    <fullUrl value="https://seniorwatch.mardelean.com/fhir/CarePlan/0689b1d1-b4a8-43a5-9e9f-1677f8b3a69c"/>
+    <resource>
+      <CarePlan xmlns="http://hl7.org/fhir">
+        <id value="0689b1d1-b4a8-43a5-9e9f-1677f8b3a69c"/>
+        <status value="active"/>
+        <intent value="plan"/>
+        <title>
+          <value value="Monitorizarea zilnica a pulsului"/>
+        </title>
+        <subject>
+          <reference value="Patient/395cf5e1-fbaa-4e4f-8edf-cea5417e5f78"/>
+        </subject>
+        <created value="2026-06-15T19:49:16.112819Z"/>
+        <activity>
+          <detail>
+            <kind value="ServiceRequest"/>
+            <code>
+              <text value="Monitorizarea zilnica a pulsului"/>
+            </code>
+            <status value="scheduled"/>
+          </detail>
+        </activity>
+      </CarePlan>
+    </resource>
+  </entry>
+  <entry>
+    <fullUrl value="https://seniorwatch.mardelean.com/fhir/CarePlan/5639c9f5-d8f3-4be5-91d5-ed88ec0ff551"/>
+    <resource>
+      <CarePlan xmlns="http://hl7.org/fhir">
+        <id value="5639c9f5-d8f3-4be5-91d5-ed88ec0ff551"/>
+        <status value="active"/>
+        <intent value="plan"/>
+        <title>
+          <value value="Plimbare"/>
+        </title>
+        <subject>
+          <reference value="Patient/395cf5e1-fbaa-4e4f-8edf-cea5417e5f78"/>
+        </subject>
+        <created value="2026-06-13T19:37:00.906182Z"/>
+        <activity>
+          <detail>
+            <kind value="ServiceRequest"/>
+            <code>
+              <text value="Plimbare"/>
+            </code>
+            <status value="scheduled"/>
+            <description value="Evitarea stresului"/>
+          </detail>
+        </activity>
+      </CarePlan>
+    </resource>
+  </entry>
+  <entry>
+    <fullUrl value="https://seniorwatch.mardelean.com/fhir/Observation/395cf5e1-fbaa-4e4f-8edf-cea5417e5f78-vital-puls"/>
+    <resource>
+      <Observation xmlns="http://hl7.org/fhir">
+        <id value="395cf5e1-fbaa-4e4f-8edf-cea5417e5f78-vital-puls"/>
+        <status value="final"/>
+        <category>
+          <coding>
+            <system value="http://terminology.hl7.org/CodeSystem/observation-category"/>
+            <code value="vital-signs"/>
+            <display value="Vital Signs"/>
+          </coding>
+        </category>
+        <code>
+          <coding>
+            <system value="http://loinc.org"/>
+            <code value="8867-4"/>
+            <display value="Heart rate"/>
+          </coding>
+          <text value="Heart rate"/>
+        </code>
+        <subject>
+          <reference value="Patient/395cf5e1-fbaa-4e4f-8edf-cea5417e5f78"/>
+        </subject>
+        <effectiveDateTime value="2026-06-15T15:49:38Z"/>
+        <valueQuantity>
+          <value value="84"/>
+          <unit value="beats/minute"/>
+          <system value="http://unitsofmeasure.org"/>
+          <code value="/min"/>
+        </valueQuantity>
+      </Observation>
+    </resource>
+  </entry>
+  <entry>
+    <fullUrl value="https://seniorwatch.mardelean.com/fhir/Observation/395cf5e1-fbaa-4e4f-8edf-cea5417e5f78-vital-temperatura"/>
+    <resource>
+      <Observation xmlns="http://hl7.org/fhir">
+        <id value="395cf5e1-fbaa-4e4f-8edf-cea5417e5f78-vital-temperatura"/>
+        <status value="final"/>
+        <category>
+          <coding>
+            <system value="http://terminology.hl7.org/CodeSystem/observation-category"/>
+            <code value="vital-signs"/>
+            <display value="Vital Signs"/>
+          </coding>
+        </category>
+        <code>
+          <coding>
+            <system value="http://loinc.org"/>
+            <code value="8310-5"/>
+            <display value="Body temperature"/>
+          </coding>
+          <text value="Body temperature"/>
+        </code>
+        <subject>
+          <reference value="Patient/395cf5e1-fbaa-4e4f-8edf-cea5417e5f78"/>
+        </subject>
+        <effectiveDateTime value="2026-06-15T15:49:38Z"/>
+        <valueQuantity>
+          <value value="24.8"/>
+          <unit value="Cel"/>
+          <system value="http://unitsofmeasure.org"/>
+          <code value="Cel"/>
+        </valueQuantity>
+      </Observation>
+    </resource>
+  </entry>
+  <entry>
+    <fullUrl value="https://seniorwatch.mardelean.com/fhir/Observation/395cf5e1-fbaa-4e4f-8edf-cea5417e5f78-vital-umiditate"/>
+    <resource>
+      <Observation xmlns="http://hl7.org/fhir">
+        <id value="395cf5e1-fbaa-4e4f-8edf-cea5417e5f78-vital-umiditate"/>
+        <status value="final"/>
+        <category>
+          <coding>
+            <system value="http://terminology.hl7.org/CodeSystem/observation-category"/>
+            <code value="vital-signs"/>
+            <display value="Vital Signs"/>
+          </coding>
+        </category>
+        <code>
+          <coding>
+            <system value="https://seniorwatch.ro/fhir/sid/observation"/>
+            <code value="humidity"/>
+            <display value="Ambient humidity"/>
+          </coding>
+          <text value="Ambient humidity"/>
+        </code>
+        <subject>
+          <reference value="Patient/395cf5e1-fbaa-4e4f-8edf-cea5417e5f78"/>
+        </subject>
+        <effectiveDateTime value="2026-06-15T15:49:38Z"/>
+        <valueQuantity>
+          <value value="52"/>
+          <unit value="%"/>
+          <system value="http://unitsofmeasure.org"/>
+          <code value="%"/>
+        </valueQuantity>
+      </Observation>
+    </resource>
+  </entry>
+</Bundle>
