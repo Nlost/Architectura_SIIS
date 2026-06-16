@@ -42,7 +42,7 @@ const buildAlertsFromPatients = (patients) => {
     const patientName = getPatientName(patient);
     const initials = getInitials(patient);
 
-    if (sample.puls && Number(sample.puls) > 100) {
+    if (sample.puls && Number(sample.puls) > 110) {
       alerts.push({
         id: `${patient.id}-puls`,
         initials,
@@ -58,7 +58,7 @@ const buildAlertsFromPatients = (patients) => {
       });
     }
 
-    if (sample.temperatura && Number(sample.temperatura) >= 37.5) {
+    if (sample.temperatura && Number(sample.temperatura) >= 38) {
       alerts.push({
         id: `${patient.id}-temp`,
         initials,
@@ -73,8 +73,26 @@ const buildAlertsFromPatients = (patients) => {
         status: "ACTIVE",
       });
     }
+    if (
+  sample.temperatura &&
+  Number(sample.temperatura) < 35
+) {
+  alerts.push({
+    id: `${patient.id}-temp-low`,
+    initials,
+    patient: patientName,
+    type: "Temperatură scăzută",
+    value: `${sample.temperatura}°C`,
+    severity: "CRITICAL",
+    time: "Ultima măsurătoare",
+    threshold: "35 - 38°C",
+    recommendation: "Verificare imediată a pacientului.",
+    history: [`Temperatură curentă: ${sample.temperatura}°C`],
+    status: "ACTIVE",
+  });
+}
 
-    if (sample.umiditate && Number(sample.umiditate) > 70) {
+    if (sample.umiditate && Number(sample.umiditate) > 80) {
       alerts.push({
         id: `${patient.id}-umiditate`,
         initials,

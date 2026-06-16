@@ -1,18 +1,24 @@
 import "../../App.css";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { getPatients } from "../../api";
-import { logoutUser } from "../../api";
-
+import {
+  getPatients,
+  getConsultations,
+  getRecommendationsByPatient,
+  logoutUser,
+} from "../../api";
 
 const handleLogout = () => {
   logoutUser();
   window.location.href = "/login";
 };
 
-
 function Medic() {
   const navigate = useNavigate();
+
+  const [patients, setPatients] = useState([]);
+  const [consultations, setConsultations] = useState([]);
+  const [recommendationsCount, setRecommendationsCount] = useState(0);
 
   const formatDoctorName = (email) => {
     if (!email || email === "medic") return "Medic";
@@ -31,31 +37,6 @@ function Medic() {
 
     return `Dr. ${nameParts[0] || "Medic"}`;
   };
-
-  const email = localStorage.getItem("sw_email") || "medic";
-  const doctorName = formatDoctorName(email);
-
-  const doctorInitials = doctorName
-    .replace("Dr. ", "")
-    .split(" ")
-    .map((p) => p[0])
-    .join("")
-    .toUpperCase();
-
-  const [patients, setPatients] = useState([]);
-
-  useEffect(() => {
-    const loadDashboard = async () => {
-      try {
-        const data = await getPatients();
-        setPatients(data);
-      } catch (error) {
-        console.log("Eroare dashboard medic:", error);
-      }
-    };
-
-    loadDashboard();
-  }, []);
 
   const calcAge = (birthDate) => {
     if (!birthDate) return "—";
@@ -80,31 +61,144 @@ function Medic() {
     );
   };
 
-  const getStatus = (sample) => {
-    if (!sample) return "Stabil";
+const getStatus = (sample) => {
+  if (!sample) return "Stabil";
 
-    if (
-      sample.puls > 110 ||
-      sample.temperatura > 38 ||
-      sample.spo2 < 92 ||
-      sample.umiditate > 80
-    ) {
-      return "Alertă";
-    }
+  const puls = Number(sample.puls || 0);
+  const temperatura = Number(sample.temperatura || 0);
+  const umiditate = Number(sample.umiditate || 0);
 
-    if (
-      sample.puls > 95 ||
-      sample.temperatura > 37.5 ||
-      sample.spo2 < 95 ||
-      sample.umiditate > 70
-    ) {
-      return "Observație";
-    }
+  // ALERTĂ
+  if (
+    puls > 110 ||
+    puls < 40 ||
+    temperatura > 38 ||
+    temperatura < 35 ||
+    umiditate > 80
+  ) {
+    return "Alertă";
+  }
 
-    return "Stabil";
-  };
+  // OBSERVAȚIE
+  if (
+    puls > 95 ||
+    puls < 50 ||
+    temperatura > 37.5 ||
+    temperatura < 36 ||
+    umiditate > 70
+  ) {
+    return "Observație";
+  }
+
+  return "Stabil";
+};
+
+const getAlertMessage = (sample) => {
+  if (!sample) return "Nu există valori recente.";
+
+  const messages = [];
+
+  if (Number(sample.puls || 0) > 110) {
+    messages.push(`Puls ridicat: ${sample.puls} bpm`);
+  }
+
+  if (Number(sample.puls || 0) < 40) {
+    messages.push(`Puls scăzut: ${sample.puls} bpm`);
+  }
+
+  if (Number(sample.temperatura || 0) > 38) {
+    messages.push(`Temperatură crescută: ${sample.temperatura}°C`);
+  }
+
+  if (
+    Number(sample.temperatura || 0) > 0 &&
+    Number(sample.temperatura || 0) < 35
+  ) {
+    messages.push(`Temperatură scăzută: ${sample.temperatura}°C`);
+  }
+
+  if (Number(sample.umiditate || 0) > 80) {
+    messages.push(`Umiditate crescută: ${sample.umiditate}%`);
+  }
+
+  return messages.length > 0
+    ? messages.join(" • ")
+    : "Valori în limite normale.";
+};
+  useEffect(() => {
+    const loadDashboard = async () => {
+      try {
+        const patientsData = await getPatients();
+        setPatients(Array.isArray(patientsData) ? patientsData : []);
+
+        try {
+          const consultationsData = await getConsultations();
+          setConsultations(Array.isArray(consultationsData) ? consultationsData : []);
+        } catch (error) {
+          console.log("Eroare consultații dashboard:", error);
+          setConsultations([]);
+        }
+
+        try {
+          const allRecommendations = await Promise.all(
+            (Array.isArray(patientsData) ? patientsData : []).map((p) =>
+              getRecommendationsByPatient(p.id).catch(() => [])
+            )
+          );
+
+          setRecommendationsCount(allRecommendations.flat().length);
+        } catch (error) {
+          console.log("Eroare recomandări dashboard:", error);
+          setRecommendationsCount(0);
+        }
+      } catch (error) {
+        console.log("Eroare dashboard medic:", error);
+        setPatients([]);
+      }
+    };
+
+    loadDashboard();
+  }, []);
+
+  const email = localStorage.getItem("sw_email") || "medic";
+  const doctorName = formatDoctorName(email);
+
+  const doctorInitials = doctorName
+    .replace("Dr. ", "")
+    .split(" ")
+    .map((p) => p[0])
+    .join("")
+    .toUpperCase();
 
   const recentPatients = patients.slice(0, 5);
+
+  const activeAlerts = patients.filter((p) => {
+    const sample = p.latestSample || p.lastSample || p.sensorSample || null;
+    return getStatus(sample) === "Alertă";
+  }).length;
+
+  const recentAlerts = patients
+    .filter((p) => {
+      const sample = p.latestSample || p.lastSample || p.sensorSample || null;
+      return getStatus(sample) === "Alertă";
+    })
+    .slice(0, 3);
+
+  const todayConsultations = consultations.filter((c) => {
+    const rawDate = c.visitedAt || c.recordedAt || c.createdAt;
+    if (!rawDate) return false;
+
+    const date = new Date(rawDate);
+    if (Number.isNaN(date.getTime())) return false;
+
+    const today = new Date();
+
+    return (
+      date.getDate() === today.getDate() &&
+      date.getMonth() === today.getMonth() &&
+      date.getFullYear() === today.getFullYear()
+    );
+  }).length;
 
   return (
     <div className="app">
@@ -182,10 +276,11 @@ function Medic() {
             🔗 HL7 FHIR
           </a>
         </nav>
-        
+
         <button className="logoutBtn" onClick={handleLogout}>
-  Logout
-</button>
+          Logout
+        </button>
+
         <div className="profile">
           <div>{doctorInitials || "?"}</div>
           <span>
@@ -220,8 +315,8 @@ function Medic() {
             <div className="icon pink">🔔</div>
             <div>
               <p>Alerte active</p>
-              <h2>0</h2>
-              <span>urmează legare cu tabela de alerte</span>
+              <h2>{activeAlerts}</h2>
+              <span>calculate din valorile senzorilor</span>
             </div>
           </div>
 
@@ -229,8 +324,8 @@ function Medic() {
             <div className="icon green">💚</div>
             <div>
               <p>Recomandări active</p>
-              <h2>0</h2>
-              <span>urmează legare cu recomandări</span>
+              <h2>{recommendationsCount}</h2>
+              <span>recomandări asociate pacienților</span>
             </div>
           </div>
 
@@ -238,8 +333,8 @@ function Medic() {
             <div className="icon violet">📅</div>
             <div>
               <p>Consultații azi</p>
-              <h2>0</h2>
-              <span>urmează legare cu consultații</span>
+              <h2>{todayConsultations}</h2>
+              <span>consultații înregistrate astăzi</span>
             </div>
           </div>
         </section>
@@ -275,12 +370,12 @@ function Medic() {
                   <span>-</span>
                   <span>-</span>
                   <span>-</span>
-                  <span>-</span>
                 </div>
               ) : (
                 recentPatients.map((p) => {
                   const d = p.demographics || {};
-                  const sample = p.latestSample || p.lastSample || p.sensorSample || null;
+                  const sample =
+                    p.latestSample || p.lastSample || p.sensorSample || null;
 
                   const fullName = [d.nume, d.prenume]
                     .filter(Boolean)
@@ -301,22 +396,30 @@ function Medic() {
 
                       <span>{calcAge(d.dataNasterii)}</span>
 
-                      <span className={sample?.puls > 110 ? "dangerText" : ""}>
-                        {sample?.puls ? `${sample.puls} bpm` : "-"}
+                      <span className={Number(sample?.puls || 0) > 110 ? "dangerText" : ""}>
+                        {sample?.puls !== undefined && sample?.puls !== null
+                          ? `${sample.puls} bpm`
+                          : "-"}
                       </span>
 
                       <span
                         className={
-                          sample?.temperatura > 38 ? "dangerText" : ""
+                          Number(sample?.temperatura || 0) > 38
+                            ? "dangerText"
+                            : ""
                         }
                       >
-                        {sample?.temperatura
+                        {sample?.temperatura !== undefined &&
+                        sample?.temperatura !== null
                           ? `${sample.temperatura}°C`
                           : "-"}
                       </span>
 
                       <span>
-                        {sample?.umiditate ? `${sample.umiditate}%` : "-"}
+                        {sample?.umiditate !== undefined &&
+                        sample?.umiditate !== null
+                          ? `${sample.umiditate}%`
+                          : "-"}
                       </span>
 
                       <span className={`badge ${status}`}>{status}</span>
@@ -340,11 +443,31 @@ function Medic() {
                 </button>
               </div>
 
-              <div className="alert info">
-                <b>Nu există alerte recente</b>
-                <span>-</span>
-                <small>-</small>
-              </div>
+              {recentAlerts.length === 0 ? (
+                <div className="alert info">
+                  <b>Nu există alerte recente</b>
+                  <span>-</span>
+                  <small>Valorile pacienților sunt în limite normale.</small>
+                </div>
+              ) : (
+                recentAlerts.map((p) => {
+                  const d = p.demographics || {};
+                  const sample =
+                    p.latestSample || p.lastSample || p.sensorSample || null;
+
+                  const fullName = [d.nume, d.prenume]
+                    .filter(Boolean)
+                    .join(" ");
+
+                  return (
+                    <div className="alert danger" key={p.id}>
+                      <b>{fullName || "Pacient"}</b>
+                      <span>{getStatus(sample)}</span>
+                      <small>{getAlertMessage(sample)}</small>
+                    </div>
+                  );
+                })
+              )}
             </div>
           </div>
         </section>

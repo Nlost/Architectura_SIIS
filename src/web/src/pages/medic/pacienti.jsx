@@ -85,7 +85,7 @@ function PacientiMedic() {
   const [createdPatientInfo, setCreatedPatientInfo] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [showEditModal, setShowEditModal] = useState(false);
-  const [selectedPatient, setSelectedPatient] = useState(null);
+const [selectedPatient, setSelectedPatient] = useState(null);
   
   const loadPatients = async () => {
     try {
@@ -138,6 +138,29 @@ const handleEditPatient = (patient) => {
 
     return age;
   };
+  const getStatus = (sample) => {
+  if (!sample) return "Fara date";
+
+  if (
+    sample.puls > 110 ||
+    sample.temperatura > 38 ||
+    sample.spo2 < 92 ||
+    sample.umiditate > 80
+  ) {
+    return "Alertă";
+  }
+
+  if (
+    sample.puls > 95 ||
+    sample.temperatura > 37.5 ||
+    sample.spo2 < 95 ||
+    sample.umiditate > 70
+  ) {
+    return "Observație";
+  }
+
+  return "Stabil";
+};
 
   const normalizeText = (text) => {
     return text
@@ -344,6 +367,19 @@ const filteredPatients = patients.filter((p) => {
     setNewPatient(initialNewPatient);
   };
 
+const totalPatients = patients.length;
+
+const stablePatients = patients.filter((p) => {
+  const sample = p.latestSample || null;
+  return getStatus(sample) === "Stabil";
+}).length;
+
+const alertsCount = patients.filter((p) => {
+  const sample = p.latestSample || null;
+  return getStatus(sample) === "Alertă";
+}).length;
+
+
   return (
     <div className="app">
       <aside className="sidebar">
@@ -438,8 +474,8 @@ const filteredPatients = patients.filter((p) => {
             <div className="icon purple">👥</div>
             <div>
               <p>Total pacienți</p>
-              <h2>{patients.length}</h2>
-              <span>pacienți asociați medicului</span>
+                <h2>{totalPatients}</h2>             
+                <span>pacienți asociați medicului</span>
             </div>
           </div>
 
@@ -447,7 +483,7 @@ const filteredPatients = patients.filter((p) => {
             <div className="icon green">💚</div>
             <div>
               <p>Stabili</p>
-              <h2>{patients.length}</h2>
+              <h2>{stablePatients}</h2>
               <span>fără alerte active</span>
             </div>
           </div>
@@ -456,17 +492,8 @@ const filteredPatients = patients.filter((p) => {
             <div className="icon pink">🔔</div>
             <div>
               <p>Cu alerte</p>
-              <h2>0</h2>
-              <span>urmează legare cu alerte</span>
-            </div>
-          </div>
-
-          <div className="stat">
-            <div className="icon violet">📈</div>
-            <div>
-              <p>Monitorizați azi</p>
-              <h2>0</h2>
-              <span>urmează legare cu senzori</span>
+<h2>{alertsCount}</h2>
+<span>pacienți cu alerte active</span>
             </div>
           </div>
         </section>
@@ -529,7 +556,7 @@ const filteredPatients = patients.filter((p) => {
                 const age = d.dataNasterii
                   ? `${calcAge(d.dataNasterii)} ani`
                   : "—";
-
+const status = getStatus(sample);
                 return (
                   <div className="tableRow pacienti-row" key={p.id}>
                     <span className="patientName">
@@ -542,8 +569,9 @@ const filteredPatients = patients.filter((p) => {
 <span>{sample?.puls ? `${sample.puls} bpm` : "—"}</span>
 <span>{sample?.temperatura ? `${sample.temperatura}°C` : "—"}</span>
 <span>{sample?.umiditate ? `${sample.umiditate}%` : "—"}</span>
-<span className="badge Stabil">Stabil</span>
-<span className="patientActions">
+<span className={`badge ${status}`}>
+  {status}
+</span><span className="patientActions">
   <button onClick={() => navigate(`/medic/pacient/${p.id}`)}>
     Fișă
   </button>
@@ -551,8 +579,6 @@ const filteredPatients = patients.filter((p) => {
   <button onClick={() => handleEditPatient(p)}>
     Editează
   </button>
-
-  <button>Alerte</button>
 </span>
                   </div>
                 );
@@ -979,4 +1005,5 @@ const filteredPatients = patients.filter((p) => {
     </div>
   );
 }
+
 export default PacientiMedic;

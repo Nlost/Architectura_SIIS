@@ -246,23 +246,38 @@ body {
   font-size: 26px;
 }
 
+
+
+
+
 .audit-table {
   margin-top: 24px;
   display: flex;
   flex-direction: column;
   gap: 12px;
+  width: 100%;
 }
 
 .audit-row {
   display: grid;
-  grid-template-columns: 1fr 0.8fr 0.9fr 0.9fr 1.6fr 1fr 0.8fr;
+grid-template-columns:
+1.4fr 0.8fr 0.9fr 0.9fr 1fr 0.8fr;
   align-items: center;
-  padding: 18px;
+  padding: 18px 16px;
   border-radius: 18px;
   background: #fbf9ff;
   font-weight: 800;
   color: #4e3d73;
-  gap: 10px;
+  gap: 14px;
+}
+
+.audit-row > span {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .audit-header {
@@ -270,15 +285,22 @@ body {
   color: #9278c7;
   font-size: 12px;
   text-transform: uppercase;
+  padding: 0 16px 10px;
 }
 
 .audit-type,
 .audit-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   width: fit-content;
-  padding: 9px 14px;
+  min-width: 72px;
+  height: 34px;
+  padding: 0 14px;
   border-radius: 999px;
   font-size: 12px;
   font-weight: 900;
+  line-height: 1;
 }
 
 .audit-type.CREATE,
@@ -355,4 +377,17 @@ body {
 .audit-status.DENIED {
   background: #ffe4ef;
   color: #e11d48;
+}
+
+.audit-filters-single {
+  grid-template-columns: minmax(260px, 420px);
+}
+
+.audit-empty {
+  padding: 22px;
+  border-radius: 18px;
+  background: #fbf9ff;
+  border: 1px solid #eadfff;
+  color: #6b617f;
+  font-weight: 800;
 }

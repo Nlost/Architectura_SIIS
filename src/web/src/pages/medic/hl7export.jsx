@@ -42,6 +42,28 @@ function Hl7Export() {
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
 
+  
+  const formatDoctorName = (email) => {
+  if (!email) return "Medic";
+
+  const username = email.split("@")[0];
+  const parts = username
+    .split(".")
+    .filter(Boolean)
+    .map((p) => p.charAt(0).toUpperCase() + p.slice(1).toLowerCase());
+
+  return parts.length >= 2 ? `Dr. ${parts.join(" ")}` : `Dr. ${parts[0] || "Medic"}`;
+};
+  const doctorEmail = localStorage.getItem("sw_email") || "";
+
+const doctorName = formatDoctorName(doctorEmail);
+ const doctorInitials = doctorName
+    .replace("Dr. ", "")
+    .split(" ")
+    .map((p) => p[0])
+    .join("")
+    .toUpperCase();
+
   const loadPatients = useCallback(async () => {
     setLoading(true);
     setError("");
@@ -188,9 +210,10 @@ function Hl7Export() {
   Logout
 </button>
         <div className="profile">
-          <div>AP</div>
+          
+          <div>{doctorInitials || "MD"}</div>
           <span>
-            <b>Dr. Andrei Popescu</b>
+            <b>{doctorName}</b>
             Medic specialist
           </span>
         </div>
