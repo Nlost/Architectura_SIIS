@@ -2,12 +2,14 @@
  * Derivează starea de sănătate din ultima măsurătoare (3 clase, ca Species din Iris.csv).
  */
 export function getHealthStatus(sample) {
-  if (!sample) return null;
+  if (!hasSensorData(sample)) {
+    return "Stare-stabil";
+  }
 
-  const puls = Number(sample.puls);
-  const temp = Number(sample.temperatura);
-  const spo2 = Number(sample.spo2);
-  const umid = Number(sample.umiditate);
+  const puls = toNumberOrZero(sample.puls);
+  const temp = toNumberOrZero(sample.temperatura);
+  const spo2 = toNumberOrZero(sample.spo2);
+  const umid = toNumberOrZero(sample.umiditate);
 
   if (
     puls > 110 ||
@@ -30,13 +32,17 @@ export function getHealthStatus(sample) {
   return "Stare-stabil";
 }
 
-function hasCompleteSample(sample) {
-  return (
-    sample &&
-    sample.puls != null &&
-    sample.spo2 != null &&
-    sample.temperatura != null &&
-    sample.umiditate != null
+function toNumberOrZero(value) {
+  if (value == null || value === "") return 0;
+  const n = Number(value);
+  return Number.isFinite(n) ? n : 0;
+}
+
+function hasSensorData(sample) {
+  if (!sample) return false;
+
+  return [sample.puls, sample.spo2, sample.temperatura, sample.umiditate].some(
+    (value) => value != null && value !== ""
   );
 }
 
@@ -50,15 +56,14 @@ export class PatientCsvBuilder {
     let id = 1;
 
     for (const patient of this.patients) {
-      const sample = patient.latestSample;
-      if (!hasCompleteSample(sample)) continue;
+      const sample = patient.latestSample || {};
 
       rows.push({
         id,
-        puls: Number(sample.puls),
-        spo2: Number(sample.spo2),
-        temperatura: Number(sample.temperatura),
-        umiditate: Number(sample.umiditate),
+        puls: toNumberOrZero(sample.puls),
+        spo2: toNumberOrZero(sample.spo2),
+        temperatura: toNumberOrZero(sample.temperatura),
+        umiditate: toNumberOrZero(sample.umiditate),
         stareSanatate: getHealthStatus(sample),
       });
       id += 1;

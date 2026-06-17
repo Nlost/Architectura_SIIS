@@ -76,8 +76,6 @@ function AdminCsv() {
     }
   };
 
-  const skippedCount = patients.length - exportCount;
-
   return (
     <div className="acsv-app">
       <aside className="acsv-sidebar">
@@ -174,7 +172,7 @@ function AdminCsv() {
             <div>
               <p>Rânduri exportate</p>
               <h2>{loading ? "…" : exportCount}</h2>
-              <span>pacienți cu măsurători complete</span>
+              <span>valori lipsă exportate ca 0</span>
             </div>
           </div>
           <div className="acsv-stat">
@@ -200,14 +198,7 @@ function AdminCsv() {
 
           {!loading && !error && exportCount === 0 && (
             <div className="acsv-status acsv-warn">
-              Niciun pacient nu are toate valorile senzorilor (Puls, SpO2, Temperatură, Umiditate).
-              {patients.length > 0 && ` (${patients.length} pacienți în sistem)`}
-            </div>
-          )}
-
-          {!loading && !error && skippedCount > 0 && exportCount > 0 && (
-            <div className="acsv-status acsv-info">
-              {skippedCount} pacienți omisi — lipsesc măsurători senzor complete.
+              Nu există pacienți în sistem pentru export.
             </div>
           )}
 
