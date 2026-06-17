@@ -1,20 +1,20 @@
-import "./adminhl7.css";
+import "./admincsv.css";
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { getPatients } from "../../api";
-import { FhirXmlBuilder } from "../../utils/fhirXmlBuilder";
-import { logoutUser } from "../../api";
-
+import { getPatients, logReportExport, logoutUser } from "../../api";
+import { PatientCsvBuilder } from "../../utils/patientCsvBuilder";
 
 const handleLogout = () => {
   logoutUser();
   window.location.href = "/login";
 };
-function AdminHl7() {
+
+function AdminCsv() {
   const navigate = useNavigate();
 
   const [patients, setPatients] = useState([]);
-  const [xml, setXml] = useState("");
+  const [csv, setCsv] = useState("");
+  const [exportCount, setExportCount] = useState(0);
   const [generatedAt, setGeneratedAt] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -24,16 +24,21 @@ function AdminHl7() {
     setLoading(true);
     setError("");
     setCopied(false);
+
     try {
       const data = await getPatients();
-      const builder = new FhirXmlBuilder(data);
+      const builder = new PatientCsvBuilder(data);
+      const rows = builder.getExportRows();
+
       setPatients(data);
-      setXml(builder.toXmlString());
+      setCsv(builder.toCsvString());
+      setExportCount(rows.length);
       setGeneratedAt(new Date());
     } catch (err) {
       setError(err.message || "Nu s-au putut încărca pacienții de pe server.");
       setPatients([]);
-      setXml("");
+      setCsv("");
+      setExportCount(0);
     } finally {
       setLoading(false);
     }
@@ -43,21 +48,27 @@ function AdminHl7() {
     loadAndBuild();
   }, [loadAndBuild]);
 
-  const handleDownload = () => {
-    const blob = new Blob([xml], { type: "application/fhir+xml" });
+  const handleDownload = async () => {
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = `pacienti-fhir-r4-${new Date().toISOString().slice(0, 10)}.xml`;
+    link.download = `Pacienti-${new Date().toISOString().slice(0, 10)}.csv`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
+
+    try {
+      await logReportExport();
+    } catch {
+      // exportul a reușit; auditul e secundar
+    }
   };
 
   const handleCopy = async () => {
     try {
-      await navigator.clipboard.writeText(xml);
+      await navigator.clipboard.writeText(csv);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
@@ -65,11 +76,13 @@ function AdminHl7() {
     }
   };
 
+  const skippedCount = patients.length - exportCount;
+
   return (
-    <div className="ahl7-app">
-      <aside className="ahl7-sidebar">
-        <div className="ahl7-brand">
-          <div className="ahl7-logo">SW</div>
+    <div className="acsv-app">
+      <aside className="acsv-sidebar">
+        <div className="acsv-brand">
+          <div className="acsv-logo">SW</div>
           <div>
             <h2>SeniorWatch</h2>
             <p>Admin Panel</p>
@@ -89,17 +102,19 @@ function AdminHl7() {
           <a href="#" onClick={(e) => { e.preventDefault(); navigate("/admin/adminaudit"); }}>
             📝 Audit
           </a>
-          <a href="#" className="active" onClick={(e) => e.preventDefault()}>
+          <a href="#" onClick={(e) => { e.preventDefault(); navigate("/admin/adminhl7"); }}>
             🔗 HL7 FHIR
           </a>
-          <a href="#" onClick={(e) => { e.preventDefault(); navigate("/admin/admincsv"); }}>
+          <a href="#" className="active" onClick={(e) => e.preventDefault()}>
             📁 Export CSV
           </a>
         </nav>
+
         <button className="logoutBtn" onClick={handleLogout}>
-  Logout
-</button>
-        <div className="ahl7-profile">
+          Logout
+        </button>
+
+        <div className="acsv-profile">
           <div>A</div>
           <span>
             <b>Administrator</b>
@@ -108,16 +123,18 @@ function AdminHl7() {
         </div>
       </aside>
 
-      <main className="ahl7-main">
-        <section className="ahl7-hero">
+      <main className="acsv-main">
+        <section className="acsv-hero">
           <div>
-            <p>INTEROPERABILITATE</p>
-            <h1>Export pacienți — HL7 FHIR R4</h1>
-            <span>Toți pacienții activi din sistem, ca Bundle FHIR R4 (XML)</span>
+            <p>CLASIFICARE</p>
+            <h1>Export pacienți — CSV</h1>
+            <span>
+              Date de antrenare în format Iris: Puls, SpO2, Temperatură, Umiditate, StareSanatate
+            </span>
           </div>
-          <div className="ahl7-heroBtns">
+          <div className="acsv-heroBtns">
             <button
-              className="ahl7-btn regen"
+              className="acsv-btn regen"
               type="button"
               onClick={loadAndBuild}
               disabled={loading}
@@ -125,43 +142,43 @@ function AdminHl7() {
               ↻ Regenerează
             </button>
             <button
-              className="ahl7-btn copy"
+              className="acsv-btn copy"
               type="button"
               onClick={handleCopy}
-              disabled={loading || !xml}
+              disabled={loading || !csv}
             >
-              {copied ? "✓ Copiat" : "Copiază XML"}
+              {copied ? "✓ Copiat" : "Copiază CSV"}
             </button>
             <button
-              className="ahl7-btn download"
+              className="acsv-btn download"
               type="button"
               onClick={handleDownload}
-              disabled={loading || !xml}
+              disabled={loading || !csv}
             >
-              ⬇ Descarcă .xml
+              ⬇ Descarcă Pacienti.csv
             </button>
           </div>
         </section>
 
-        <section className="ahl7-stats">
-          <div className="ahl7-stat">
-            <div className="ahl7-statIcon purple">🔗</div>
+        <section className="acsv-stats">
+          <div className="acsv-stat">
+            <div className="acsv-statIcon purple">📁</div>
             <div>
-              <p>Standard</p>
-              <h2>FHIR R4</h2>
-              <span>HL7 FHIR Release 4 (XML)</span>
+              <p>Format</p>
+              <h2>CSV</h2>
+              <span>compatibil cu tutorial-pacienti-exemplu.py</span>
             </div>
           </div>
-          <div className="ahl7-stat">
-            <div className="ahl7-statIcon green">👥</div>
+          <div className="acsv-stat">
+            <div className="acsv-statIcon green">👥</div>
             <div>
-              <p>Pacienți exportați</p>
-              <h2>{loading ? "…" : patients.length}</h2>
-              <span>resurse Patient în Bundle</span>
+              <p>Rânduri exportate</p>
+              <h2>{loading ? "…" : exportCount}</h2>
+              <span>pacienți cu măsurători complete</span>
             </div>
           </div>
-          <div className="ahl7-stat">
-            <div className="ahl7-statIcon violet">🕒</div>
+          <div className="acsv-stat">
+            <div className="acsv-statIcon violet">🕒</div>
             <div>
               <p>Generat la</p>
               <h2>{generatedAt ? generatedAt.toLocaleTimeString("ro-RO") : "—"}</h2>
@@ -170,20 +187,33 @@ function AdminHl7() {
           </div>
         </section>
 
-        <section className="ahl7-panel">
+        <section className="acsv-panel">
           {loading && (
-            <div className="ahl7-status">Se încarcă pacienții de pe server…</div>
+            <div className="acsv-status">Se încarcă pacienții de pe server…</div>
           )}
 
           {!loading && error && (
-            <div className="ahl7-status ahl7-error">
+            <div className="acsv-status acsv-error">
               <b>Eroare:</b> {error}
             </div>
           )}
 
-          {!loading && !error && (
-            <pre className="ahl7-xml-preview">
-              <code>{xml}</code>
+          {!loading && !error && exportCount === 0 && (
+            <div className="acsv-status acsv-warn">
+              Niciun pacient nu are toate valorile senzorilor (Puls, SpO2, Temperatură, Umiditate).
+              {patients.length > 0 && ` (${patients.length} pacienți în sistem)`}
+            </div>
+          )}
+
+          {!loading && !error && skippedCount > 0 && exportCount > 0 && (
+            <div className="acsv-status acsv-info">
+              {skippedCount} pacienți omisi — lipsesc măsurători senzor complete.
+            </div>
+          )}
+
+          {!loading && !error && csv && (
+            <pre className="acsv-preview">
+              <code>{csv}</code>
             </pre>
           )}
         </section>
@@ -192,4 +222,4 @@ function AdminHl7() {
   );
 }
 
-export default AdminHl7;
+export default AdminCsv;

@@ -17,6 +17,7 @@ import AdminRoluri from "./pages/admin/adminroluri";
 import AdminAudit from "./pages/admin/adminaudit";
 import AdminStatus from "./pages/admin/adminstatus";
 import AdminHl7 from "./pages/admin/adminhl7";
+import AdminCsv from "./pages/admin/admincsv";
 
 import Pacient from "./pages/pacient/pacient";
 import PacientFisa from "./pages/pacient/pacientfisa";
@@ -65,6 +66,7 @@ function App() {
       <Route path="/admin/adminaudit" element={<AdminRoute><AdminAudit /></AdminRoute>} />
       <Route path="/admin/adminstatus" element={<AdminRoute><AdminStatus /></AdminRoute>} />
       <Route path="/admin/adminhl7" element={<AdminRoute><AdminHl7 /></AdminRoute>} />
+      <Route path="/admin/admincsv" element={<AdminRoute><AdminCsv /></AdminRoute>} />
 
       <Route path="/pacient" element={<PatientRoute><Pacient /></PatientRoute>} />
       <Route path="/pacient/pacientfisa" element={<PatientRoute><PacientFisa /></PatientRoute>} />
