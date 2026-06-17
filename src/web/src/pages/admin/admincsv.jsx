@@ -12,7 +12,6 @@ const handleLogout = () => {
 function AdminCsv() {
   const navigate = useNavigate();
 
-  const [patients, setPatients] = useState([]);
   const [csv, setCsv] = useState("");
   const [exportCount, setExportCount] = useState(0);
   const [generatedAt, setGeneratedAt] = useState(null);
@@ -30,13 +29,11 @@ function AdminCsv() {
       const builder = new PatientCsvBuilder(data);
       const rows = builder.getExportRows();
 
-      setPatients(data);
       setCsv(builder.toCsvString());
       setExportCount(rows.length);
       setGeneratedAt(new Date());
     } catch (err) {
       setError(err.message || "Nu s-au putut încărca pacienții de pe server.");
-      setPatients([]);
       setCsv("");
       setExportCount(0);
     } finally {
