@@ -2,9 +2,12 @@
 ### tensorflow este o biblioteca cu care se pot efectua operatii matematice complexe si de asemenea este folosita pentru invatarea automata
 import os
 import tensorflow as tf
+
+# TensorFlow 2.x ruleaza implicit in mod eager; tutorialul foloseste API TF 1.x
+tf.compat.v1.disable_eager_execution()
+
 ### numpy are suport pentru operatii complexe cu tablouri de dimensiuni mari
-import numpy as np
-### este o biblioteca software pentru manipularea și analiza datelor
+import numpy as np### este o biblioteca software pentru manipularea și analiza datelor
 import pandas as pd
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -59,16 +62,14 @@ x = tf.compat.v1.placeholder(tf.float32, shape=[None, 4])
 y_ = tf.compat.v1.placeholder(tf.float32, shape=[None, 3])
 
 # weight and bias
-W = tf.Variable(tf.zeros([4, 3]))
-b = tf.Variable(tf.zeros([3]))
-
+W = tf.compat.v1.Variable(tf.zeros([4, 3]))
+b = tf.compat.v1.Variable(tf.zeros([3]))
 # modelul
 # functia softmax pentru clasificare a multiclaselor
 y = tf.nn.softmax(tf.matmul(x, W) + b)
 
 # loss function
-cross_entropy = tf.reduce_mean(-tf.reduce_sum(y_ * tf.math.log(y), reduction_indices=[1]))
-
+cross_entropy = tf.reduce_mean(-tf.reduce_sum(y_ * tf.math.log(y), axis=1))
 # optimizator
 train_step = tf.compat.v1.train.AdamOptimizer(0.01).minimize(cross_entropy)
 
@@ -89,7 +90,10 @@ epoch = 2000
 for step in range(epoch):
     _, c = sess.run(
         [train_step, cross_entropy],
-        feed_dict={x: x_input, y_: [t for t in y_input.to_numpy()]},
+        feed_dict={
+            x: x_input.to_numpy(dtype=np.float32),
+            y_: np.array([t for t in y_input.to_numpy()], dtype=np.float32),
+        },
     )
     if step % 500 == 0:
         print(c)
@@ -107,6 +111,14 @@ for i in range(test_start, len(data)):
 
 if len(x_test) > 0:
     print("Acuratetea generala este: ")
-    print(sess.run(accuracy, feed_dict={x: x_test, y_: [t for t in y_test.to_numpy()]}))
+    print(
+        sess.run(
+            accuracy,
+            feed_dict={
+                x: x_test.to_numpy(dtype=np.float32),
+                y_: np.array([t for t in y_test.to_numpy()], dtype=np.float32),
+            },
+        )
+    )
 else:
     print("Nu exista suficiente date de test pentru calculul acuratetii.")
