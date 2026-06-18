@@ -1,0 +1,326 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: "Inter", "Segoe UI", sans-serif;
+  background: #f6f3ff;
+}
+
+.acsv-app {
+  min-height: 100vh;
+  display: flex;
+  background:
+    radial-gradient(circle at 82% 10%, rgba(124, 58, 237, 0.18), transparent 28%),
+    radial-gradient(circle at 45% 0%, rgba(196, 181, 253, 0.35), transparent 25%),
+    linear-gradient(135deg, #f5efff 0%, #eee4ff 45%, #f9f6ff 100%);
+}
+
+.acsv-sidebar {
+  width: 285px;
+  height: 100vh;
+  position: fixed;
+  left: 0;
+  top: 0;
+  padding: 32px 24px;
+  background: linear-gradient(180deg, #7c3aed, #8f33f2);
+  color: white;
+  border-radius: 0 28px 28px 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.acsv-brand {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 45px;
+}
+
+.acsv-logo {
+  width: 58px;
+  height: 58px;
+  border-radius: 18px;
+  background: white;
+  color: #6d28d9;
+  display: grid;
+  place-items: center;
+  font-size: 24px;
+  font-weight: 900;
+}
+
+.acsv-brand h2 {
+  margin: 0;
+}
+
+.acsv-brand p {
+  margin: 4px 0 0;
+  color: #d8caff;
+  font-size: 14px;
+}
+
+.acsv-sidebar nav {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.acsv-sidebar nav a {
+  padding: 16px 18px;
+  border-radius: 16px;
+  color: white;
+  font-weight: 800;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.acsv-sidebar nav a.active,
+.acsv-sidebar nav a:hover {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.acsv-profile {
+  padding: 16px;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.16);
+  display: flex;
+  align-items: center;
+  gap: 13px;
+}
+
+.logoutBtn {
+  width: 100%;
+  height: 46px;
+  border: none;
+  border-radius: 15px;
+  background: rgba(255, 255, 255, 0.16);
+  color: white;
+  font-weight: 900;
+  cursor: pointer;
+  margin-top: auto;
+  margin-bottom: 14px;
+}
+
+.logoutBtn:hover {
+  background: rgba(255, 255, 255, 0.24);
+}
+
+.acsv-profile div {
+  width: 50px;
+  height: 50px;
+  border-radius: 16px;
+  background: white;
+  color: #6d28d9;
+  display: grid;
+  place-items: center;
+  font-weight: 900;
+}
+
+.acsv-profile span {
+  display: flex;
+  flex-direction: column;
+  color: #ddd2ff;
+  font-size: 13px;
+}
+
+.acsv-profile b {
+  color: white;
+}
+
+.acsv-main {
+  margin-left: 285px;
+  width: calc(100% - 285px);
+  padding: 42px 48px;
+}
+
+.acsv-hero {
+  min-height: 150px;
+  border-radius: 34px;
+  padding: 34px;
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(18px);
+  box-shadow: 0 24px 70px rgba(83, 47, 147, 0.12);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.acsv-hero p {
+  margin: 0 0 8px;
+  color: #8b5cf6;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.acsv-hero h1 {
+  margin: 0;
+  font-size: 34px;
+}
+
+.acsv-hero span {
+  display: block;
+  margin-top: 10px;
+  color: #6d5a8e;
+  font-weight: 700;
+}
+
+.acsv-heroBtns {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.acsv-btn {
+  height: 50px;
+  padding: 0 22px;
+  border: none;
+  border-radius: 16px;
+  font-size: 14px;
+  font-weight: 900;
+  cursor: pointer;
+  transition: 0.2s ease;
+  color: white;
+}
+
+.acsv-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.acsv-btn:not(:disabled):hover {
+  transform: translateY(-2px);
+  filter: brightness(0.96);
+}
+
+.acsv-btn.regen {
+  background: #ede9fe;
+  color: #6d28d9;
+}
+
+.acsv-btn.copy {
+  background: linear-gradient(135deg, #34d399, #10b981);
+  box-shadow: 0 10px 22px rgba(16, 185, 129, 0.2);
+}
+
+.acsv-btn.download {
+  background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+  box-shadow: 0 10px 22px rgba(109, 40, 217, 0.22);
+}
+
+.acsv-stats {
+  margin-top: 28px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 22px;
+}
+
+.acsv-stat {
+  min-height: 130px;
+  background: rgba(255, 255, 255, 0.92);
+  border-radius: 26px;
+  padding: 24px;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.acsv-statIcon {
+  width: 58px;
+  height: 58px;
+  border-radius: 18px;
+  display: grid;
+  place-items: center;
+  color: white;
+  font-size: 24px;
+}
+
+.acsv-statIcon.purple {
+  background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+}
+
+.acsv-statIcon.green {
+  background: linear-gradient(135deg, #34d399, #10b981);
+}
+
+.acsv-statIcon.violet {
+  background: linear-gradient(135deg, #a78bfa, #7c3aed);
+}
+
+.acsv-stat p {
+  margin: 0;
+  color: #77669b;
+  font-weight: 900;
+}
+
+.acsv-stat h2 {
+  margin: 8px 0 0;
+  font-size: 28px;
+}
+
+.acsv-stat span {
+  display: block;
+  margin-top: 6px;
+  color: #9a8bc0;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.acsv-panel {
+  margin-top: 28px;
+  background: rgba(255, 255, 255, 0.94);
+  border-radius: 28px;
+  padding: 26px;
+  box-shadow: 0 18px 50px rgba(89, 56, 142, 0.09);
+}
+
+.acsv-status {
+  padding: 18px 22px;
+  border-radius: 14px;
+  background: #ede9fe;
+  color: #6d28d9;
+  font-weight: 800;
+  margin-bottom: 16px;
+}
+
+.acsv-status.acsv-error {
+  background: #ffe4ef;
+  color: #e11d48;
+}
+
+.acsv-status.acsv-warn {
+  background: #fff7ed;
+  color: #c2410c;
+}
+
+.acsv-status.acsv-info {
+  background: #ecfdf5;
+  color: #047857;
+}
+
+.acsv-preview {
+  margin: 0;
+  max-height: 560px;
+  overflow: auto;
+  padding: 22px;
+  border-radius: 18px;
+  background: #1a093d;
+}
+
+.acsv-preview code {
+  display: block;
+  white-space: pre;
+  font-family: "Consolas", "Fira Code", "Courier New", monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  color: #e9d5ff;
+}
+
+@media (max-width: 1200px) {
+  .acsv-stats {
+    grid-template-columns: 1fr;
+  }
+}

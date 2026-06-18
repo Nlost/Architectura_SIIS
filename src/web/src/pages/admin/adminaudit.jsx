@@ -116,6 +116,16 @@ function AdminAudit() {
           >
             🔗 HL7 FHIR
           </a>
+
+          <a
+            href="#"
+            onClick={(e) => {
+              e.preventDefault();
+              navigate("/admin/admincsv");
+            }}
+          >
+            📁 Export CSV
+          </a>
         </nav>
 
         <button className="logoutBtn" onClick={handleLogout}>
